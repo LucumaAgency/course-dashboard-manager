@@ -23,7 +23,7 @@ class BoxRenderer {
         }
         
         $courses = get_posts([
-            'post_type' => 'stm-courses',
+            'post_type' => 'course',
             'posts_per_page' => -1,
             'tax_query' => [
                 [

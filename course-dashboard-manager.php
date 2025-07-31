@@ -1222,6 +1222,27 @@ function course_box_manager_shortcode() {
         'current_filter' => current_filter()
     ]);
     
+    // Debug: Check custom texts directly
+    if (current_user_can('manage_options') && isset($_GET['cbm_debug_texts'])) {
+        $custom_texts = get_post_meta($post_id, 'box_custom_texts', true);
+        $date_format = get_post_meta($post_id, 'box_date_format', true);
+        $price_format = get_post_meta($post_id, 'box_price_format', true);
+        $button_text = get_post_meta($post_id, 'box_button_text', true);
+        
+        $debug_output = '<div style="background: #f0f0f0; padding: 20px; margin: 20px 0; font-family: monospace;">';
+        $debug_output .= '<h3>Course Box Manager - Custom Texts Debug</h3>';
+        $debug_output .= '<p><strong>Post ID:</strong> ' . $post_id . '</p>';
+        $debug_output .= '<p><strong>Custom Texts:</strong></p>';
+        $debug_output .= '<pre>' . print_r($custom_texts, true) . '</pre>';
+        $debug_output .= '<p><strong>Date Format:</strong> ' . esc_html($date_format) . '</p>';
+        $debug_output .= '<p><strong>Price Format:</strong> ' . esc_html($price_format) . '</p>';
+        $debug_output .= '<p><strong>Button Text:</strong> ' . esc_html($button_text) . '</p>';
+        $debug_output .= '<p><em>Add ?cbm_debug_texts=1 to URL to see this debug info</em></p>';
+        $debug_output .= '</div>';
+        
+        return $debug_output;
+    }
+    
     // Check Elementor status
     CourseBoxManager\Debug::check_elementor();
     
@@ -1240,7 +1261,19 @@ function course_box_manager_shortcode() {
     ]);
     
     try {
-        return CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id);
+        $output = CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id);
+        
+        // Add JavaScript debug info if admin
+        if (current_user_can('manage_options')) {
+            $custom_texts = get_post_meta($post_id, 'box_custom_texts', true) ?: [];
+            $output .= '<script>
+                console.log("CBM Debug - Post ID:", ' . json_encode($post_id) . ');
+                console.log("CBM Debug - Custom Texts:", ' . json_encode($custom_texts) . ');
+                console.log("CBM Debug - Has custom texts:", ' . json_encode(!empty($custom_texts)) . ');
+            </script>';
+        }
+        
+        return $output;
     } catch (\Exception $e) {
         CourseBoxManager\Debug::log('Error rendering boxes', [
             'error' => $e->getMessage(),
