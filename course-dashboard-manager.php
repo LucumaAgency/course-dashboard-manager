@@ -297,6 +297,83 @@ function course_box_manager_page() {
                 <a href="?page=course-box-manager" class="button">Back to Groups</a>
             <?php endif; ?>
             <div style="margin-top: 20px;">
+                <?php 
+                // Calculate seats availability for display
+                $product_id = get_post_meta($course_id, 'linked_product_id', true);
+                if ($is_group_course && $product_id) {
+                    ?>
+                    <div style="background: #f1f1f1; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
+                        <h3 style="margin-top: 0;">Seats Availability</h3>
+                        <?php
+                        if (!empty($dates)) {
+                            echo '<table style="width: 100%; border-collapse: collapse;">';
+                            echo '<thead><tr style="border-bottom: 1px solid #ccc;">';
+                            echo '<th style="text-align: left; padding: 5px;">Date</th>';
+                            echo '<th style="text-align: center; padding: 5px;">Total Seats</th>';
+                            echo '<th style="text-align: center; padding: 5px;">Sold</th>';
+                            echo '<th style="text-align: center; padding: 5px;">Available</th>';
+                            echo '</tr></thead><tbody>';
+                            
+                            $total_seats_all = 0;
+                            $total_sold_all = 0;
+                            $total_available_all = 0;
+                            
+                            foreach ($dates as $date) {
+                                if (isset($date['date'])) {
+                                    $stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
+                                    $sold = calculate_seats_sold($product_id, $date['date']);
+                                    $available = max(0, $stock - $sold);
+                                    
+                                    $total_seats_all += $stock;
+                                    $total_sold_all += $sold;
+                                    $total_available_all += $available;
+                                    
+                                    $row_class = '';
+                                    if ($stock > 0) {
+                                        $percentage = ($available / $stock) * 100;
+                                        if ($percentage <= 20) $row_class = 'low-seats';
+                                        elseif ($percentage <= 50) $row_class = 'medium-seats';
+                                    }
+                                    
+                                    echo '<tr>';
+                                    echo '<td style="padding: 5px;">' . esc_html($date['date']) . '</td>';
+                                    echo '<td style="text-align: center; padding: 5px;">' . esc_html($stock) . '</td>';
+                                    echo '<td style="text-align: center; padding: 5px;">' . esc_html($sold) . '</td>';
+                                    echo '<td style="text-align: center; padding: 5px;" class="' . esc_attr($row_class) . '"><strong>' . esc_html($available) . '</strong></td>';
+                                    echo '</tr>';
+                                }
+                            }
+                            
+                            echo '<tr style="border-top: 2px solid #333; font-weight: bold;">';
+                            echo '<td style="padding: 5px;">TOTAL</td>';
+                            echo '<td style="text-align: center; padding: 5px;">' . esc_html($total_seats_all) . '</td>';
+                            echo '<td style="text-align: center; padding: 5px;">' . esc_html($total_sold_all) . '</td>';
+                            echo '<td style="text-align: center; padding: 5px;">' . esc_html($total_available_all) . '</td>';
+                            echo '</tr>';
+                            
+                            echo '</tbody></table>';
+                        } else {
+                            // Single stock for all dates
+                            $sold = calculate_seats_sold($product_id);
+                            $available = max(0, $webinar_stock - $sold);
+                            
+                            echo '<p><strong>Total Seats:</strong> ' . esc_html($webinar_stock) . '</p>';
+                            echo '<p><strong>Seats Sold:</strong> ' . esc_html($sold) . '</p>';
+                            echo '<p><strong>Seats Available:</strong> <span class="';
+                            
+                            if ($webinar_stock > 0) {
+                                $percentage = ($available / $webinar_stock) * 100;
+                                if ($percentage <= 20) echo 'low-seats';
+                                elseif ($percentage <= 50) echo 'medium-seats';
+                            }
+                            
+                            echo '">' . esc_html($available) . '</span></p>';
+                        }
+                        ?>
+                    </div>
+                    <?php
+                }
+                ?>
                 <h3>Course Settings</h3>
                 <table class="form-table">
                     <tr>
