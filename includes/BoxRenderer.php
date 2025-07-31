@@ -44,15 +44,6 @@ class BoxRenderer {
             }
         }
         
-        // Debug logging
-        if (class_exists('CourseBoxManager\\Debug')) {
-            \CourseBoxManager\Debug::log('BoxRenderer finding courses', [
-                'group_id' => $group_id,
-                'current_post_id' => $current_post_id,
-                'courses_found' => $courses,
-                'count' => count($courses)
-            ]);
-        }
         
         if (empty($courses)) {
             return '';
