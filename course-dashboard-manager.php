@@ -94,14 +94,8 @@ function course_box_manager_menu() {
 // Helper function to calculate seats sold for a course
 function calculate_seats_sold($product_id, $date = null) {
     if (!$product_id) {
-        CourseBoxManager\Debug::log('No product ID provided for seats calculation');
         return 0;
     }
-    
-    CourseBoxManager\Debug::log('Starting seats calculation', [
-        'product_id' => $product_id,
-        'date' => $date
-    ]);
     
     $args = [
         'status' => ['wc-completed'],
@@ -111,7 +105,6 @@ function calculate_seats_sold($product_id, $date = null) {
     
     // Check if WooCommerce is available
     if (!function_exists('wc_get_orders')) {
-        CourseBoxManager\Debug::log('WooCommerce not available - wc_get_orders function missing');
         return 0;
     }
     
@@ -136,25 +129,11 @@ function calculate_seats_sold($product_id, $date = null) {
         }
     }
     
-    CourseBoxManager\Debug::log('Seats calculation complete', [
-        'product_id' => $product_id,
-        'date' => $date,
-        'sales_count' => $sales_count,
-        'matching_order_count' => count($matching_orders),
-        'order_ids' => array_slice($matching_orders, 0, 5) // Show first 5 order IDs
-    ]);
-    
     return $sales_count;
 }
 
 // Dashboard page content
 function course_box_manager_page() {
-    // Debug WooCommerce availability
-    CourseBoxManager\Debug::log('Dashboard page loaded', [
-        'woocommerce_active' => class_exists('WooCommerce'),
-        'wc_get_orders_exists' => function_exists('wc_get_orders'),
-        'wc_get_product_exists' => function_exists('wc_get_product')
-    ]);
     ?>
     <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
@@ -241,9 +220,6 @@ function course_box_manager_page() {
                         $dates = get_field('course_dates', $course_id) ?: [];
                         $is_group_course = preg_match('/( - G\d+|\(G\d+\))$/', $title);
                         $product_id = get_post_meta($course_id, 'linked_product_id', true);
-                        
-                        // Debug seats calculation
-                        CourseBoxManager\Debug::check_seats_calculation($course_id);
                         
                         // Calculate seats availability
                         $seats_info = [];
