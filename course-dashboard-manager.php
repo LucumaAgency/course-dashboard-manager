@@ -87,20 +87,71 @@ function course_box_manager_menu() {
 
 // Dashboard page content
 function course_box_manager_page() {
-    // Get all courses
-    $courses = get_posts([
-        'post_type' => 'stm-courses',
-        'posts_per_page' => -1,
-        'fields' => 'ids',
-    ]);
-
     ?>
     <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-        <input type="text" id="course-search" placeholder="Search courses...">
-        <?php if (!isset($_GET['course_id'])) : ?>
-            <!-- Main View: Courses Table -->
+        <input type="text" id="course-search" placeholder="Search...">
+        <?php if (!isset($_GET['course_id']) && !isset($_GET['group_id'])) : ?>
+            <!-- Main View: Course Groups Table -->
+            <?php
+            $groups = get_terms(['taxonomy' => 'course_group', 'hide_empty' => false]);
+            ?>
             <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>Course Group</th>
+                        <th>Number of Courses</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($groups as $group) :
+                        $courses_in_group = get_posts([
+                            'post_type' => 'stm-courses',
+                            'posts_per_page' => -1,
+                            'fields' => 'ids',
+                            'tax_query' => [
+                                [
+                                    'taxonomy' => 'course_group',
+                                    'field' => 'term_id',
+                                    'terms' => $group->term_id,
+                                ],
+                            ],
+                        ]);
+                    ?>
+                        <tr>
+                            <td><a href="?page=course-box-manager&group_id=<?php echo esc_attr($group->term_id); ?>"><?php echo esc_html($group->name); ?></a></td>
+                            <td><?php echo count($courses_in_group); ?></td>
+                            <td>
+                                <button class="button view-courses" data-group-id="<?php echo esc_attr($group->term_id); ?>">View Courses</button>
+                                <button class="button delete-group" data-group-id="<?php echo esc_attr($group->term_id); ?>">Delete</button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <button class="button button-primary add-course-group" style="margin-top: 10px;">Add Course Group</button>
+        <?php elseif (isset($_GET['group_id']) && !isset($_GET['course_id'])) : ?>
+            <!-- Group View: Courses in Group -->
+            <?php
+            $group_id = intval($_GET['group_id']);
+            $group = get_term($group_id, 'course_group');
+            $courses = get_posts([
+                'post_type' => 'stm-courses',
+                'posts_per_page' => -1,
+                'fields' => 'ids',
+                'tax_query' => [
+                    [
+                        'taxonomy' => 'course_group',
+                        'field' => 'term_id',
+                        'terms' => $group_id,
+                    ],
+                ],
+            ]);
+            ?>
+            <h2>Course Group: <?php echo esc_html($group->name); ?></h2>
+            <a href="?page=course-box-manager" class="button">Back to Groups</a>
+            <table class="wp-list-table widefat fixed striped" style="margin-top: 20px;">
                 <thead>
                     <tr>
                         <th>Course</th>
@@ -122,7 +173,7 @@ function course_box_manager_page() {
                         $is_group_course = preg_match('/( - G\d+|\(G\d+\))$/', $title);
                     ?>
                         <tr>
-                            <td><a href="?page=course-box-manager&course_id=<?php echo esc_attr($course_id); ?>"><?php echo esc_html($title); ?></a></td>
+                            <td><a href="?page=course-box-manager&course_id=<?php echo esc_attr($course_id); ?>&group_id=<?php echo esc_attr($group_id); ?>"><?php echo esc_html($title); ?></a></td>
                             <td><?php echo esc_html(implode(', ', $instructor_names)); ?></td>
                             <td><?php echo esc_html(ucfirst(str_replace('-', ' ', $box_state))); ?></td>
                             <td><?php echo $is_group_course ? esc_html($webinar_stock) : '-'; ?></td>
@@ -135,8 +186,7 @@ function course_box_manager_page() {
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            <button class="button button-primary add-course" style="margin-top: 10px;">Add Course</button>
-            <button class="button button-primary add-course-group" style="margin-top: 10px; margin-left: 10px;">Add Course Group</button>
+            <button class="button button-primary add-course" data-group-id="<?php echo esc_attr($group_id); ?>" style="margin-top: 10px;">Add Course to Group</button>
         <?php else : ?>
             <!-- Detail View: Course Settings -->
             <?php
@@ -162,9 +212,14 @@ function course_box_manager_page() {
                 ],
             ]);
             $selling_page_id = !empty($selling_page) ? $selling_page[0]->ID : 0;
+            $from_group_id = isset($_GET['group_id']) ? intval($_GET['group_id']) : 0;
             ?>
             <h2>Course: <?php echo esc_html($title); ?></h2>
-            <a href="?page=course-box-manager" class="button">Back to Courses</a>
+            <?php if ($from_group_id) : ?>
+                <a href="?page=course-box-manager&group_id=<?php echo esc_attr($from_group_id); ?>" class="button">Back to Group</a>
+            <?php else : ?>
+                <a href="?page=course-box-manager" class="button">Back to Groups</a>
+            <?php endif; ?>
             <div style="margin-top: 20px;">
                 <h3>Course Settings</h3>
                 <table class="form-table">
@@ -254,6 +309,7 @@ function course_box_manager_page() {
                 <h2>Add Course</h2>
                 <label>Course Title (include suffix, e.g., VOD, G1, (G1)):</label>
                 <input type="text" id="course-title" placeholder="e.g., How to do AI - VOD or How to do AI (G1)">
+                <?php if (!isset($_GET['group_id'])) : ?>
                 <label>Course Group:</label>
                 <select id="course-group">
                     <option value="0">None</option>
@@ -264,6 +320,9 @@ function course_box_manager_page() {
                     }
                     ?>
                 </select>
+                <?php else : ?>
+                <input type="hidden" id="course-group" value="<?php echo esc_attr($_GET['group_id']); ?>">
+                <?php endif; ?>
                 <label>Instructors:</label>
                 <select id="course-instructors" multiple>
                     <?php
@@ -374,6 +433,10 @@ function course_box_manager_page() {
                 // Open Add Course Modal
                 document.querySelectorAll('.add-course').forEach(button => {
                     button.addEventListener('click', function() {
+                        const groupId = this.getAttribute('data-group-id');
+                        if (groupId) {
+                            document.getElementById('course-group').value = groupId;
+                        }
                         addCourseModal.style.display = 'block';
                     });
                 });
@@ -524,19 +587,56 @@ function course_box_manager_page() {
                     });
                 });
 
-                // Search Courses
+                // Search functionality
                 document.getElementById('course-search').addEventListener('input', function() {
                     const search = this.value.toLowerCase();
                     document.querySelectorAll('.wp-list-table tbody tr').forEach(row => {
-                        const courseName = row.cells[0].textContent.toLowerCase();
-                        row.style.display = courseName.includes(search) ? '' : 'none';
+                        const searchText = row.cells[0].textContent.toLowerCase();
+                        row.style.display = searchText.includes(search) ? '' : 'none';
+                    });
+                });
+
+                // View Courses button
+                document.querySelectorAll('.view-courses').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const groupId = this.getAttribute('data-group-id');
+                        window.location.href = '?page=course-box-manager&group_id=' + groupId;
+                    });
+                });
+
+                // Delete Group button
+                document.querySelectorAll('.delete-group').forEach(button => {
+                    button.addEventListener('click', function() {
+                        if (!confirm('Are you sure you want to delete this course group? This will not delete the courses.')) return;
+                        const groupId = this.getAttribute('data-group-id');
+                        fetch(ajaxurl + '?action=delete_course_group', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: 'group_id=' + groupId + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('Course group deleted successfully!');
+                                location.reload();
+                            } else {
+                                alert('Error: ' + data.data);
+                            }
+                        });
                     });
                 });
 
                 // Edit Course Settings
                 document.querySelectorAll('.edit-course-settings').forEach(button => {
                     button.addEventListener('click', function() {
-                        window.location.href = '?page=course-box-manager&course_id=' + this.getAttribute('data-course-id');
+                        const courseId = this.getAttribute('data-course-id');
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const groupId = urlParams.get('group_id');
+                        let redirectUrl = '?page=course-box-manager&course_id=' + courseId;
+                        if (groupId) {
+                            redirectUrl += '&group_id=' + groupId;
+                        }
+                        window.location.href = redirectUrl;
                     });
                 });
             });
@@ -555,6 +655,39 @@ function create_new_course_group() {
         wp_send_json_success();
     } else {
         wp_send_json_error($term->get_error_message());
+    }
+}
+
+// AJAX Handler for Deleting Course Group
+add_action('wp_ajax_delete_course_group', 'delete_course_group');
+function delete_course_group() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    $group_id = intval($_POST['group_id']);
+    
+    // Remove the term from all courses first
+    $courses = get_posts([
+        'post_type' => 'stm-courses',
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'tax_query' => [
+            [
+                'taxonomy' => 'course_group',
+                'field' => 'term_id',
+                'terms' => $group_id,
+            ],
+        ],
+    ]);
+    
+    foreach ($courses as $course_id) {
+        wp_remove_object_terms($course_id, $group_id, 'course_group');
+    }
+    
+    // Delete the term
+    $result = wp_delete_term($group_id, 'course_group');
+    if (!is_wp_error($result)) {
+        wp_send_json_success();
+    } else {
+        wp_send_json_error($result->get_error_message());
     }
 }
 
