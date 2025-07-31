@@ -34,6 +34,11 @@ spl_autoload_register(function ($class) {
     }
 });
 
+// Initialize the seats remaining functionality
+add_action('init', function() {
+    new CourseBoxManager\SeatsRemaining();
+});
+
 // Register course_group taxonomy
 add_action('init', 'register_course_group_taxonomy');
 function register_course_group_taxonomy() {
@@ -172,12 +177,23 @@ function course_box_manager_page() {
                         $webinar_stock = get_field('course_stock', $course_id) ?: 0;
                         $dates = get_field('course_dates', $course_id) ?: [];
                         $is_group_course = preg_match('/( - G\d+|\(G\d+\))$/', $title);
+                        
+                        // Get stock info from dates if available
+                        $stock_info = [];
+                        if (!empty($dates)) {
+                            foreach ($dates as $date) {
+                                if (isset($date['date'])) {
+                                    $stock = isset($date['stock']) ? $date['stock'] : $webinar_stock;
+                                    $stock_info[] = $date['date'] . ' (' . $stock . ')';
+                                }
+                            }
+                        }
                     ?>
                         <tr>
                             <td><a href="?page=course-box-manager&course_id=<?php echo esc_attr($course_id); ?>&group_id=<?php echo esc_attr($group_id); ?>"><?php echo esc_html($title); ?></a></td>
                             <td><?php echo esc_html(implode(', ', $instructor_names)); ?></td>
                             <td><?php echo esc_html(ucfirst(str_replace('-', ' ', $box_state))); ?></td>
-                            <td><?php echo $is_group_course ? esc_html($webinar_stock) : '-'; ?></td>
+                            <td><?php echo $is_group_course && !empty($stock_info) ? esc_html(implode(', ', $stock_info)) : ($is_group_course ? esc_html($webinar_stock) : '-'); ?></td>
                             <td><?php echo $is_group_course && !empty($dates) ? esc_html(implode(', ', array_column($dates, 'date'))) : '-'; ?></td>
                             <td>
                                 <button class="button button-primary edit-course-settings" data-course-id="<?php echo esc_attr($course_id); ?>">Edit</button>
@@ -270,16 +286,22 @@ function course_box_manager_page() {
                             </td>
                         </tr>
                         <tr>
-                            <th><label>Dates</label></th>
+                            <th><label>Dates & Stock</label></th>
                             <td>
                                 <div class="date-list" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                    <div style="display: flex; gap: 10px; margin-bottom: 5px; font-weight: bold;">
+                                        <span style="width: 150px;">Date</span>
+                                        <span style="width: 80px;">Stock</span>
+                                        <span>Action</span>
+                                    </div>
                                     <?php foreach ($dates as $index => $date) : ?>
-                                        <div>
-                                            <input type="text" class="course-date" value="<?php echo esc_attr($date['date']); ?>" data-index="<?php echo esc_attr($index); ?>" placeholder="Enter date (e.g., 2025-08-01)">
+                                        <div class="date-stock-row" style="display: flex; gap: 10px; margin-bottom: 5px;">
+                                            <input type="text" class="course-date" value="<?php echo esc_attr($date['date']); ?>" data-index="<?php echo esc_attr($index); ?>" placeholder="2025-08-01" style="width: 150px;">
+                                            <input type="number" class="course-stock" value="<?php echo esc_attr(isset($date['stock']) ? $date['stock'] : $webinar_stock); ?>" data-index="<?php echo esc_attr($index); ?>" placeholder="10" min="0" style="width: 80px;">
                                             <button class="remove-date" data-index="<?php echo esc_attr($index); ?>">Remove</button>
                                         </div>
                                     <?php endforeach; ?>
-                                    <button class="add-date">Add Date</button>
+                                    <button class="add-date" style="margin-top: 10px;">Add Date</button>
                                 </div>
                             </td>
                         </tr>
@@ -567,7 +589,18 @@ function course_box_manager_page() {
                         const boxState = document.querySelector(`.box-state-select[data-course-id="${courseId}"]`).value;
                         const instructors = Array.from(document.querySelector(`.instructor-select[data-course-id="${courseId}"]`).selectedOptions).map(option => option.value);
                         const stock = document.querySelector(`.webinar-stock[data-course-id="${courseId}"]`)?.value || '';
-                        const dates = Array.from(document.querySelectorAll(`.date-list[data-course-id="${courseId}"] .course-date`)).map(input => input.value).filter(date => date.trim() !== '');
+                        const dateElements = document.querySelectorAll(`.date-list[data-course-id="${courseId}"] .date-stock-row`);
+                        const dates = [];
+                        dateElements.forEach(row => {
+                            const dateInput = row.querySelector('.course-date');
+                            const stockInput = row.querySelector('.course-stock');
+                            if (dateInput && dateInput.value.trim() !== '') {
+                                dates.push({
+                                    date: dateInput.value.trim(),
+                                    stock: stockInput ? stockInput.value : stock
+                                });
+                            }
+                        });
                         const sellingPageId = document.querySelector(`#selling-page[data-course-id="${courseId}"]`).value;
                         fetch(ajaxurl + '?action=save_course_settings', {
                             method: 'POST',
@@ -616,11 +649,24 @@ function course_box_manager_page() {
                         const dateList = container;
                         const index = dateList.querySelectorAll('.course-date').length;
                         const wrapper = document.createElement('div');
+                        wrapper.className = 'date-stock-row';
+                        wrapper.style.cssText = 'display: flex; gap: 10px; margin-bottom: 5px;';
+                        
                         const newDateInput = document.createElement('input');
                         newDateInput.type = 'text';
                         newDateInput.className = 'course-date';
                         newDateInput.setAttribute('data-index', index);
-                        newDateInput.placeholder = 'Enter date (e.g., 2025-08-01)';
+                        newDateInput.placeholder = '2025-08-01';
+                        newDateInput.style.width = '150px';
+                        
+                        const newStockInput = document.createElement('input');
+                        newStockInput.type = 'number';
+                        newStockInput.className = 'course-stock';
+                        newStockInput.setAttribute('data-index', index);
+                        newStockInput.placeholder = '10';
+                        newStockInput.min = '0';
+                        newStockInput.style.width = '80px';
+                        
                         const removeButton = document.createElement('button');
                         removeButton.className = 'remove-date';
                         removeButton.setAttribute('data-index', index);
@@ -628,7 +674,9 @@ function course_box_manager_page() {
                         removeButton.addEventListener('click', function() {
                             wrapper.remove();
                         });
+                        
                         wrapper.appendChild(newDateInput);
+                        wrapper.appendChild(newStockInput);
                         wrapper.appendChild(removeButton);
                         dateList.insertBefore(wrapper, addDateButton);
                     });
@@ -846,7 +894,20 @@ function save_course_settings() {
         }
     }
     if ($dates) {
-        update_field('course_dates', array_map(function($date) { return ['date' => $date]; }, $dates), $course_id);
+        // Process dates with stock information
+        $formatted_dates = [];
+        foreach ($dates as $date_info) {
+            if (is_array($date_info) && isset($date_info['date'])) {
+                $formatted_dates[] = [
+                    'date' => $date_info['date'],
+                    'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $stock
+                ];
+            } elseif (is_string($date_info)) {
+                // Legacy support for simple date strings
+                $formatted_dates[] = ['date' => $date_info, 'stock' => $stock];
+            }
+        }
+        update_field('course_dates', $formatted_dates, $course_id);
     } else {
         delete_field('course_dates', $course_id);
     }
