@@ -1202,14 +1202,6 @@ add_action('woocommerce_email_order_meta', function ($order) {
 }, 10, 1);
 
 add_shortcode('course_box_manager', 'course_box_manager_shortcode');
-add_filter('the_content', 'inject_course_box_manager');
-function inject_course_box_manager($content) {
-    if (is_singular('course')) {
-        $output = do_shortcode('[course_box_manager]');
-        return $content . $output;
-    }
-    return $content;
-}
 
 // Sync course creation with product only (no selling page)
 add_action('save_post_course', 'sync_course_to_product_and_page', 10, 3);
