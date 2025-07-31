@@ -27,6 +27,16 @@ abstract class AbstractBox {
     public function __construct($course_id) {
         $this->course_id = $course_id;
         $this->course = get_post($course_id);
+        
+        // Debug logging
+        if (class_exists('CourseBoxManager\Debug')) {
+            \CourseBoxManager\Debug::log('AbstractBox constructor', [
+                'course_id' => $course_id,
+                'course_exists' => ($this->course !== null),
+                'course_title' => $this->course ? $this->course->post_title : 'NO COURSE'
+            ]);
+        }
+        
         $this->initialize_properties();
     }
     

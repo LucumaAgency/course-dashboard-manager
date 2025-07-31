@@ -1266,9 +1266,27 @@ function course_box_manager_shortcode() {
         // Add JavaScript debug info if admin
         if (current_user_can('manage_options')) {
             $custom_texts = get_post_meta($post_id, 'box_custom_texts', true) ?: [];
+            
+            // Find which courses are in this group
+            $courses_in_group = get_posts([
+                'post_type' => 'course',
+                'posts_per_page' => -1,
+                'tax_query' => [
+                    [
+                        'taxonomy' => 'course_group',
+                        'field' => 'term_id',
+                        'terms' => $group_id,
+                    ],
+                ],
+                'fields' => 'ids'
+            ]);
+            
             $output .= '<script>
-                console.log("CBM Debug - Post ID:", ' . json_encode($post_id) . ');
-                console.log("CBM Debug - Custom Texts:", ' . json_encode($custom_texts) . ');
+                console.log("CBM Debug - Selling Page ID:", ' . json_encode($post_id) . ');
+                console.log("CBM Debug - Group ID:", ' . json_encode($group_id) . ');
+                console.log("CBM Debug - Courses in group:", ' . json_encode($courses_in_group) . ');
+                console.log("CBM Debug - Is selling page in group?", ' . json_encode(in_array($post_id, $courses_in_group)) . ');
+                console.log("CBM Debug - Custom Texts on selling page:", ' . json_encode($custom_texts) . ');
                 console.log("CBM Debug - Has custom texts:", ' . json_encode(!empty($custom_texts)) . ');
             </script>';
         }

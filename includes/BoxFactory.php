@@ -59,10 +59,24 @@ class BoxFactory {
     public static function get_boxes_for_courses($course_ids) {
         $boxes = [];
         
+        // Debug logging
+        if (class_exists('CourseBoxManager\\Debug')) {
+            \CourseBoxManager\Debug::log('BoxFactory::get_boxes_for_courses called', [
+                'course_ids' => $course_ids,
+                'count' => count($course_ids)
+            ]);
+        }
+        
         foreach ($course_ids as $course_id) {
             $box = self::get_box($course_id);
             if ($box) {
                 $boxes[] = $box;
+            } else {
+                if (class_exists('CourseBoxManager\\Debug')) {
+                    \CourseBoxManager\Debug::log('No box created for course', [
+                        'course_id' => $course_id
+                    ]);
+                }
             }
         }
         
