@@ -37,6 +37,8 @@ spl_autoload_register(function ($class) {
 // Initialize the seats remaining functionality
 add_action('init', function() {
     new CourseBoxManager\SeatsRemaining();
+    CourseBoxManager\Debug::init();
+    CourseBoxManager\Debug::handle_debug_toggle();
 });
 
 // Register course_group taxonomy
@@ -92,7 +94,15 @@ function course_box_manager_menu() {
 
 // Helper function to calculate seats sold for a course
 function calculate_seats_sold($product_id, $date = null) {
-    if (!$product_id) return 0;
+    if (!$product_id) {
+        CourseBoxManager\Debug::log('No product ID provided for seats calculation');
+        return 0;
+    }
+    
+    CourseBoxManager\Debug::log('Starting seats calculation', [
+        'product_id' => $product_id,
+        'date' => $date
+    ]);
     
     $args = [
         'status' => ['wc-completed'],
@@ -100,8 +110,15 @@ function calculate_seats_sold($product_id, $date = null) {
         'date_query' => ['after' => '2020-01-01'],
     ];
     
+    // Check if WooCommerce is available
+    if (!function_exists('wc_get_orders')) {
+        CourseBoxManager\Debug::log('WooCommerce not available - wc_get_orders function missing');
+        return 0;
+    }
+    
     $orders = wc_get_orders($args);
     $sales_count = 0;
+    $matching_orders = [];
     
     foreach ($orders as $order) {
         foreach ($order->get_items() as $item) {
@@ -110,19 +127,35 @@ function calculate_seats_sold($product_id, $date = null) {
                     $start_date = $item->get_meta('Start Date');
                     if ($start_date === $date) {
                         $sales_count += $item->get_quantity();
+                        $matching_orders[] = $order->get_id();
                     }
                 } else {
                     $sales_count += $item->get_quantity();
+                    $matching_orders[] = $order->get_id();
                 }
             }
         }
     }
+    
+    CourseBoxManager\Debug::log('Seats calculation complete', [
+        'product_id' => $product_id,
+        'date' => $date,
+        'sales_count' => $sales_count,
+        'matching_order_count' => count($matching_orders),
+        'order_ids' => array_slice($matching_orders, 0, 5) // Show first 5 order IDs
+    ]);
     
     return $sales_count;
 }
 
 // Dashboard page content
 function course_box_manager_page() {
+    // Debug WooCommerce availability
+    CourseBoxManager\Debug::log('Dashboard page loaded', [
+        'woocommerce_active' => class_exists('WooCommerce'),
+        'wc_get_orders_exists' => function_exists('wc_get_orders'),
+        'wc_get_product_exists' => function_exists('wc_get_product')
+    ]);
     ?>
     <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
@@ -209,6 +242,9 @@ function course_box_manager_page() {
                         $dates = get_field('course_dates', $course_id) ?: [];
                         $is_group_course = preg_match('/( - G\d+|\(G\d+\))$/', $title);
                         $product_id = get_post_meta($course_id, 'linked_product_id', true);
+                        
+                        // Debug seats calculation
+                        CourseBoxManager\Debug::check_seats_calculation($course_id);
                         
                         // Calculate seats availability
                         $seats_info = [];
@@ -1162,8 +1198,30 @@ function delete_course() {
 function course_box_manager_shortcode() {
     global $post;
     $post_id = $post ? $post->ID : 0;
+    
+    CourseBoxManager\Debug::log('Shortcode execution started', [
+        'post_id' => $post_id,
+        'post_type' => get_post_type($post_id),
+        'is_singular' => is_singular(),
+        'current_filter' => current_filter()
+    ]);
+    
+    // Check Elementor status
+    CourseBoxManager\Debug::check_elementor();
+    
+    // Don't render in Elementor editor
+    if (class_exists('\Elementor\Plugin') && \Elementor\Plugin::$instance->preview->is_preview_mode()) {
+        CourseBoxManager\Debug::log('Skipping render - Elementor preview mode active');
+        return '<div style="padding: 20px; background: #f0f0f0; text-align: center;">Course Box Manager - Boxes will appear here on the live page</div>';
+    }
+    
     $terms = wp_get_post_terms($post_id, 'course_group');
     $group_id = !empty($terms) ? $terms[0]->term_id : 0;
+    
+    CourseBoxManager\Debug::log('Rendering boxes', [
+        'group_id' => $group_id,
+        'terms' => $terms
+    ]);
     
     return CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id);
 }
