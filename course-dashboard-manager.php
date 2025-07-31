@@ -29,8 +29,15 @@ spl_autoload_register(function ($class) {
     $relative_class = substr($class, $len);
     $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
     
+    // Debug autoloader
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        error_log('[CBM Autoloader] Looking for class: ' . $class);
+        error_log('[CBM Autoloader] File path: ' . $file);
+        error_log('[CBM Autoloader] File exists: ' . (file_exists($file) ? 'YES' : 'NO'));
+    }
+    
     if (file_exists($file)) {
-        require $file;
+        require_once $file;
     }
 });
 
@@ -1223,7 +1230,20 @@ function course_box_manager_shortcode() {
         'terms' => $terms
     ]);
     
-    return CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id);
+    try {
+        return CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id);
+    } catch (\Exception $e) {
+        CourseBoxManager\Debug::log('Error rendering boxes', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        if (current_user_can('manage_options')) {
+            return '<div class="notice notice-error"><p>Course Box Manager Error: ' . esc_html($e->getMessage()) . '</p></div>';
+        }
+        
+        return '<!-- Course Box Manager Error -->';
+    }
 }
 
 // Add start date to cart item data

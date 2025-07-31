@@ -31,9 +31,19 @@ class BoxFactory {
         ];
         
         foreach ($box_types as $box_class) {
-            $box = new $box_class($course_id);
-            if ($box->should_display()) {
-                return $box;
+            // Verify class exists before instantiating
+            if (!class_exists($box_class)) {
+                error_log('[CBM BoxFactory] Class not found: ' . $box_class);
+                continue;
+            }
+            
+            try {
+                $box = new $box_class($course_id);
+                if ($box->should_display()) {
+                    return $box;
+                }
+            } catch (\Exception $e) {
+                error_log('[CBM BoxFactory] Error creating box: ' . $e->getMessage());
             }
         }
         
