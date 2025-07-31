@@ -37,7 +37,7 @@ spl_autoload_register(function ($class) {
 // Register course_group taxonomy
 add_action('init', 'register_course_group_taxonomy');
 function register_course_group_taxonomy() {
-    register_taxonomy('course_group', ['stm-courses', 'product', 'course'], [
+    register_taxonomy('course_group', ['course', 'product'], [
         'labels' => [
             'name' => __('Course Groups'),
             'singular_name' => __('Course Group'),
@@ -107,7 +107,7 @@ function course_box_manager_page() {
                 <tbody>
                     <?php foreach ($groups as $group) :
                         $courses_in_group = get_posts([
-                            'post_type' => 'stm-courses',
+                            'post_type' => 'course',
                             'posts_per_page' => -1,
                             'fields' => 'ids',
                             'tax_query' => [
@@ -131,13 +131,14 @@ function course_box_manager_page() {
                 </tbody>
             </table>
             <button class="button button-primary add-course-group" style="margin-top: 10px;">Add Course Group</button>
+            <a href="<?php echo admin_url('edit.php?post_type=course'); ?>" class="button" style="margin-top: 10px; margin-left: 10px;">View All Courses</a>
         <?php elseif (isset($_GET['group_id']) && !isset($_GET['course_id'])) : ?>
             <!-- Group View: Courses in Group -->
             <?php
             $group_id = intval($_GET['group_id']);
             $group = get_term($group_id, 'course_group');
             $courses = get_posts([
-                'post_type' => 'stm-courses',
+                'post_type' => 'course',
                 'posts_per_page' => -1,
                 'fields' => 'ids',
                 'tax_query' => [
@@ -302,13 +303,51 @@ function course_box_manager_page() {
             </div>
         <?php endif; ?>
 
-        <!-- Modal for Adding Course -->
+        <!-- Modal for Adding Course to Group -->
         <div id="add-course-modal" class="modal" style="display:none;">
             <div class="modal-content">
                 <span class="modal-close">×</span>
-                <h2>Add Course</h2>
-                <label>Course Title (include suffix, e.g., VOD, G1, (G1)):</label>
-                <input type="text" id="course-title" placeholder="e.g., How to do AI - VOD or How to do AI (G1)">
+                <h2><?php echo isset($_GET['group_id']) ? 'Add Course to Group' : 'Assign Course to Group'; ?></h2>
+                <label>Select Course:</label>
+                <select id="course-select" style="width: 100%;">
+                    <option value="">Select a course...</option>
+                    <?php
+                    // Get the current group ID if we're in a group view
+                    $current_group_id = isset($_GET['group_id']) ? intval($_GET['group_id']) : 0;
+                    
+                    // Get all courses
+                    $all_courses = get_posts([
+                        'post_type' => 'course',
+                        'posts_per_page' => -1,
+                        'orderby' => 'title',
+                        'order' => 'ASC'
+                    ]);
+                    
+                    // If we're in a group view, get courses already in this group to exclude them
+                    $courses_in_group = [];
+                    if ($current_group_id) {
+                        $courses_in_group = get_posts([
+                            'post_type' => 'course',
+                            'posts_per_page' => -1,
+                            'fields' => 'ids',
+                            'tax_query' => [
+                                [
+                                    'taxonomy' => 'course_group',
+                                    'field' => 'term_id',
+                                    'terms' => $current_group_id,
+                                ],
+                            ],
+                        ]);
+                    }
+                    
+                    foreach ($all_courses as $course) {
+                        // Skip courses already in the current group
+                        if (!in_array($course->ID, $courses_in_group)) {
+                            echo '<option value="' . esc_attr($course->ID) . '">' . esc_html($course->post_title) . '</option>';
+                        }
+                    }
+                    ?>
+                </select>
                 <?php if (!isset($_GET['group_id'])) : ?>
                 <label>Course Group:</label>
                 <select id="course-group">
@@ -323,16 +362,7 @@ function course_box_manager_page() {
                 <?php else : ?>
                 <input type="hidden" id="course-group" value="<?php echo esc_attr($_GET['group_id']); ?>">
                 <?php endif; ?>
-                <label>Instructors:</label>
-                <select id="course-instructors" multiple>
-                    <?php
-                    $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1]);
-                    foreach ($all_instructors as $instructor) {
-                        echo '<option value="' . esc_attr($instructor->ID) . '">' . esc_html($instructor->post_title) . '</option>';
-                    }
-                    ?>
-                </select>
-                <button class="button button-primary" id="save-new-course">Create Course</button>
+                <button class="button button-primary" id="save-course-assignment">Add to Group</button>
             </div>
         </div>
 
@@ -462,20 +492,25 @@ function course_box_manager_page() {
                     }
                 });
 
-                // Save New Course
-                document.getElementById('save-new-course').addEventListener('click', function() {
+                // Save Course Assignment
+                document.getElementById('save-course-assignment').addEventListener('click', function() {
+                    const courseId = document.getElementById('course-select').value;
                     const groupId = document.getElementById('course-group').value;
-                    const title = document.getElementById('course-title').value;
-                    const instructors = Array.from(document.getElementById('course-instructors').selectedOptions).map(option => option.value);
-                    fetch(ajaxurl + '?action=create_new_course', {
+                    
+                    if (!courseId) {
+                        alert('Please select a course.');
+                        return;
+                    }
+                    
+                    fetch(ajaxurl + '?action=assign_course_to_group', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: 'group_id=' + groupId + '&title=' + encodeURIComponent(title) + '&instructors=' + encodeURIComponent(JSON.stringify(instructors)) + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                        body: 'course_id=' + courseId + '&group_id=' + groupId + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                     })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            alert('Course created successfully!');
+                            alert('Course added to group successfully!');
                             location.reload();
                         } else {
                             alert('Error: ' + data.data);
@@ -666,7 +701,7 @@ function delete_course_group() {
     
     // Remove the term from all courses first
     $courses = get_posts([
-        'post_type' => 'stm-courses',
+        'post_type' => 'course',
         'posts_per_page' => -1,
         'fields' => 'ids',
         'tax_query' => [
@@ -691,51 +726,28 @@ function delete_course_group() {
     }
 }
 
-// AJAX Handlers
-add_action('wp_ajax_create_new_course', 'create_new_course');
-function create_new_course() {
+// AJAX Handler for Assigning Course to Group
+add_action('wp_ajax_assign_course_to_group', 'assign_course_to_group');
+function assign_course_to_group() {
     check_ajax_referer('course_box_nonce', 'nonce');
+    $course_id = intval($_POST['course_id']);
     $group_id = intval($_POST['group_id']);
-    $title = sanitize_text_field($_POST['title']);
-    $instructors = json_decode(stripslashes($_POST['instructors']), true);
-
-    $course_id = wp_insert_post([
-        'post_title' => $title,
-        'post_type' => 'stm-courses',
-        'post_status' => 'publish',
-    ]);
-
-    if ($course_id) {
-        if ($group_id) {
-            wp_set_post_terms($course_id, [$group_id], 'course_group');
-        }
-        update_post_meta($course_id, 'course_instructors', $instructors);
-
-        // Create WooCommerce product
-        $product = new WC_Product_Simple();
-        $product->set_name($title);
-        $product->set_status('publish');
-        $product->set_virtual(true);
-        $product->set_price(get_field('course_price', $course_id) ?: 749.99);
-        $product_id = $product->save();
-        if ($group_id) {
-            wp_set_post_terms($product_id, [$group_id], 'course_group');
-        }
-        update_post_meta($course_id, 'linked_product_id', $product_id);
-
-        // Update instructor meta
-        foreach ($instructors as $instructor_id) {
-            $courses = get_post_meta($instructor_id, 'instructor_courses', true) ?: [];
-            if (!in_array($course_id, $courses)) {
-                $courses[] = $course_id;
-                update_post_meta($instructor_id, 'instructor_courses', $courses);
-            }
-        }
-
-        wp_send_json_success();
-    } else {
-        wp_send_json_error('Could not create course.');
+    
+    if (!$course_id) {
+        wp_send_json_error('No course selected.');
     }
+    
+    // Clear existing group terms and set new one
+    wp_set_post_terms($course_id, [], 'course_group');
+    
+    if ($group_id > 0) {
+        $result = wp_set_post_terms($course_id, [$group_id], 'course_group');
+        if (is_wp_error($result)) {
+            wp_send_json_error($result->get_error_message());
+        }
+    }
+    
+    wp_send_json_success();
 }
 
 add_action('wp_ajax_save_course_settings', 'save_course_settings');
@@ -875,7 +887,7 @@ function inject_course_box_manager($content) {
 }
 
 // Sync course creation with product only (no selling page)
-add_action('save_post_stm-courses', 'sync_course_to_product_and_page', 10, 3);
+add_action('save_post_course', 'sync_course_to_product_and_page', 10, 3);
 function sync_course_to_product_and_page($post_id, $post, $update) {
     if (wp_is_post_revision($post_id)) return;
 
@@ -901,7 +913,7 @@ function sync_course_to_product_and_page($post_id, $post, $update) {
 // Sync instructors bidirectionally
 add_action('acf/save_post', 'sync_course_instructors', 20);
 function sync_course_instructors($post_id) {
-    if (get_post_type($post_id) !== 'stm-courses') return;
+    if (get_post_type($post_id) !== 'course') return;
     $instructors = get_field('course_instructors', $post_id) ?: [];
     update_post_meta($post_id, 'course_instructors', $instructors);
 
