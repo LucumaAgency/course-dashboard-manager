@@ -8,21 +8,21 @@
 namespace CourseBoxManager\Boxes;
 
 abstract class AbstractBox {
-    protected $course_id;
-    protected $course;
-    protected $box_state;
-    protected $course_product_id;
-    protected $course_price;
-    protected $enroll_price;
-    protected $available_dates;
-    protected $is_out_of_stock;
-    protected $launch_date;
-    protected $show_countdown;
-    protected $is_group_course;
-    protected $custom_texts;
-    protected $date_format;
-    protected $price_format;
-    protected $button_text;
+    public $course_id;
+    public $course;
+    public $box_state;
+    public $course_product_id;
+    public $course_price;
+    public $enroll_price;
+    public $available_dates;
+    public $is_out_of_stock;
+    public $launch_date;
+    public $show_countdown;
+    public $is_group_course;
+    public $custom_texts;
+    public $date_format;
+    public $price_format;
+    public $button_text;
     
     public function __construct($course_id) {
         $this->course_id = $course_id;
