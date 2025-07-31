@@ -56,6 +56,17 @@ abstract class AbstractBox {
         $this->date_format = get_post_meta($this->course_id, 'box_date_format', true) ?: 'F j, Y';
         $this->price_format = get_post_meta($this->course_id, 'box_price_format', true) ?: '$%.2f';
         $this->button_text = get_post_meta($this->course_id, 'box_button_text', true) ?: '';
+        
+        // Debug custom texts
+        if (class_exists('CourseBoxManager\Debug')) {
+            \CourseBoxManager\Debug::log('Loading custom texts for course', [
+                'course_id' => $this->course_id,
+                'custom_texts' => $this->custom_texts,
+                'date_format' => $this->date_format,
+                'price_format' => $this->price_format,
+                'button_text' => $this->button_text
+            ]);
+        }
     }
     
     /**
@@ -126,7 +137,16 @@ abstract class AbstractBox {
      * @return string
      */
     protected function process_custom_text($state, $replacements = []) {
-        if (!isset($this->custom_texts[$state])) {
+        if (class_exists('CourseBoxManager\Debug')) {
+            \CourseBoxManager\Debug::log('Processing custom text', [
+                'state' => $state,
+                'has_custom_text' => isset($this->custom_texts[$state]),
+                'custom_text' => $this->custom_texts[$state] ?? 'NOT SET',
+                'replacements_keys' => array_keys($replacements)
+            ]);
+        }
+        
+        if (!isset($this->custom_texts[$state]) || empty($this->custom_texts[$state])) {
             return '';
         }
         
@@ -139,6 +159,14 @@ abstract class AbstractBox {
         
         // Convert newlines to <br> tags
         $text = nl2br($text);
+        
+        if (class_exists('CourseBoxManager\Debug')) {
+            \CourseBoxManager\Debug::log('Custom text processed', [
+                'state' => $state,
+                'final_text_length' => strlen($text),
+                'final_text_preview' => substr($text, 0, 100) . '...'
+            ]);
+        }
         
         return $text;
     }

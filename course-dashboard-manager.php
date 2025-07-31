@@ -1148,6 +1148,15 @@ function save_course_settings() {
     update_post_meta($course_id, 'box_date_format', $date_format);
     update_post_meta($course_id, 'box_price_format', $price_format);
     update_post_meta($course_id, 'box_button_text', $button_text);
+    
+    // Debug saving
+    CourseBoxManager\Debug::log('Saving custom box texts', [
+        'course_id' => $course_id,
+        'box_texts' => $box_texts,
+        'date_format' => $date_format,
+        'price_format' => $price_format,
+        'button_text' => $button_text
+    ]);
     $product_id = get_post_meta($course_id, 'linked_product_id', true);
     if ($product_id && $stock !== '') {
         update_post_meta($product_id, '_stock', $stock);

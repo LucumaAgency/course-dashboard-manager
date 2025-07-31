@@ -36,21 +36,21 @@ class BuyCourseBox extends AbstractBox {
              data-course-id="<?php echo esc_attr($this->course_id); ?>" 
              onclick="selectBox(this, 'box1', <?php echo esc_attr($this->course_id); ?>)">
             
-            <div class="statebox">
-                <?php echo $this->render_selection_indicator(); ?>
-                <div>
-                    <?php if (empty($custom_text)) : ?>
+            <?php if (empty($custom_text)) : ?>
+                <div class="statebox">
+                    <?php echo $this->render_selection_indicator(); ?>
+                    <div>
                         <h3>Buy This Course</h3>
                         <p class="price"><?php echo esc_html($this->format_price($this->course_price)); ?></p>
                         <p class="description">Pay once, own the course forever.</p>
-                    <?php else : ?>
-                        <?php echo $custom_text; ?>
-                    <?php endif; ?>
+                    </div>
                 </div>
-            </div>
-            
-            <?php if (empty($custom_text)) : ?>
                 <?php echo $this->render_add_to_cart_button('Buy Course'); ?>
+            <?php else : ?>
+                <?php echo $this->render_selection_indicator(); ?>
+                <div class="box-content">
+                    <?php echo $custom_text; ?>
+                </div>
             <?php endif; ?>
         </div>
         <?php

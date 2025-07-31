@@ -82,11 +82,10 @@ class EnrollCourseBox extends AbstractBox {
                  data-course-id="<?php echo esc_attr($this->course_id); ?>" 
                  onclick="selectBox(this, 'box2', <?php echo esc_attr($this->course_id); ?>)">
                 
-                <div class="statebox">
-                    <?php echo $this->render_selection_indicator(); ?>
-                    <div class="custom-content">
-                        <?php echo $custom_text; ?>
-                    </div>
+                <?php echo $this->render_selection_indicator(); ?>
+                
+                <div class="box-content">
+                    <?php echo $custom_text; ?>
                 </div>
             </div>
             <?php
