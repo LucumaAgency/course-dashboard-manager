@@ -1281,8 +1281,19 @@ function course_box_manager_shortcode() {
                 'fields' => 'ids'
             ]);
             
+            // Get detailed info about the current course
+            $course_title = get_the_title($post_id);
+            $box_state = get_post_meta($post_id, 'box_state', true);
+            $available_dates = get_field('course_dates', $post_id);
+            $linked_product_id = get_post_meta($post_id, 'linked_product_id', true);
+            
             $output .= '<script>
                 console.log("CBM Debug - Selling Page ID:", ' . json_encode($post_id) . ');
+                console.log("CBM Debug - Course Title:", ' . json_encode($course_title) . ');
+                console.log("CBM Debug - Box State:", ' . json_encode($box_state) . ');
+                console.log("CBM Debug - Has G pattern in title:", ' . json_encode(preg_match('/( - G\d+|\(G\d+\))$/', $course_title)) . ');
+                console.log("CBM Debug - Available Dates:", ' . json_encode($available_dates) . ');
+                console.log("CBM Debug - Linked Product ID:", ' . json_encode($linked_product_id) . ');
                 console.log("CBM Debug - Group ID:", ' . json_encode($group_id) . ');
                 console.log("CBM Debug - Courses in group:", ' . json_encode($courses_in_group) . ');
                 console.log("CBM Debug - Is selling page in group?", ' . json_encode(in_array($post_id, $courses_in_group)) . ');
