@@ -309,7 +309,7 @@ function course_box_manager_page() {
                 <span class="modal-close">×</span>
                 <h2><?php echo isset($_GET['group_id']) ? 'Add Course to Group' : 'Assign Course to Group'; ?></h2>
                 <label>Select Course:</label>
-                <select id="course-select" style="width: 100%;">
+                <select id="course-select" style="width: 100%; margin-bottom: 15px;">
                     <option value="">Select a course...</option>
                     <?php
                     // Get the current group ID if we're in a group view
@@ -348,9 +348,26 @@ function course_box_manager_page() {
                     }
                     ?>
                 </select>
+                
+                <label>Select Instructors:</label>
+                <select id="course-instructors-select" multiple style="width: 100%; margin-bottom: 15px; height: 120px;">
+                    <?php
+                    $all_instructors = get_posts([
+                        'post_type' => 'instructor',
+                        'posts_per_page' => -1,
+                        'orderby' => 'title',
+                        'order' => 'ASC'
+                    ]);
+                    foreach ($all_instructors as $instructor) {
+                        echo '<option value="' . esc_attr($instructor->ID) . '">' . esc_html($instructor->post_title) . '</option>';
+                    }
+                    ?>
+                </select>
+                <p style="font-size: 12px; color: #666; margin-top: -10px;">Hold Ctrl/Cmd to select multiple instructors</p>
+                
                 <?php if (!isset($_GET['group_id'])) : ?>
                 <label>Course Group:</label>
-                <select id="course-group">
+                <select id="course-group" style="margin-bottom: 15px;">
                     <option value="0">None</option>
                     <?php
                     $groups = get_terms(['taxonomy' => 'course_group', 'hide_empty' => false]);
@@ -496,6 +513,7 @@ function course_box_manager_page() {
                 document.getElementById('save-course-assignment').addEventListener('click', function() {
                     const courseId = document.getElementById('course-select').value;
                     const groupId = document.getElementById('course-group').value;
+                    const instructors = Array.from(document.getElementById('course-instructors-select').selectedOptions).map(option => option.value);
                     
                     if (!courseId) {
                         alert('Please select a course.');
@@ -505,7 +523,7 @@ function course_box_manager_page() {
                     fetch(ajaxurl + '?action=assign_course_to_group', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: 'course_id=' + courseId + '&group_id=' + groupId + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                        body: 'course_id=' + courseId + '&group_id=' + groupId + '&instructors=' + encodeURIComponent(JSON.stringify(instructors)) + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                     })
                     .then(response => response.json())
                     .then(data => {
@@ -732,6 +750,7 @@ function assign_course_to_group() {
     check_ajax_referer('course_box_nonce', 'nonce');
     $course_id = intval($_POST['course_id']);
     $group_id = intval($_POST['group_id']);
+    $instructors = isset($_POST['instructors']) ? json_decode(stripslashes($_POST['instructors']), true) : [];
     
     if (!$course_id) {
         wp_send_json_error('No course selected.');
@@ -744,6 +763,29 @@ function assign_course_to_group() {
         $result = wp_set_post_terms($course_id, [$group_id], 'course_group');
         if (is_wp_error($result)) {
             wp_send_json_error($result->get_error_message());
+        }
+    }
+    
+    // Update instructors for this course
+    if (!empty($instructors)) {
+        update_post_meta($course_id, 'course_instructors', $instructors);
+        update_field('course_instructors', $instructors, $course_id); // Update ACF field if exists
+        
+        // Update instructor meta - clear from all instructors first
+        $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1, 'fields' => 'ids']);
+        foreach ($all_instructors as $instructor_id) {
+            $courses = get_post_meta($instructor_id, 'instructor_courses', true) ?: [];
+            $courses = array_filter($courses, function($id) use ($course_id) { return $id != $course_id; });
+            update_post_meta($instructor_id, 'instructor_courses', $courses);
+        }
+        
+        // Add course to selected instructors
+        foreach ($instructors as $instructor_id) {
+            $courses = get_post_meta($instructor_id, 'instructor_courses', true) ?: [];
+            if (!in_array($course_id, $courses)) {
+                $courses[] = $course_id;
+                update_post_meta($instructor_id, 'instructor_courses', $courses);
+            }
         }
     }
     
