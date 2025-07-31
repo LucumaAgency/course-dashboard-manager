@@ -18,16 +18,23 @@ class SoldOutBox extends AbstractBox {
     }
     
     public function render() {
+        // Get custom text or use default
+        $custom_text = $this->process_custom_text('soldout', []);
+        
         ob_start();
         ?>
         <div class="<?php echo esc_attr($this->get_box_classes()); ?>">
-            <div class="soldout-header">
-                <span>THE COURSE IS SOLD OUT</span>
-            </div>
-            <h3>Join Waitlist for Free</h3>
-            <p class="description">Gain access to live streams, free credits for Arcana, and more.</p>
-            <?php echo do_shortcode('[contact-form-7 id="c2b4e27" title="Course Sold Out"]'); ?>
-            <p class="terms">By signing up, you agree to the Terms & Conditions.</p>
+            <?php if (empty($custom_text)) : ?>
+                <div class="soldout-header">
+                    <span>THE COURSE IS SOLD OUT</span>
+                </div>
+                <h3>Join Waitlist for Free</h3>
+                <p class="description">Gain access to live streams, free credits for Arcana, and more.</p>
+                <?php echo do_shortcode('[contact-form-7 id="c2b4e27" title="Course Sold Out"]'); ?>
+                <p class="terms">By signing up, you agree to the Terms & Conditions.</p>
+            <?php else : ?>
+                <?php echo $custom_text; ?>
+            <?php endif; ?>
         </div>
         <?php
         return ob_get_clean();

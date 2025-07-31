@@ -19,6 +19,10 @@ abstract class AbstractBox {
     protected $launch_date;
     protected $show_countdown;
     protected $is_group_course;
+    protected $custom_texts;
+    protected $date_format;
+    protected $price_format;
+    protected $button_text;
     
     public function __construct($course_id) {
         $this->course_id = $course_id;
@@ -46,6 +50,12 @@ abstract class AbstractBox {
                                strtotime($this->launch_date) > current_time('timestamp');
         
         $this->is_group_course = preg_match('/( - G\d+|\(G\d+\))$/', get_the_title($this->course_id));
+        
+        // Load custom texts and formatting
+        $this->custom_texts = get_post_meta($this->course_id, 'box_custom_texts', true) ?: [];
+        $this->date_format = get_post_meta($this->course_id, 'box_date_format', true) ?: 'F j, Y';
+        $this->price_format = get_post_meta($this->course_id, 'box_price_format', true) ?: '$%.2f';
+        $this->button_text = get_post_meta($this->course_id, 'box_button_text', true) ?: '';
     }
     
     /**
@@ -75,6 +85,11 @@ abstract class AbstractBox {
      * @return string
      */
     protected function render_add_to_cart_button($text = 'Add to Cart') {
+        // Use custom button text if available
+        if (!empty($this->button_text)) {
+            $text = $this->button_text;
+        }
+        
         return sprintf(
             '<button class="add-to-cart-button" data-product-id="%s">
                 <span class="button-text">%s</span>
@@ -91,6 +106,40 @@ abstract class AbstractBox {
      * @return string
      */
     protected function format_price($price) {
-        return '$' . number_format($price, 2) . ' USD';
+        return sprintf($this->price_format, $price);
+    }
+    
+    /**
+     * Format date display
+     * @param string $date
+     * @return string
+     */
+    protected function format_date($date) {
+        $timestamp = strtotime($date);
+        return $timestamp ? date($this->date_format, $timestamp) : $date;
+    }
+    
+    /**
+     * Process custom text with placeholders
+     * @param string $state Box state
+     * @param array $replacements Array of placeholder => value pairs
+     * @return string
+     */
+    protected function process_custom_text($state, $replacements = []) {
+        if (!isset($this->custom_texts[$state])) {
+            return '';
+        }
+        
+        $text = $this->custom_texts[$state];
+        
+        // Replace placeholders
+        foreach ($replacements as $placeholder => $value) {
+            $text = str_replace('{' . $placeholder . '}', $value, $text);
+        }
+        
+        // Convert newlines to <br> tags
+        $text = nl2br($text);
+        
+        return $text;
     }
 }

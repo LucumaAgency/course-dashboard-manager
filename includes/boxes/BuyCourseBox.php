@@ -24,6 +24,12 @@ class BuyCourseBox extends AbstractBox {
     }
     
     public function render() {
+        // Get custom text or use default
+        $custom_text = $this->process_custom_text('buy', [
+            'price' => $this->format_price($this->course_price),
+            'button' => $this->render_add_to_cart_button('Buy Course')
+        ]);
+        
         ob_start();
         ?>
         <div class="<?php echo esc_attr($this->get_box_classes()); ?>" 
@@ -33,13 +39,19 @@ class BuyCourseBox extends AbstractBox {
             <div class="statebox">
                 <?php echo $this->render_selection_indicator(); ?>
                 <div>
-                    <h3>Buy This Course</h3>
-                    <p class="price"><?php echo esc_html($this->format_price($this->course_price)); ?></p>
-                    <p class="description">Pay once, own the course forever.</p>
+                    <?php if (empty($custom_text)) : ?>
+                        <h3>Buy This Course</h3>
+                        <p class="price"><?php echo esc_html($this->format_price($this->course_price)); ?></p>
+                        <p class="description">Pay once, own the course forever.</p>
+                    <?php else : ?>
+                        <?php echo $custom_text; ?>
+                    <?php endif; ?>
                 </div>
             </div>
             
-            <?php echo $this->render_add_to_cart_button('Buy Course'); ?>
+            <?php if (empty($custom_text)) : ?>
+                <?php echo $this->render_add_to_cart_button('Buy Course'); ?>
+            <?php endif; ?>
         </div>
         <?php
         return ob_get_clean();

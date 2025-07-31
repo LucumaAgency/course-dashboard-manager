@@ -414,6 +414,64 @@ function course_box_manager_page() {
                             </select>
                         </td>
                     </tr>
+                    <tr>
+                        <th colspan="2"><h4 style="margin: 20px 0 10px 0;">Box Text Customization</h4></th>
+                    </tr>
+                    <?php 
+                    // Get existing custom texts
+                    $box_texts = get_post_meta($course_id, 'box_custom_texts', true) ?: [];
+                    $date_format = get_post_meta($course_id, 'box_date_format', true) ?: 'F j, Y';
+                    $price_format = get_post_meta($course_id, 'box_price_format', true) ?: '$%.2f';
+                    $button_text = get_post_meta($course_id, 'box_button_text', true) ?: '';
+                    ?>
+                    <tr>
+                        <th><label>Enroll Box Text</label></th>
+                        <td>
+                            <textarea class="box-text-input" data-state="enroll" style="width: 100%; height: 100px;" placeholder="Use {dates} for date list, {price} for price, {button} for button"><?php echo esc_textarea($box_texts['enroll'] ?? "Enroll in the Live Course\n{dates}\n{price}\n{button}"); ?></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>Buy Box Text</label></th>
+                        <td>
+                            <textarea class="box-text-input" data-state="buy" style="width: 100%; height: 100px;" placeholder="Use {price} for price, {button} for button"><?php echo esc_textarea($box_texts['buy'] ?? "Buy This Course\n{price}\n{button}"); ?></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>Waitlist Box Text</label></th>
+                        <td>
+                            <textarea class="box-text-input" data-state="waitlist" style="width: 100%; height: 100px;" placeholder="Use {button} for button"><?php echo esc_textarea($box_texts['waitlist'] ?? "Join the Waitlist\n{button}"); ?></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>Sold Out Box Text</label></th>
+                        <td>
+                            <textarea class="box-text-input" data-state="soldout" style="width: 100%; height: 100px;"><?php echo esc_textarea($box_texts['soldout'] ?? "This course is sold out"); ?></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th colspan="2"><h4 style="margin: 20px 0 10px 0;">Formatting Options</h4></th>
+                    </tr>
+                    <tr>
+                        <th><label>Date Format</label></th>
+                        <td>
+                            <input type="text" class="box-date-format" value="<?php echo esc_attr($date_format); ?>" placeholder="F j, Y" style="width: 200px;">
+                            <p class="description">PHP date format. Examples: F j, Y = January 1, 2025 | m/d/Y = 01/01/2025</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>Price Format</label></th>
+                        <td>
+                            <input type="text" class="box-price-format" value="<?php echo esc_attr($price_format); ?>" placeholder="$%.2f" style="width: 200px;">
+                            <p class="description">Printf format. Examples: $%.2f = $99.99 | $%d = $99</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>Custom Button Text</label></th>
+                        <td>
+                            <input type="text" class="box-button-text" value="<?php echo esc_attr($button_text); ?>" placeholder="Leave empty for default" style="width: 300px;">
+                            <p class="description">Override default button text for all states</p>
+                        </td>
+                    </tr>
                     <?php if ($is_group_course) : ?>
                         <tr>
                             <th><label>Stock</label></th>
@@ -746,10 +804,20 @@ function course_box_manager_page() {
                             }
                         });
                         const sellingPageId = document.querySelector(`#selling-page[data-course-id="${courseId}"]`).value;
+                        
+                        // Get custom box texts
+                        const boxTexts = {};
+                        document.querySelectorAll('.box-text-input').forEach(textarea => {
+                            boxTexts[textarea.dataset.state] = textarea.value;
+                        });
+                        const dateFormat = document.querySelector('.box-date-format').value;
+                        const priceFormat = document.querySelector('.box-price-format').value;
+                        const buttonText = document.querySelector('.box-button-text').value;
+                        
                         fetch(ajaxurl + '?action=save_course_settings', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                            body: 'course_id=' + courseId + '&group_id=' + groupId + '&box_state=' + boxState + '&instructors=' + encodeURIComponent(JSON.stringify(instructors)) + '&stock=' + stock + '&dates=' + encodeURIComponent(JSON.stringify(dates)) + '&selling_page_id=' + sellingPageId + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                            body: 'course_id=' + courseId + '&group_id=' + groupId + '&box_state=' + boxState + '&instructors=' + encodeURIComponent(JSON.stringify(instructors)) + '&stock=' + stock + '&dates=' + encodeURIComponent(JSON.stringify(dates)) + '&selling_page_id=' + sellingPageId + '&box_texts=' + encodeURIComponent(JSON.stringify(boxTexts)) + '&date_format=' + encodeURIComponent(dateFormat) + '&price_format=' + encodeURIComponent(priceFormat) + '&button_text=' + encodeURIComponent(buttonText) + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                         })
                         .then(response => response.json())
                         .then(data => {
@@ -994,6 +1062,10 @@ function save_course_settings() {
     $stock = sanitize_text_field($_POST['stock']);
     $dates = json_decode(stripslashes($_POST['dates']), true);
     $selling_page_id = intval($_POST['selling_page_id']);
+    $box_texts = isset($_POST['box_texts']) ? json_decode(stripslashes($_POST['box_texts']), true) : [];
+    $date_format = isset($_POST['date_format']) ? sanitize_text_field($_POST['date_format']) : 'F j, Y';
+    $price_format = isset($_POST['price_format']) ? sanitize_text_field($_POST['price_format']) : '$%.2f';
+    $button_text = isset($_POST['button_text']) ? sanitize_text_field($_POST['button_text']) : '';
 
     // Update course group
     if ($group_id) {
@@ -1027,6 +1099,12 @@ function save_course_settings() {
 
     update_post_meta($course_id, 'box_state', $box_state);
     update_post_meta($course_id, 'course_instructors', $instructors);
+    
+    // Save custom box texts and formatting
+    update_post_meta($course_id, 'box_custom_texts', $box_texts);
+    update_post_meta($course_id, 'box_date_format', $date_format);
+    update_post_meta($course_id, 'box_price_format', $price_format);
+    update_post_meta($course_id, 'box_button_text', $button_text);
     $product_id = get_post_meta($course_id, 'linked_product_id', true);
     if ($product_id && $stock !== '') {
         update_post_meta($product_id, '_stock', $stock);
