@@ -90,6 +90,37 @@ function course_box_manager_menu() {
     );
 }
 
+// Helper function to calculate seats sold for a course
+function calculate_seats_sold($product_id, $date = null) {
+    if (!$product_id) return 0;
+    
+    $args = [
+        'status' => ['wc-completed'],
+        'limit' => -1,
+        'date_query' => ['after' => '2020-01-01'],
+    ];
+    
+    $orders = wc_get_orders($args);
+    $sales_count = 0;
+    
+    foreach ($orders as $order) {
+        foreach ($order->get_items() as $item) {
+            if ($item->get_product_id() == $product_id) {
+                if ($date) {
+                    $start_date = $item->get_meta('Start Date');
+                    if ($start_date === $date) {
+                        $sales_count += $item->get_quantity();
+                    }
+                } else {
+                    $sales_count += $item->get_quantity();
+                }
+            }
+        }
+    }
+    
+    return $sales_count;
+}
+
 // Dashboard page content
 function course_box_manager_page() {
     ?>
@@ -163,7 +194,7 @@ function course_box_manager_page() {
                         <th>Course</th>
                         <th>Instructors</th>
                         <th>Box State</th>
-                        <th>Stock</th>
+                        <th>Seats (Available/Total)</th>
                         <th>Dates</th>
                         <th>Actions</th>
                     </tr>
@@ -177,23 +208,51 @@ function course_box_manager_page() {
                         $webinar_stock = get_field('course_stock', $course_id) ?: 0;
                         $dates = get_field('course_dates', $course_id) ?: [];
                         $is_group_course = preg_match('/( - G\d+|\(G\d+\))$/', $title);
+                        $product_id = get_post_meta($course_id, 'linked_product_id', true);
                         
-                        // Get stock info from dates if available
-                        $stock_info = [];
-                        if (!empty($dates)) {
+                        // Calculate seats availability
+                        $seats_info = [];
+                        $total_seats = 0;
+                        $total_available = 0;
+                        
+                        if (!empty($dates) && $product_id) {
                             foreach ($dates as $date) {
                                 if (isset($date['date'])) {
-                                    $stock = isset($date['stock']) ? $date['stock'] : $webinar_stock;
-                                    $stock_info[] = $date['date'] . ' (' . $stock . ')';
+                                    $stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
+                                    $sold = calculate_seats_sold($product_id, $date['date']);
+                                    $available = max(0, $stock - $sold);
+                                    $total_seats += $stock;
+                                    $total_available += $available;
                                 }
                             }
+                            $seats_display = $total_available . '/' . $total_seats;
+                        } elseif ($is_group_course && $product_id) {
+                            // Single stock for all dates
+                            $sold = calculate_seats_sold($product_id);
+                            $available = max(0, $webinar_stock - $sold);
+                            $seats_display = $available . '/' . $webinar_stock;
+                        } else {
+                            $seats_display = '-';
                         }
                     ?>
                         <tr>
                             <td><a href="?page=course-box-manager&course_id=<?php echo esc_attr($course_id); ?>&group_id=<?php echo esc_attr($group_id); ?>"><?php echo esc_html($title); ?></a></td>
                             <td><?php echo esc_html(implode(', ', $instructor_names)); ?></td>
                             <td><?php echo esc_html(ucfirst(str_replace('-', ' ', $box_state))); ?></td>
-                            <td><?php echo $is_group_course && !empty($stock_info) ? esc_html(implode(', ', $stock_info)) : ($is_group_course ? esc_html($webinar_stock) : '-'); ?></td>
+                            <td>
+                                <?php 
+                                $seats_class = '';
+                                if ($total_available !== '' && $total_seats > 0) {
+                                    $percentage = ($total_available / $total_seats) * 100;
+                                    if ($percentage <= 20) {
+                                        $seats_class = 'low-seats';
+                                    } elseif ($percentage <= 50) {
+                                        $seats_class = 'medium-seats';
+                                    }
+                                }
+                                ?>
+                                <span class="<?php echo esc_attr($seats_class); ?>"><?php echo esc_html($seats_display); ?></span>
+                            </td>
                             <td><?php echo $is_group_course && !empty($dates) ? esc_html(implode(', ', array_column($dates, 'date'))) : '-'; ?></td>
                             <td>
                                 <button class="button button-primary edit-course-settings" data-course-id="<?php echo esc_attr($course_id); ?>">Edit</button>
@@ -490,6 +549,14 @@ function course_box_manager_page() {
                 margin-bottom: 10px;
                 padding: 5px;
                 width: 300px;
+            }
+            .low-seats {
+                color: #d54e21;
+                font-weight: bold;
+            }
+            .medium-seats {
+                color: #f0ad4e;
+                font-weight: bold;
             }
         </style>
 
