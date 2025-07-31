@@ -1261,7 +1261,7 @@ function course_box_manager_shortcode() {
     ]);
     
     try {
-        $output = CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id);
+        $output = CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id, $post_id);
         
         // Add JavaScript debug info if admin
         if (current_user_can('manage_options')) {

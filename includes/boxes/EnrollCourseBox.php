@@ -26,6 +26,15 @@ class EnrollCourseBox extends AbstractBox {
     }
     
     public function render() {
+        // Debug course ID
+        if (class_exists('CourseBoxManager\\Debug')) {
+            \CourseBoxManager\Debug::log('EnrollCourseBox rendering', [
+                'course_id' => $this->course_id,
+                'has_custom_texts' => !empty($this->custom_texts),
+                'custom_texts' => $this->custom_texts
+            ]);
+        }
+        
         // Prepare dates HTML
         $dates_html = '';
         if (!empty($this->available_dates)) {

@@ -15,9 +15,10 @@ class BoxRenderer {
      * Render boxes for a course group
      * 
      * @param int $group_id
+     * @param int $current_post_id Optional current post ID to ensure it's included
      * @return string
      */
-    public static function render_boxes_for_group($group_id) {
+    public static function render_boxes_for_group($group_id, $current_post_id = 0) {
         if (!$group_id) {
             return '';
         }
@@ -35,10 +36,19 @@ class BoxRenderer {
             'fields' => 'ids'
         ]);
         
+        // Ensure current post is included if it's a course in this group
+        if ($current_post_id && get_post_type($current_post_id) === 'course') {
+            $post_terms = wp_get_post_terms($current_post_id, 'course_group', ['fields' => 'ids']);
+            if (in_array($group_id, $post_terms) && !in_array($current_post_id, $courses)) {
+                $courses[] = $current_post_id;
+            }
+        }
+        
         // Debug logging
         if (class_exists('CourseBoxManager\\Debug')) {
             \CourseBoxManager\Debug::log('BoxRenderer finding courses', [
                 'group_id' => $group_id,
+                'current_post_id' => $current_post_id,
                 'courses_found' => $courses,
                 'count' => count($courses)
             ]);
