@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.5.0
+ * Version: 1.5.1
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
