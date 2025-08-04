@@ -42,7 +42,7 @@ class SeatsRemaining {
             while (have_rows('field_6826dd2179231', $post_id)) {
                 the_row();
                 $date_text = get_sub_field('field_6826dfe2d7837');
-                $stock = get_sub_field('field_684ba360c13e2'); // webinar_stock
+                $stock = get_sub_field('field_684ba360c13e2'); // course_stock
                 if (!empty($date_text)) {
                     $sanitized_date = sanitize_text_field($date_text);
                     $available_dates[] = $sanitized_date;

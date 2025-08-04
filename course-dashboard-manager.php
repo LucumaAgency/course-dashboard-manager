@@ -216,9 +216,8 @@ function course_box_manager_page() {
                         $instructors = get_post_meta($course_id, 'course_instructors', true) ?: [];
                         $instructor_names = array_map(function($id) { return get_the_title($id); }, $instructors);
                         $box_state = get_post_meta($course_id, 'box_state', true) ?: 'enroll-course';
-                        $webinar_stock = get_field('course_stock', $course_id) ?: 0;
+                        $course_stock = get_field('course_stock', $course_id) ?: 0;
                         $dates = get_field('course_dates', $course_id) ?: [];
-                        $is_group_course = preg_match('/( - G\d+|\(G\d+\))$/', $title);
                         $product_id = get_post_meta($course_id, 'linked_product_id', true);
                         
                         // Calculate seats availability
@@ -230,7 +229,7 @@ function course_box_manager_page() {
                         if (!empty($dates) && $product_id) {
                             foreach ($dates as $idx => $date) {
                                 if (isset($date['date'])) {
-                                    $stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
+                                    $stock = isset($date['stock']) ? intval($date['stock']) : $course_stock;
                                     $sold = calculate_seats_sold($product_id, $date['date']);
                                     $available = max(0, $stock - $sold);
                                     $total_seats += $stock;
@@ -245,11 +244,11 @@ function course_box_manager_page() {
                                 }
                             }
                             $seats_display = $total_available . '/' . $total_seats;
-                        } elseif ($is_group_course && $product_id) {
+                        } elseif ($product_id) {
                             // Single stock for all dates
                             $sold = calculate_seats_sold($product_id);
-                            $available = max(0, $webinar_stock - $sold);
-                            $seats_display = $available . '/' . $webinar_stock;
+                            $available = max(0, $course_stock - $sold);
+                            $seats_display = $available . '/' . $course_stock;
                         } else {
                             $seats_display = '-';
                         }
@@ -279,7 +278,7 @@ function course_box_manager_page() {
                                     <div class="inline-dates-editor" data-course-id="<?php echo esc_attr($course_id); ?>">
                                         <?php foreach ($dates_with_info as $date_info) : ?>
                                             <div class="inline-date-row" style="display: flex; gap: 5px; margin-bottom: 3px; align-items: center;">
-                                                <input type="date" 
+                                                <input type="text" 
                                                        class="inline-date-input" 
                                                        value="<?php echo esc_attr($date_info['date']); ?>" 
                                                        data-course-id="<?php echo esc_attr($course_id); ?>"
@@ -349,9 +348,8 @@ function course_box_manager_page() {
             $title = get_the_title($course_id);
             $instructors = get_post_meta($course_id, 'course_instructors', true) ?: [];
             $box_state = get_post_meta($course_id, 'box_state', true) ?: 'enroll-course';
-            $webinar_stock = get_field('course_stock', $course_id) ?: 0;
+            $course_stock = get_field('course_stock', $course_id) ?: 0;
             $dates = get_field('course_dates', $course_id) ?: [];
-            $is_group_course = preg_match('/( - G\d+|\(G\d+\))$/', $title);
             $terms = wp_get_post_terms($course_id, 'course_group');
             $group_id = !empty($terms) ? $terms[0]->term_id : 0;
             $group_name = $group_id ? get_term($group_id, 'course_group')->name : 'None';
@@ -379,7 +377,7 @@ function course_box_manager_page() {
                 <?php 
                 // Calculate seats availability for display
                 $product_id = get_post_meta($course_id, 'linked_product_id', true);
-                if ($is_group_course && $product_id) {
+                if ($product_id) {
                     ?>
                     <div style="background: #f1f1f1; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
                         <h3 style="margin-top: 0;">Seats Availability</h3>
@@ -399,7 +397,7 @@ function course_box_manager_page() {
                             
                             foreach ($dates as $date) {
                                 if (isset($date['date'])) {
-                                    $stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
+                                    $stock = isset($date['stock']) ? intval($date['stock']) : $course_stock;
                                     $sold = calculate_seats_sold($product_id, $date['date']);
                                     $available = max(0, $stock - $sold);
                                     
@@ -434,14 +432,14 @@ function course_box_manager_page() {
                         } else {
                             // Single stock for all dates
                             $sold = calculate_seats_sold($product_id);
-                            $available = max(0, $webinar_stock - $sold);
+                            $available = max(0, $course_stock - $sold);
                             
-                            echo '<p><strong>Total Seats:</strong> ' . esc_html($webinar_stock) . '</p>';
+                            echo '<p><strong>Total Seats:</strong> ' . esc_html($course_stock) . '</p>';
                             echo '<p><strong>Seats Sold:</strong> ' . esc_html($sold) . '</p>';
                             echo '<p><strong>Seats Available:</strong> <span class="';
                             
-                            if ($webinar_stock > 0) {
-                                $percentage = ($available / $webinar_stock) * 100;
+                            if ($course_stock > 0) {
+                                $percentage = ($available / $course_stock) * 100;
                                 if ($percentage <= 20) echo 'low-seats';
                                 elseif ($percentage <= 50) echo 'medium-seats';
                             }
@@ -496,7 +494,7 @@ function course_box_manager_page() {
                     <tr>
                         <th><label>Default Stock</label></th>
                         <td>
-                            <input type="number" class="webinar-stock" data-course-id="<?php echo esc_attr($course_id); ?>" value="<?php echo esc_attr($webinar_stock); ?>" min="0">
+                            <input type="number" class="course-stock-input" data-course-id="<?php echo esc_attr($course_id); ?>" value="<?php echo esc_attr($course_stock); ?>" min="0">
                             <p style="font-size: 12px; color: #666; margin-top: 5px;">Default stock for new dates</p>
                         </td>
                     </tr>
@@ -561,7 +559,7 @@ function course_box_manager_page() {
                                         $total_available_sum = 0;
                                         
                                         foreach ($dates as $date) {
-                                            $stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
+                                            $stock = isset($date['stock']) ? intval($date['stock']) : $course_stock;
                                             $sold = isset($date['date']) ? calculate_seats_sold($product_id, $date['date']) : 0;
                                             $available = max(0, $stock - $sold);
                                             
@@ -787,7 +785,7 @@ function course_box_manager_page() {
                 padding: 5px;
                 font-size: 14px;
             }
-            .webinar-stock {
+            .course-stock-input {
                 width: 100px;
                 padding: 5px;
                 font-size: 14px;
@@ -1040,7 +1038,7 @@ function course_box_manager_page() {
                         const groupId = document.querySelector(`#course-group[data-course-id="${courseId}"]`).value;
                         const boxState = document.querySelector(`.box-state-select[data-course-id="${courseId}"]`).value;
                         const instructors = Array.from(document.querySelector(`.instructor-select[data-course-id="${courseId}"]`).selectedOptions).map(option => option.value);
-                        const stock = document.querySelector(`.webinar-stock[data-course-id="${courseId}"]`)?.value || '';
+                        const stock = document.querySelector(`.course-stock-input[data-course-id="${courseId}"]`)?.value || '';
                         const dateElements = document.querySelectorAll(`.date-list[data-course-id="${courseId}"] .date-stock-row`);
                         const dates = [];
                         dateElements.forEach(row => {
@@ -1098,7 +1096,7 @@ function course_box_manager_page() {
                 document.querySelectorAll('.date-list').forEach(container => {
                     const courseId = container.getAttribute('data-course-id');
                     const addDateButton = container.querySelector('.add-date');
-                    const defaultStock = document.querySelector('.webinar-stock').value || 20;
+                    const defaultStock = document.querySelector('.course-stock-input').value || 20;
                     
                     // Add new date functionality
                     if (addDateButton) {
@@ -1367,7 +1365,7 @@ function course_box_manager_page() {
                             const today = new Date().toISOString().split('T')[0];
                             
                             newRow.innerHTML = `
-                                <input type="date" 
+                                <input type="text" 
                                        class="inline-date-input" 
                                        value="${today}"
                                        data-course-id="${courseId}"
@@ -1687,13 +1685,13 @@ function save_inline_dates() {
     
     // Format dates for ACF field
     $formatted_dates = [];
-    $webinar_stock = get_field('course_stock', $course_id) ?: 0;
+    $course_stock = get_field('course_stock', $course_id) ?: 0;
     
     foreach ($dates as $date_info) {
         if (isset($date_info['date']) && !empty($date_info['date'])) {
             $formatted_dates[] = [
                 'date' => $date_info['date'],
-                'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $webinar_stock
+                'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $course_stock
             ];
         }
     }

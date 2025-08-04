@@ -13,23 +13,18 @@ class EnrollCourseBox extends AbstractBox {
         return $this->box_state === 'enroll-course' && 
                !$this->is_out_of_stock && 
                !$this->show_countdown && 
-               !empty($this->available_dates) && 
-               $this->is_group_course;
+               !empty($this->available_dates);
     }
     
     protected function get_box_classes() {
-        $classes = parent::get_box_classes() . ' enroll-course';
-        if ($this->is_group_course) {
-            $classes .= ' selected';
-        }
-        return $classes;
+        return parent::get_box_classes() . ' enroll-course selected';
     }
     
     public function render() {
         // Prepare dates HTML
         $dates_html = '';
         if (!empty($this->available_dates)) {
-            $dates_html .= '<div class="start-dates" style="display: ' . (!$this->is_group_course ? 'none' : 'block') . ';">';
+            $dates_html .= '<div class="start-dates" style="display: block;">';
             $dates_html .= '<p class="choose-label">Choose a starting date</p>';
             $dates_html .= '<div class="date-options">';
             foreach ($this->available_dates as $date) {
@@ -96,14 +91,14 @@ class EnrollCourseBox extends AbstractBox {
     protected function render_selection_indicator() {
         ob_start();
         ?>
-        <div class="circlecontainer" style="display: <?php echo !$this->is_group_course ? 'none' : 'flex'; ?>;">
+        <div class="circlecontainer" style="display: flex;">
             <div class="outer-circle">
                 <div class="middle-circle">
                     <div class="inner-circle"></div>
                 </div>
             </div>
         </div>
-        <div class="circle-container" style="display: <?php echo !$this->is_group_course ? 'flex' : 'none'; ?>;">
+        <div class="circle-container" style="display: none;">
             <div class="circle"></div>
         </div>
         <?php

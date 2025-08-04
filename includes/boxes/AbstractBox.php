@@ -18,7 +18,6 @@ abstract class AbstractBox {
     protected $is_out_of_stock;
     protected $launch_date;
     protected $show_countdown;
-    protected $is_group_course;
     protected $custom_texts;
     protected $date_format;
     protected $price_format;
@@ -50,8 +49,6 @@ abstract class AbstractBox {
         
         $this->show_countdown = !empty($this->launch_date) && 
                                strtotime($this->launch_date) > current_time('timestamp');
-        
-        $this->is_group_course = preg_match('/( - G\d+|\(G\d+\))$/', get_the_title($this->course_id));
         
         // Load custom texts and formatting
         $this->custom_texts = get_post_meta($this->course_id, 'box_custom_texts', true) ?: [];

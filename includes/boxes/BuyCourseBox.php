@@ -16,11 +16,7 @@ class BuyCourseBox extends AbstractBox {
     }
     
     protected function get_box_classes() {
-        $classes = parent::get_box_classes() . ' buy-course';
-        if (!$this->is_group_course) {
-            $classes .= ' selected';
-        }
-        return $classes;
+        return parent::get_box_classes() . ' buy-course';
     }
     
     public function render() {
@@ -60,14 +56,14 @@ class BuyCourseBox extends AbstractBox {
     protected function render_selection_indicator() {
         ob_start();
         ?>
-        <div class="circlecontainer" style="display: <?php echo $this->is_group_course ? 'none' : 'flex'; ?>;">
+        <div class="circlecontainer" style="display: none;">
             <div class="outer-circle">
                 <div class="middle-circle">
                     <div class="inner-circle"></div>
                 </div>
             </div>
         </div>
-        <div class="circle-container" style="display: <?php echo $this->is_group_course ? 'flex' : 'none'; ?>;">
+        <div class="circle-container" style="display: flex;">
             <div class="circle"></div>
         </div>
         <?php
