@@ -29,15 +29,8 @@ spl_autoload_register(function ($class) {
     $relative_class = substr($class, $len);
     $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
     
-    error_log('[CBM Autoloader] Looking for class: ' . $class);
-    error_log('[CBM Autoloader] Trying to load file: ' . $file);
-    error_log('[CBM Autoloader] File exists: ' . (file_exists($file) ? 'YES' : 'NO'));
-    
     if (file_exists($file)) {
         require_once $file;
-        error_log('[CBM Autoloader] Successfully loaded: ' . $file);
-    } else {
-        error_log('[CBM Autoloader] Failed to find file: ' . $file);
     }
 });
 
