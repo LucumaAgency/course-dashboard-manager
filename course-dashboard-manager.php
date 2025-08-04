@@ -1597,18 +1597,51 @@ function course_box_manager_shortcode() {
     global $post;
     $post_id = $post ? $post->ID : 0;
     
+    error_log('[CBM Shortcode Debug] Starting shortcode render for post_id: ' . $post_id);
+    error_log('[CBM Shortcode Debug] Post type: ' . get_post_type($post_id));
+    
     // Don't render in Elementor editor
     if (class_exists('\Elementor\Plugin') && \Elementor\Plugin::$instance->preview->is_preview_mode()) {
         return '<div style="padding: 20px; background: #f0f0f0; text-align: center;">Course Box Manager - Boxes will appear here on the live page</div>';
     }
     
     $terms = wp_get_post_terms($post_id, 'course_group');
+    error_log('[CBM Shortcode Debug] Terms found: ' . print_r($terms, true));
+    
     $group_id = !empty($terms) ? $terms[0]->term_id : 0;
+    error_log('[CBM Shortcode Debug] Group ID: ' . $group_id);
+    
+    if (!$group_id) {
+        error_log('[CBM Shortcode Debug] No group ID found, checking if this is a course');
+        // If no group but it's a course, try to get its own data
+        if (get_post_type($post_id) === 'course') {
+            error_log('[CBM Shortcode Debug] This is a course, creating single box');
+            // Maybe create a single box for this course
+        }
+    }
     
     try {
         $output = CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id, $post_id);
+        error_log('[CBM Shortcode Debug] Output length: ' . strlen($output));
+        
+        // Add debug info for admins
+        if (current_user_can('manage_options') && isset($_GET['cbm_debug'])) {
+            $debug_info = '<div style="background: #f0f0f0; padding: 20px; margin: 20px 0; border: 2px solid #333;">';
+            $debug_info .= '<h3>Course Box Manager Debug Info</h3>';
+            $debug_info .= '<p><strong>Post ID:</strong> ' . $post_id . '</p>';
+            $debug_info .= '<p><strong>Post Type:</strong> ' . get_post_type($post_id) . '</p>';
+            $debug_info .= '<p><strong>Group ID:</strong> ' . $group_id . '</p>';
+            $debug_info .= '<p><strong>Box State:</strong> ' . get_post_meta($post_id, 'box_state', true) . '</p>';
+            $debug_info .= '<p><strong>Product ID:</strong> ' . get_post_meta($post_id, 'linked_product_id', true) . '</p>';
+            $debug_info .= '<p><strong>Dates:</strong> <pre>' . print_r(get_field('course_dates', $post_id), true) . '</pre></p>';
+            $debug_info .= '<p><strong>Output Empty?</strong> ' . (empty($output) ? 'YES' : 'NO') . '</p>';
+            $debug_info .= '</div>';
+            $output = $debug_info . $output;
+        }
+        
         return $output;
     } catch (\Exception $e) {
+        error_log('[CBM Shortcode Debug] Exception: ' . $e->getMessage());
         if (current_user_can('manage_options')) {
             return '<div class="notice notice-error"><p>Course Box Manager Error: ' . esc_html($e->getMessage()) . '</p></div>';
         }
