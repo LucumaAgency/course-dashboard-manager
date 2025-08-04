@@ -202,11 +202,10 @@ function course_box_manager_page() {
             <table class="wp-list-table widefat fixed striped" style="margin-top: 20px;">
                 <thead>
                     <tr>
-                        <th style="width: 20%;">Course</th>
-                        <th style="width: 15%;">Instructors</th>
-                        <th style="width: 10%;">Box State</th>
-                        <th style="width: 12%;">Seats (Avail/Total)</th>
-                        <th style="width: 28%;">Dates & Stock Management</th>
+                        <th style="width: 25%;">Course</th>
+                        <th style="width: 20%;">Instructors</th>
+                        <th style="width: 15%;">Box State</th>
+                        <th style="width: 25%;">Dates (Stock)</th>
                         <th style="width: 15%;">Actions</th>
                     </tr>
                 </thead>
@@ -258,82 +257,33 @@ function course_box_manager_page() {
                             <td><?php echo esc_html(implode(', ', $instructor_names)); ?></td>
                             <td><?php echo esc_html(ucfirst(str_replace('-', ' ', $box_state))); ?></td>
                             <td>
-                                <?php 
-                                $seats_class = '';
-                                if ($total_available !== '' && $total_seats > 0) {
-                                    $percentage = ($total_available / $total_seats) * 100;
-                                    if ($percentage <= 20) {
-                                        $seats_class = 'low-seats';
-                                    } elseif ($percentage <= 50) {
-                                        $seats_class = 'medium-seats';
-                                    }
-                                }
-                                ?>
-                                <span class="seats-summary <?php echo esc_attr($seats_class); ?>" data-course-id="<?php echo esc_attr($course_id); ?>">
-                                    <?php echo esc_html($seats_display); ?>
-                                </span>
-                            </td>
-                            <td>
                                 <?php if (!empty($dates_with_info)) : ?>
-                                    <div class="inline-dates-editor" data-course-id="<?php echo esc_attr($course_id); ?>">
-                                        <?php foreach ($dates_with_info as $date_info) : ?>
-                                            <div class="inline-date-row" style="display: flex; gap: 5px; margin-bottom: 3px; align-items: center;">
-                                                <input type="text" 
-                                                       class="inline-date-input" 
-                                                       value="<?php echo esc_attr($date_info['date']); ?>" 
-                                                       data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                       data-index="<?php echo esc_attr($date_info['index']); ?>"
-                                                       style="width: 110px; padding: 2px 4px; font-size: 11px; background: #fff; color: #333;">
-                                                <input type="number" 
-                                                       class="inline-stock-input" 
-                                                       value="<?php echo esc_attr($date_info['stock']); ?>" 
-                                                       data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                       data-index="<?php echo esc_attr($date_info['index']); ?>"
-                                                       min="0"
-                                                       style="width: 45px; padding: 2px 4px; font-size: 11px; background: #fff; color: #333;">
-                                                <span style="font-size: 11px; color: #666;">
-                                                    (<?php echo $date_info['sold']; ?> sold, 
-                                                    <span style="color: <?php echo $date_info['available'] <= 5 ? '#ff6b6b' : ($date_info['available'] <= 10 ? '#ffd93d' : '#4CAF50'); ?>; font-weight: bold;">
-                                                        <?php echo $date_info['available']; ?> avail
-                                                    </span>)
-                                                </span>
-                                                <button class="inline-remove-date" 
-                                                        data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                        data-index="<?php echo esc_attr($date_info['index']); ?>"
-                                                        style="padding: 1px 4px; font-size: 10px; background: #d54e21; color: white; border: none; cursor: pointer; border-radius: 2px;">
-                                                    ×
-                                                </button>
-                                            </div>
-                                        <?php endforeach; ?>
-                                        <button class="inline-add-date button-small" 
-                                                data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                style="margin-top: 3px; padding: 2px 6px; font-size: 10px;">
-                                            + Add Date
-                                        </button>
-                                        <button class="inline-save-dates button-small button-primary" 
-                                                data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                style="margin-top: 3px; margin-left: 5px; padding: 2px 6px; font-size: 10px; display: none;">
-                                            Save
-                                        </button>
+                                    <div class="dates-display">
+                                        <?php 
+                                        foreach ($dates_with_info as $index => $date_info) {
+                                            $stock_color = '#333';
+                                            if ($date_info['available'] <= 0) {
+                                                $stock_color = '#d54e21'; // Red for sold out
+                                            } elseif ($date_info['available'] <= 5) {
+                                                $stock_color = '#f0ad4e'; // Yellow for low stock
+                                            } else {
+                                                $stock_color = '#46b450'; // Green for good availability
+                                            }
+                                            ?>
+                                            <span class="date-item" style="display: inline-block; margin-right: 10px; margin-bottom: 3px; font-size: 11px;">
+                                                <span style="color: #fff;"><?php echo esc_html($date_info['date']); ?></span>
+                                                <span style="color: <?php echo $stock_color; ?>; font-weight: bold;">(<?php echo esc_html($date_info['stock']); ?>)</span>
+                                            </span>
+                                            <?php
+                                        }
+                                        ?>
                                     </div>
                                 <?php else : ?>
-                                    <div class="inline-dates-editor" data-course-id="<?php echo esc_attr($course_id); ?>">
-                                        <p style="font-size: 11px; color: #666; margin: 0 0 5px 0;">No dates configured</p>
-                                        <button class="inline-add-date button-small" 
-                                                data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                style="padding: 2px 6px; font-size: 10px;">
-                                            + Add Date
-                                        </button>
-                                        <button class="inline-save-dates button-small button-primary" 
-                                                data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                style="margin-left: 5px; padding: 2px 6px; font-size: 10px; display: none;">
-                                            Save
-                                        </button>
-                                    </div>
+                                    <span style="font-size: 11px; color: #aaa; font-style: italic;">No dates configured</span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <button class="button button-primary edit-course-settings" data-course-id="<?php echo esc_attr($course_id); ?>">Full Edit</button>
+                                <button class="button button-primary edit-course-settings" data-course-id="<?php echo esc_attr($course_id); ?>">Edit</button>
                                 <button class="button delete-course" data-course-id="<?php echo esc_attr($course_id); ?>">Delete</button>
                             </td>
                         </tr>
@@ -1336,8 +1286,13 @@ function course_box_manager_page() {
                     });
                 });
 
-                // Inline date and stock editing in course list view
-                document.querySelectorAll('.inline-dates-editor').forEach(editor => {
+                // Inline date and stock editing in course list view (only for non-group views)
+                // Skip if we're in a group view
+                const urlParams = new URLSearchParams(window.location.search);
+                const isGroupView = urlParams.has('group_id') && !urlParams.has('course_id');
+                
+                if (!isGroupView) {
+                    document.querySelectorAll('.inline-dates-editor').forEach(editor => {
                     const courseId = editor.getAttribute('data-course-id');
                     let hasChanges = false;
                     
@@ -1476,6 +1431,7 @@ function course_box_manager_page() {
                         });
                     }
                 });
+                }
             });
         </script>
     </div>
