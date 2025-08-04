@@ -202,12 +202,12 @@ function course_box_manager_page() {
             <table class="wp-list-table widefat fixed striped" style="margin-top: 20px;">
                 <thead>
                     <tr>
-                        <th>Course</th>
-                        <th>Instructors</th>
-                        <th>Box State</th>
-                        <th>Seats (Available/Total)</th>
-                        <th>Dates</th>
-                        <th>Actions</th>
+                        <th style="width: 20%;">Course</th>
+                        <th style="width: 15%;">Instructors</th>
+                        <th style="width: 10%;">Box State</th>
+                        <th style="width: 12%;">Seats (Avail/Total)</th>
+                        <th style="width: 28%;">Dates & Stock Management</th>
+                        <th style="width: 15%;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -225,15 +225,23 @@ function course_box_manager_page() {
                         $seats_info = [];
                         $total_seats = 0;
                         $total_available = 0;
+                        $dates_with_info = [];
                         
                         if (!empty($dates) && $product_id) {
-                            foreach ($dates as $date) {
+                            foreach ($dates as $idx => $date) {
                                 if (isset($date['date'])) {
                                     $stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
                                     $sold = calculate_seats_sold($product_id, $date['date']);
                                     $available = max(0, $stock - $sold);
                                     $total_seats += $stock;
                                     $total_available += $available;
+                                    $dates_with_info[] = [
+                                        'date' => $date['date'],
+                                        'stock' => $stock,
+                                        'sold' => $sold,
+                                        'available' => $available,
+                                        'index' => $idx
+                                    ];
                                 }
                             }
                             $seats_display = $total_available . '/' . $total_seats;
@@ -246,7 +254,7 @@ function course_box_manager_page() {
                             $seats_display = '-';
                         }
                     ?>
-                        <tr>
+                        <tr data-course-id="<?php echo esc_attr($course_id); ?>">
                             <td><a href="?page=course-box-manager&course_id=<?php echo esc_attr($course_id); ?>&group_id=<?php echo esc_attr($group_id); ?>"><?php echo esc_html($title); ?></a></td>
                             <td><?php echo esc_html(implode(', ', $instructor_names)); ?></td>
                             <td><?php echo esc_html(ucfirst(str_replace('-', ' ', $box_state))); ?></td>
@@ -262,11 +270,72 @@ function course_box_manager_page() {
                                     }
                                 }
                                 ?>
-                                <span class="<?php echo esc_attr($seats_class); ?>"><?php echo esc_html($seats_display); ?></span>
+                                <span class="seats-summary <?php echo esc_attr($seats_class); ?>" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                    <?php echo esc_html($seats_display); ?>
+                                </span>
                             </td>
-                            <td><?php echo $is_group_course && !empty($dates) ? esc_html(implode(', ', array_column($dates, 'date'))) : '-'; ?></td>
                             <td>
-                                <button class="button button-primary edit-course-settings" data-course-id="<?php echo esc_attr($course_id); ?>">Edit</button>
+                                <?php if ($is_group_course && !empty($dates_with_info)) : ?>
+                                    <div class="inline-dates-editor" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                        <?php foreach ($dates_with_info as $date_info) : ?>
+                                            <div class="inline-date-row" style="display: flex; gap: 5px; margin-bottom: 3px; align-items: center;">
+                                                <input type="date" 
+                                                       class="inline-date-input" 
+                                                       value="<?php echo esc_attr($date_info['date']); ?>" 
+                                                       data-course-id="<?php echo esc_attr($course_id); ?>"
+                                                       data-index="<?php echo esc_attr($date_info['index']); ?>"
+                                                       style="width: 110px; padding: 2px 4px; font-size: 11px; background: #fff; color: #333;">
+                                                <input type="number" 
+                                                       class="inline-stock-input" 
+                                                       value="<?php echo esc_attr($date_info['stock']); ?>" 
+                                                       data-course-id="<?php echo esc_attr($course_id); ?>"
+                                                       data-index="<?php echo esc_attr($date_info['index']); ?>"
+                                                       min="0"
+                                                       style="width: 45px; padding: 2px 4px; font-size: 11px; background: #fff; color: #333;">
+                                                <span style="font-size: 11px; color: #666;">
+                                                    (<?php echo $date_info['sold']; ?> sold, 
+                                                    <span style="color: <?php echo $date_info['available'] <= 5 ? '#ff6b6b' : ($date_info['available'] <= 10 ? '#ffd93d' : '#4CAF50'); ?>; font-weight: bold;">
+                                                        <?php echo $date_info['available']; ?> avail
+                                                    </span>)
+                                                </span>
+                                                <button class="inline-remove-date" 
+                                                        data-course-id="<?php echo esc_attr($course_id); ?>"
+                                                        data-index="<?php echo esc_attr($date_info['index']); ?>"
+                                                        style="padding: 1px 4px; font-size: 10px; background: #d54e21; color: white; border: none; cursor: pointer; border-radius: 2px;">
+                                                    ×
+                                                </button>
+                                            </div>
+                                        <?php endforeach; ?>
+                                        <button class="inline-add-date button-small" 
+                                                data-course-id="<?php echo esc_attr($course_id); ?>"
+                                                style="margin-top: 3px; padding: 2px 6px; font-size: 10px;">
+                                            + Add Date
+                                        </button>
+                                        <button class="inline-save-dates button-small button-primary" 
+                                                data-course-id="<?php echo esc_attr($course_id); ?>"
+                                                style="margin-top: 3px; margin-left: 5px; padding: 2px 6px; font-size: 10px; display: none;">
+                                            Save
+                                        </button>
+                                    </div>
+                                <?php elseif ($is_group_course) : ?>
+                                    <div class="inline-dates-editor" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                        <button class="inline-add-date button-small" 
+                                                data-course-id="<?php echo esc_attr($course_id); ?>"
+                                                style="padding: 2px 6px; font-size: 10px;">
+                                            + Add Date
+                                        </button>
+                                        <button class="inline-save-dates button-small button-primary" 
+                                                data-course-id="<?php echo esc_attr($course_id); ?>"
+                                                style="margin-left: 5px; padding: 2px 6px; font-size: 10px; display: none;">
+                                            Save
+                                        </button>
+                                    </div>
+                                <?php else : ?>
+                                    -
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <button class="button button-primary edit-course-settings" data-course-id="<?php echo esc_attr($course_id); ?>">Full Edit</button>
                                 <button class="button delete-course" data-course-id="<?php echo esc_attr($course_id); ?>">Delete</button>
                             </td>
                         </tr>
@@ -1271,6 +1340,147 @@ function course_box_manager_page() {
                         window.location.href = redirectUrl;
                     });
                 });
+
+                // Inline date and stock editing in course list view
+                document.querySelectorAll('.inline-dates-editor').forEach(editor => {
+                    const courseId = editor.getAttribute('data-course-id');
+                    let hasChanges = false;
+                    
+                    // Track changes
+                    editor.addEventListener('input', function(e) {
+                        if (e.target.classList.contains('inline-date-input') || e.target.classList.contains('inline-stock-input')) {
+                            hasChanges = true;
+                            const saveBtn = editor.querySelector('.inline-save-dates');
+                            if (saveBtn) saveBtn.style.display = 'inline-block';
+                        }
+                    });
+                    
+                    // Add date functionality
+                    const addBtn = editor.querySelector('.inline-add-date');
+                    if (addBtn) {
+                        addBtn.addEventListener('click', function() {
+                            const existingRows = editor.querySelectorAll('.inline-date-row');
+                            const newIndex = existingRows.length;
+                            
+                            const newRow = document.createElement('div');
+                            newRow.className = 'inline-date-row';
+                            newRow.style.cssText = 'display: flex; gap: 5px; margin-bottom: 3px; align-items: center;';
+                            
+                            // Get today's date in YYYY-MM-DD format
+                            const today = new Date().toISOString().split('T')[0];
+                            
+                            newRow.innerHTML = `
+                                <input type="date" 
+                                       class="inline-date-input" 
+                                       value="${today}"
+                                       data-course-id="${courseId}"
+                                       data-index="${newIndex}"
+                                       style="width: 110px; padding: 2px 4px; font-size: 11px; background: #fff; color: #333;">
+                                <input type="number" 
+                                       class="inline-stock-input" 
+                                       value="20"
+                                       data-course-id="${courseId}"
+                                       data-index="${newIndex}"
+                                       min="0"
+                                       style="width: 45px; padding: 2px 4px; font-size: 11px; background: #fff; color: #333;">
+                                <span style="font-size: 11px; color: #666;">
+                                    (0 sold, <span style="color: #4CAF50; font-weight: bold;">20 avail</span>)
+                                </span>
+                                <button class="inline-remove-date" 
+                                        data-course-id="${courseId}"
+                                        data-index="${newIndex}"
+                                        style="padding: 1px 4px; font-size: 10px; background: #d54e21; color: white; border: none; cursor: pointer; border-radius: 2px;">
+                                    ×
+                                </button>
+                            `;
+                            
+                            editor.insertBefore(newRow, addBtn);
+                            
+                            // Add remove functionality
+                            newRow.querySelector('.inline-remove-date').addEventListener('click', function() {
+                                newRow.remove();
+                                hasChanges = true;
+                                const saveBtn = editor.querySelector('.inline-save-dates');
+                                if (saveBtn) saveBtn.style.display = 'inline-block';
+                            });
+                            
+                            hasChanges = true;
+                            const saveBtn = editor.querySelector('.inline-save-dates');
+                            if (saveBtn) saveBtn.style.display = 'inline-block';
+                        });
+                    }
+                    
+                    // Remove date functionality
+                    editor.querySelectorAll('.inline-remove-date').forEach(removeBtn => {
+                        removeBtn.addEventListener('click', function() {
+                            const row = this.closest('.inline-date-row');
+                            row.remove();
+                            hasChanges = true;
+                            const saveBtn = editor.querySelector('.inline-save-dates');
+                            if (saveBtn) saveBtn.style.display = 'inline-block';
+                        });
+                    });
+                    
+                    // Save functionality
+                    const saveBtn = editor.querySelector('.inline-save-dates');
+                    if (saveBtn) {
+                        saveBtn.addEventListener('click', function() {
+                            const dates = [];
+                            editor.querySelectorAll('.inline-date-row').forEach(row => {
+                                const dateInput = row.querySelector('.inline-date-input');
+                                const stockInput = row.querySelector('.inline-stock-input');
+                                if (dateInput && stockInput && dateInput.value) {
+                                    dates.push({
+                                        date: dateInput.value,
+                                        stock: stockInput.value
+                                    });
+                                }
+                            });
+                            
+                            // Save via AJAX
+                            fetch(ajaxurl + '?action=save_inline_dates', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                                body: 'course_id=' + courseId + 
+                                      '&dates=' + encodeURIComponent(JSON.stringify(dates)) + 
+                                      '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    saveBtn.style.display = 'none';
+                                    hasChanges = false;
+                                    
+                                    // Update seats summary
+                                    const summarySpan = document.querySelector(`.seats-summary[data-course-id="${courseId}"]`);
+                                    if (summarySpan && data.data.summary) {
+                                        summarySpan.textContent = data.data.summary;
+                                        
+                                        // Update class based on availability
+                                        summarySpan.className = 'seats-summary';
+                                        if (data.data.percentage <= 20) {
+                                            summarySpan.classList.add('low-seats');
+                                        } else if (data.data.percentage <= 50) {
+                                            summarySpan.classList.add('medium-seats');
+                                        }
+                                    }
+                                    
+                                    // Show success message
+                                    const successMsg = document.createElement('span');
+                                    successMsg.style.cssText = 'color: #46b450; font-size: 11px; margin-left: 5px;';
+                                    successMsg.textContent = '✓ Saved';
+                                    saveBtn.parentElement.appendChild(successMsg);
+                                    setTimeout(() => successMsg.remove(), 2000);
+                                } else {
+                                    alert('Error saving: ' + (data.data || 'Unknown error'));
+                                }
+                            })
+                            .catch(error => {
+                                alert('Error saving dates: ' + error.message);
+                            });
+                        });
+                    }
+                });
             });
         </script>
     </div>
@@ -1465,6 +1675,59 @@ function delete_course() {
     }
     wp_delete_post($course_id, true);
     wp_send_json_success();
+}
+
+// AJAX Handler for inline date/stock editing
+add_action('wp_ajax_save_inline_dates', 'save_inline_dates');
+function save_inline_dates() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    $course_id = intval($_POST['course_id']);
+    $dates = json_decode(stripslashes($_POST['dates']), true);
+    
+    if (!$course_id) {
+        wp_send_json_error('Invalid course ID');
+    }
+    
+    // Format dates for ACF field
+    $formatted_dates = [];
+    $webinar_stock = get_field('course_stock', $course_id) ?: 0;
+    
+    foreach ($dates as $date_info) {
+        if (isset($date_info['date']) && !empty($date_info['date'])) {
+            $formatted_dates[] = [
+                'date' => $date_info['date'],
+                'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $webinar_stock
+            ];
+        }
+    }
+    
+    // Update ACF field
+    update_field('course_dates', $formatted_dates, $course_id);
+    
+    // Calculate new summary
+    $product_id = get_post_meta($course_id, 'linked_product_id', true);
+    $total_seats = 0;
+    $total_available = 0;
+    
+    if ($product_id && !empty($formatted_dates)) {
+        foreach ($formatted_dates as $date) {
+            $stock = $date['stock'];
+            $sold = calculate_seats_sold($product_id, $date['date']);
+            $available = max(0, $stock - $sold);
+            $total_seats += $stock;
+            $total_available += $available;
+        }
+    }
+    
+    $summary = $total_seats > 0 ? $total_available . '/' . $total_seats : '-';
+    $percentage = $total_seats > 0 ? ($total_available / $total_seats) * 100 : 100;
+    
+    wp_send_json_success([
+        'summary' => $summary,
+        'percentage' => $percentage,
+        'total_seats' => $total_seats,
+        'total_available' => $total_available
+    ]);
 }
 
 // Shortcode to render boxes
