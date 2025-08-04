@@ -450,6 +450,30 @@ function course_box_manager_page() {
                         </td>
                     </tr>
                     <tr>
+                        <th><label>Associated Product</label></th>
+                        <td>
+                            <select id="linked-product" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                <option value="0">None</option>
+                                <?php
+                                $linked_product_id = get_post_meta($course_id, 'linked_product_id', true);
+                                if (function_exists('wc_get_products')) {
+                                    $products = wc_get_products(['limit' => -1, 'orderby' => 'title', 'order' => 'ASC', 'status' => 'publish']);
+                                    if (!empty($products)) {
+                                        foreach ($products as $product) {
+                                            $selected = ($linked_product_id == $product->get_id()) ? ' selected' : '';
+                                            echo '<option value="' . esc_attr($product->get_id()) . '"' . $selected . '>' . 
+                                                 esc_html($product->get_name()) . ' (#' . $product->get_id() . ')' . '</option>';
+                                        }
+                                    }
+                                } else {
+                                    echo '<option disabled>WooCommerce not active</option>';
+                                }
+                                ?>
+                            </select>
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Select the WooCommerce product associated with this course</p>
+                        </td>
+                    </tr>
+                    <tr>
                         <th><label>Dates & Seats Management</label></th>
                         <td>
                                 <div class="date-list" data-course-id="<?php echo esc_attr($course_id); ?>">
@@ -921,7 +945,8 @@ function course_box_manager_page() {
                         const boxState = document.querySelector(`.box-state-select[data-course-id="${courseId}"]`).value;
                         const instructors = Array.from(document.querySelector(`.instructor-select[data-course-id="${courseId}"]`).selectedOptions).map(option => option.value);
                         const stock = document.querySelector(`.course-stock-input[data-course-id="${courseId}"]`)?.value || '';
-                        const linkedProductId = document.querySelector(`#linked-product[data-course-id="${courseId}"]`).value;
+                        const linkedProductElement = document.querySelector(`#linked-product[data-course-id="${courseId}"]`);
+                        const linkedProductId = linkedProductElement ? linkedProductElement.value : 0;
                         const dateElements = document.querySelectorAll(`.date-list[data-course-id="${courseId}"] .date-stock-row`);
                         const dates = [];
                         dateElements.forEach(row => {
