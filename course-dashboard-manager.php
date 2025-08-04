@@ -275,7 +275,7 @@ function course_box_manager_page() {
                                 </span>
                             </td>
                             <td>
-                                <?php if ($is_group_course && !empty($dates_with_info)) : ?>
+                                <?php if (!empty($dates_with_info)) : ?>
                                     <div class="inline-dates-editor" data-course-id="<?php echo esc_attr($course_id); ?>">
                                         <?php foreach ($dates_with_info as $date_info) : ?>
                                             <div class="inline-date-row" style="display: flex; gap: 5px; margin-bottom: 3px; align-items: center;">
@@ -317,8 +317,9 @@ function course_box_manager_page() {
                                             Save
                                         </button>
                                     </div>
-                                <?php elseif ($is_group_course) : ?>
+                                <?php else : ?>
                                     <div class="inline-dates-editor" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                        <p style="font-size: 11px; color: #666; margin: 0 0 5px 0;">No dates configured</p>
                                         <button class="inline-add-date button-small" 
                                                 data-course-id="<?php echo esc_attr($course_id); ?>"
                                                 style="padding: 2px 6px; font-size: 10px;">
@@ -330,8 +331,6 @@ function course_box_manager_page() {
                                             Save
                                         </button>
                                     </div>
-                                <?php else : ?>
-                                    -
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -494,17 +493,16 @@ function course_box_manager_page() {
                             </select>
                         </td>
                     </tr>
-                    <?php if ($is_group_course) : ?>
-                        <tr>
-                            <th><label>Default Stock</label></th>
-                            <td>
-                                <input type="number" class="webinar-stock" data-course-id="<?php echo esc_attr($course_id); ?>" value="<?php echo esc_attr($webinar_stock); ?>" min="0">
-                                <p style="font-size: 12px; color: #666; margin-top: 5px;">Default stock for new dates</p>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th><label>Dates & Seats Management</label></th>
-                            <td>
+                    <tr>
+                        <th><label>Default Stock</label></th>
+                        <td>
+                            <input type="number" class="webinar-stock" data-course-id="<?php echo esc_attr($course_id); ?>" value="<?php echo esc_attr($webinar_stock); ?>" min="0">
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Default stock for new dates</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><label>Dates & Seats Management</label></th>
+                        <td>
                                 <div class="date-list" data-course-id="<?php echo esc_attr($course_id); ?>">
                                     <div class="date-header" style="display: flex; gap: 10px; margin-bottom: 10px; padding: 8px; background: #f5f5f5; border-radius: 4px; font-weight: bold;">
                                         <span style="width: 120px;">Date</span>
@@ -582,7 +580,6 @@ function course_box_manager_page() {
                                 </div>
                             </td>
                         </tr>
-                    <?php endif; ?>
                     <tr>
                         <th><label>Selling Page</label></th>
                         <td>
