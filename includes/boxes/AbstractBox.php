@@ -40,6 +40,12 @@ abstract class AbstractBox {
         $available_dates = get_field('course_dates', $this->course_id) ?: [];
         $this->available_dates = array_column($available_dates, 'date');
         
+        // Debug logging
+        error_log('[CBM Debug] Course ' . $this->course_id . ' properties:');
+        error_log('[CBM Debug] - box_state: ' . $this->box_state);
+        error_log('[CBM Debug] - product_id: ' . $this->course_product_id);
+        error_log('[CBM Debug] - available_dates: ' . json_encode($this->available_dates));
+        
         $this->is_out_of_stock = $this->course_product_id && 
                                 function_exists('wc_get_product') && 
                                 !wc_get_product($this->course_product_id)->is_in_stock();
@@ -49,6 +55,9 @@ abstract class AbstractBox {
         
         $this->show_countdown = !empty($this->launch_date) && 
                                strtotime($this->launch_date) > current_time('timestamp');
+        
+        error_log('[CBM Debug] - is_out_of_stock: ' . ($this->is_out_of_stock ? 'true' : 'false'));
+        error_log('[CBM Debug] - show_countdown: ' . ($this->show_countdown ? 'true' : 'false'));
         
         // Load custom texts and formatting
         $this->custom_texts = get_post_meta($this->course_id, 'box_custom_texts', true) ?: [];

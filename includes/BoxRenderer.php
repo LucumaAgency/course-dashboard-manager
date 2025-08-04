@@ -19,7 +19,10 @@ class BoxRenderer {
      * @return string
      */
     public static function render_boxes_for_group($group_id, $current_post_id = 0) {
+        error_log('[CBM Debug] render_boxes_for_group called with group_id: ' . $group_id . ', current_post_id: ' . $current_post_id);
+        
         if (!$group_id) {
+            error_log('[CBM Debug] No group_id provided, returning empty');
             return '';
         }
         
@@ -36,20 +39,25 @@ class BoxRenderer {
             'fields' => 'ids'
         ]);
         
+        error_log('[CBM Debug] Found ' . count($courses) . ' courses in group: ' . implode(', ', $courses));
+        
         // Ensure current post is included if it's a course in this group
         if ($current_post_id && get_post_type($current_post_id) === 'course') {
             $post_terms = wp_get_post_terms($current_post_id, 'course_group', ['fields' => 'ids']);
             if (in_array($group_id, $post_terms) && !in_array($current_post_id, $courses)) {
                 $courses[] = $current_post_id;
+                error_log('[CBM Debug] Added current post to courses list');
             }
         }
         
         
         if (empty($courses)) {
+            error_log('[CBM Debug] No courses found, returning empty');
             return '';
         }
         
         $boxes = BoxFactory::get_boxes_for_courses($courses);
+        error_log('[CBM Debug] Created ' . count($boxes) . ' boxes from courses');
         
         ob_start();
         ?>

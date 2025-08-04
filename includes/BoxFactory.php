@@ -22,6 +22,8 @@ class BoxFactory {
      * @return \CourseBoxManager\Boxes\AbstractBox|null
      */
     public static function get_box($course_id) {
+        error_log('[CBM Debug] get_box called for course_id: ' . $course_id);
+        
         $box_types = [
             SoldOutBox::class,
             CountdownBox::class,
@@ -39,16 +41,21 @@ class BoxFactory {
             
             try {
                 $box = new $box_class($course_id);
+                $class_name = get_class($box);
                 
                 
                 if ($box->should_display()) {
+                    error_log('[CBM Debug] Box selected: ' . $class_name . ' for course ' . $course_id);
                     return $box;
+                } else {
+                    error_log('[CBM Debug] Box ' . $class_name . ' should_display() returned false for course ' . $course_id);
                 }
             } catch (\Exception $e) {
                 error_log('[CBM BoxFactory] Error creating box: ' . $e->getMessage());
             }
         }
         
+        error_log('[CBM Debug] No box matched for course ' . $course_id);
         return null;
     }
     
