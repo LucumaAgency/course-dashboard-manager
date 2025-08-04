@@ -119,13 +119,13 @@ abstract class AbstractBox {
     }
     
     /**
-     * Format date display
+     * Format date display - returns text as-is for text dates
      * @param string $date
      * @return string
      */
     protected function format_date($date) {
-        $timestamp = strtotime($date);
-        return $timestamp ? date($this->date_format, $timestamp) : $date;
+        // Return the date text as-is, no formatting
+        return $date;
     }
     
     /**

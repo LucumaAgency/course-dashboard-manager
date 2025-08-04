@@ -10,10 +10,11 @@ namespace CourseBoxManager\Boxes;
 class EnrollCourseBox extends AbstractBox {
     
     public function should_display() {
+        // Allow display if box_state is enroll-course and not out of stock/countdown
+        // Don't require valid dates - any text is acceptable
         return $this->box_state === 'enroll-course' && 
                !$this->is_out_of_stock && 
-               !$this->show_countdown && 
-               !empty($this->available_dates);
+               !$this->show_countdown;
     }
     
     protected function get_box_classes() {
@@ -28,10 +29,11 @@ class EnrollCourseBox extends AbstractBox {
             $dates_html .= '<p class="choose-label">Choose a starting date</p>';
             $dates_html .= '<div class="date-options">';
             foreach ($this->available_dates as $date) {
+                // Use the date text as-is, no formatting
                 $dates_html .= sprintf(
                     '<button class="date-btn" data-date="%s">%s</button>',
                     esc_attr($date),
-                    esc_html($this->format_date($date))
+                    esc_html($date)  // Display the text exactly as entered
                 );
             }
             $dates_html .= '</div></div>';

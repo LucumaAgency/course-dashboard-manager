@@ -192,18 +192,28 @@ class SeatsRemaining {
     }
 
     /**
-     * Calculate seats remaining for a product and date
+     * Calculate seats remaining for a product and date text
      */
     private function calculate_seats_remaining($product_id, $selected_date, $available_dates, $date_stocks) {
-        // Validate selected date is in available dates
-        if (!in_array($selected_date, $available_dates)) {
-            error_log('Seats Remaining: Invalid selected date ' . $selected_date . ' not in available dates: ' . implode(', ', $available_dates));
-            return 10; // Fallback if date is invalid
+        // Check if selected date text exists in available dates (case-insensitive)
+        $found = false;
+        $matched_date = $selected_date;
+        foreach ($available_dates as $date) {
+            if (strcasecmp(trim($date), trim($selected_date)) === 0) {
+                $found = true;
+                $matched_date = $date; // Use the exact format from available_dates
+                break;
+            }
+        }
+        
+        if (!$found) {
+            error_log('Seats Remaining: Date text not found: ' . $selected_date . ' in available dates: ' . implode(', ', $available_dates));
+            return 10; // Fallback if date is not found
         }
 
-        // Get initial stock for selected date
-        $initial_seats = isset($date_stocks[$selected_date]) ? $date_stocks[$selected_date] : 10;
-        error_log('Seats Remaining Shortcode: Calculating seats for date ' . $selected_date . ', Initial stock: ' . $initial_seats);
+        // Get initial stock for selected date (use matched date for exact key)
+        $initial_seats = isset($date_stocks[$matched_date]) ? $date_stocks[$matched_date] : 10;
+        error_log('Seats Remaining Shortcode: Calculating seats for date ' . $matched_date . ', Initial stock: ' . $initial_seats);
 
         $args = [
             'status' => ['wc-completed'], // Only count completed orders
@@ -225,10 +235,10 @@ class SeatsRemaining {
                 $quantity = $item->get_quantity();
                 error_log('Seats Remaining Shortcode: Order ID ' . $order->get_id() . ', Status: ' . $order_status . ', Item Product ID ' . $item_product_id . ', Start Date: ' . ($start_date ?: 'None') . ', Quantity: ' . $quantity);
 
-                // Exact string match for product ID and start date
-                if ($item_product_id == $product_id && $start_date === $selected_date) {
+                // Text comparison (case-insensitive) for product ID and start date
+                if ($item_product_id == $product_id && strcasecmp(trim($start_date), trim($matched_date)) === 0) {
                     $sales_count += $quantity;
-                    error_log('Seats Remaining Shortcode: Match found: Added ' . $quantity . ' to sales count for date ' . $selected_date . ', Order ID ' . $order->get_id());
+                    error_log('Seats Remaining Shortcode: Match found: Added ' . $quantity . ' to sales count for date ' . $matched_date . ', Order ID ' . $order->get_id());
                 }
             }
         }

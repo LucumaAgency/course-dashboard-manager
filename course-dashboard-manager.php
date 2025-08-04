@@ -92,7 +92,7 @@ function course_box_manager_menu() {
 }
 
 // Helper function to calculate seats sold for a course
-function calculate_seats_sold($product_id, $date = null) {
+function calculate_seats_sold($product_id, $date_text = null) {
     if (!$product_id) {
         return 0;
     }
@@ -115,9 +115,10 @@ function calculate_seats_sold($product_id, $date = null) {
     foreach ($orders as $order) {
         foreach ($order->get_items() as $item) {
             if ($item->get_product_id() == $product_id) {
-                if ($date) {
+                if ($date_text) {
                     $start_date = $item->get_meta('Start Date');
-                    if ($start_date === $date) {
+                    // Compare as text strings, case-insensitive
+                    if (strcasecmp(trim($start_date), trim($date_text)) === 0) {
                         $sales_count += $item->get_quantity();
                         $matching_orders[] = $order->get_id();
                     }
