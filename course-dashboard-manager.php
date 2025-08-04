@@ -530,6 +530,27 @@ function course_box_manager_page() {
                             </td>
                         </tr>
                     <tr>
+                        <th><label>Associated Product</label></th>
+                        <td>
+                            <select id="linked-product" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                <option value="0">None</option>
+                                <?php
+                                // Get all WooCommerce products
+                                $products = get_posts([
+                                    'post_type' => 'product',
+                                    'posts_per_page' => -1,
+                                    'orderby' => 'title',
+                                    'order' => 'ASC'
+                                ]);
+                                foreach ($products as $product) {
+                                    echo '<option value="' . esc_attr($product->ID) . '"' . ($product_id == $product->ID ? ' selected' : '') . '>' . esc_html($product->post_title) . '</option>';
+                                }
+                                ?>
+                            </select>
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Select the WooCommerce product for this course</p>
+                        </td>
+                    </tr>
+                    <tr>
                         <th><label>Selling Page</label></th>
                         <td>
                             <select id="selling-page" data-course-id="<?php echo esc_attr($course_id); ?>">
@@ -900,6 +921,7 @@ function course_box_manager_page() {
                         const boxState = document.querySelector(`.box-state-select[data-course-id="${courseId}"]`).value;
                         const instructors = Array.from(document.querySelector(`.instructor-select[data-course-id="${courseId}"]`).selectedOptions).map(option => option.value);
                         const stock = document.querySelector(`.course-stock-input[data-course-id="${courseId}"]`)?.value || '';
+                        const linkedProductId = document.querySelector(`#linked-product[data-course-id="${courseId}"]`).value;
                         const dateElements = document.querySelectorAll(`.date-list[data-course-id="${courseId}"] .date-stock-row`);
                         const dates = [];
                         dateElements.forEach(row => {
@@ -917,7 +939,7 @@ function course_box_manager_page() {
                         fetch(ajaxurl + '?action=save_course_settings', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                            body: 'course_id=' + courseId + '&group_id=' + groupId + '&box_state=' + boxState + '&instructors=' + encodeURIComponent(JSON.stringify(instructors)) + '&stock=' + stock + '&dates=' + encodeURIComponent(JSON.stringify(dates)) + '&selling_page_id=' + sellingPageId + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                            body: 'course_id=' + courseId + '&group_id=' + groupId + '&box_state=' + boxState + '&instructors=' + encodeURIComponent(JSON.stringify(instructors)) + '&stock=' + stock + '&dates=' + encodeURIComponent(JSON.stringify(dates)) + '&selling_page_id=' + sellingPageId + '&linked_product_id=' + linkedProductId + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                         })
                         .then(response => response.json())
                         .then(data => {
@@ -1453,6 +1475,7 @@ function save_course_settings() {
     $stock = sanitize_text_field($_POST['stock']);
     $dates = json_decode(stripslashes($_POST['dates']), true);
     $selling_page_id = intval($_POST['selling_page_id']);
+    $linked_product_id = intval($_POST['linked_product_id']);
 
     // Update course group
     if ($group_id) {
@@ -1486,14 +1509,18 @@ function save_course_settings() {
 
     update_post_meta($course_id, 'box_state', $box_state);
     update_post_meta($course_id, 'course_instructors', $instructors);
-    $product_id = get_post_meta($course_id, 'linked_product_id', true);
-    if ($product_id && $stock !== '') {
-        update_post_meta($product_id, '_stock', $stock);
-        update_post_meta($product_id, '_manage_stock', 'yes');
+    
+    // Update linked product
+    update_post_meta($course_id, 'linked_product_id', $linked_product_id);
+    
+    // Update stock on the product
+    if ($linked_product_id && $stock !== '') {
+        update_post_meta($linked_product_id, '_stock', $stock);
+        update_post_meta($linked_product_id, '_manage_stock', 'yes');
         if ($group_id) {
-            wp_set_post_terms($product_id, [$group_id], 'course_group');
+            wp_set_post_terms($linked_product_id, [$group_id], 'course_group');
         } else {
-            wp_set_post_terms($product_id, [], 'course_group');
+            wp_set_post_terms($linked_product_id, [], 'course_group');
         }
     }
     if ($dates) {
