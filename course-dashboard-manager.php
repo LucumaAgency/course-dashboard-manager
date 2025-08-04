@@ -427,28 +427,89 @@ function course_box_manager_page() {
                     </tr>
                     <?php if ($is_group_course) : ?>
                         <tr>
-                            <th><label>Stock</label></th>
+                            <th><label>Default Stock</label></th>
                             <td>
                                 <input type="number" class="webinar-stock" data-course-id="<?php echo esc_attr($course_id); ?>" value="<?php echo esc_attr($webinar_stock); ?>" min="0">
+                                <p style="font-size: 12px; color: #666; margin-top: 5px;">Default stock for new dates</p>
                             </td>
                         </tr>
                         <tr>
-                            <th><label>Dates & Stock</label></th>
+                            <th><label>Dates & Seats Management</label></th>
                             <td>
                                 <div class="date-list" data-course-id="<?php echo esc_attr($course_id); ?>">
-                                    <div style="display: flex; gap: 10px; margin-bottom: 5px; font-weight: bold;">
-                                        <span style="width: 150px;">Date</span>
-                                        <span style="width: 80px;">Stock</span>
-                                        <span>Action</span>
+                                    <div class="date-header" style="display: flex; gap: 10px; margin-bottom: 10px; padding: 8px; background: #f5f5f5; border-radius: 4px; font-weight: bold;">
+                                        <span style="width: 120px;">Date</span>
+                                        <span style="width: 80px;">Total Seats</span>
+                                        <span style="width: 80px;">Sold</span>
+                                        <span style="width: 80px;">Available</span>
+                                        <span style="width: 100px;">Actions</span>
                                     </div>
-                                    <?php foreach ($dates as $index => $date) : ?>
-                                        <div class="date-stock-row" style="display: flex; gap: 10px; margin-bottom: 5px;">
-                                            <input type="text" class="course-date" value="<?php echo esc_attr($date['date']); ?>" data-index="<?php echo esc_attr($index); ?>" placeholder="2025-08-01" style="width: 150px;">
-                                            <input type="number" class="course-stock" value="<?php echo esc_attr(isset($date['stock']) ? $date['stock'] : $webinar_stock); ?>" data-index="<?php echo esc_attr($index); ?>" placeholder="10" min="0" style="width: 80px;">
-                                            <button class="remove-date" data-index="<?php echo esc_attr($index); ?>">Remove</button>
+                                    <?php 
+                                    foreach ($dates as $index => $date) : 
+                                        $date_stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
+                                        $date_sold = 0;
+                                        $date_available = $date_stock;
+                                        
+                                        // Calculate sold and available for this specific date
+                                        if ($product_id && isset($date['date'])) {
+                                            $date_sold = calculate_seats_sold($product_id, $date['date']);
+                                            $date_available = max(0, $date_stock - $date_sold);
+                                        }
+                                        
+                                        // Determine row styling based on availability
+                                        $row_class = '';
+                                        if ($date_stock > 0) {
+                                            $percentage = ($date_available / $date_stock) * 100;
+                                            if ($percentage <= 20) {
+                                                $row_class = 'seat-warning';
+                                            } elseif ($percentage <= 50) {
+                                                $row_class = 'seat-caution';
+                                            }
+                                        }
+                                    ?>
+                                        <div class="date-stock-row <?php echo esc_attr($row_class); ?>" style="display: flex; gap: 10px; margin-bottom: 8px; padding: 8px; background: #fff; border: 1px solid #ddd; border-radius: 4px; align-items: center;">
+                                            <input type="text" class="course-date" value="<?php echo esc_attr($date['date']); ?>" data-index="<?php echo esc_attr($index); ?>" placeholder="YYYY-MM-DD" style="width: 120px; padding: 5px;">
+                                            
+                                            <input type="number" class="course-stock" value="<?php echo esc_attr($date_stock); ?>" data-index="<?php echo esc_attr($index); ?>" placeholder="10" min="0" style="width: 80px; padding: 5px;">
+                                            
+                                            <span style="width: 80px; text-align: center; color: #666;"><?php echo esc_html($date_sold); ?></span>
+                                            
+                                            <span style="width: 80px; text-align: center; font-weight: bold; color: <?php echo $date_available <= 5 ? '#d54e21' : ($date_available <= 10 ? '#f0ad4e' : '#46b450'); ?>">
+                                                <?php echo esc_html($date_available); ?>
+                                            </span>
+                                            
+                                            <div style="width: 100px;">
+                                                <button class="button button-small edit-seats" data-index="<?php echo esc_attr($index); ?>" style="margin-right: 5px;">Edit</button>
+                                                <button class="button button-small remove-date" data-index="<?php echo esc_attr($index); ?>" style="background: #d54e21; color: white;">×</button>
+                                            </div>
                                         </div>
                                     <?php endforeach; ?>
-                                    <button class="add-date" style="margin-top: 10px;">Add Date</button>
+                                    
+                                    <button class="button add-date" style="margin-top: 10px;">+ Add New Date</button>
+                                    
+                                    <!-- Summary Section -->
+                                    <?php if (!empty($dates)) : 
+                                        $total_stock_sum = 0;
+                                        $total_sold_sum = 0;
+                                        $total_available_sum = 0;
+                                        
+                                        foreach ($dates as $date) {
+                                            $stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
+                                            $sold = isset($date['date']) ? calculate_seats_sold($product_id, $date['date']) : 0;
+                                            $available = max(0, $stock - $sold);
+                                            
+                                            $total_stock_sum += $stock;
+                                            $total_sold_sum += $sold;
+                                            $total_available_sum += $available;
+                                        }
+                                    ?>
+                                    <div style="margin-top: 20px; padding: 10px; background: #f1f1f1; border-radius: 4px;">
+                                        <strong>Summary:</strong> 
+                                        Total Seats: <?php echo $total_stock_sum; ?> | 
+                                        Sold: <?php echo $total_sold_sum; ?> | 
+                                        Available: <span style="color: <?php echo $total_available_sum <= 10 ? '#d54e21' : '#46b450'; ?>"><?php echo $total_available_sum; ?></span>
+                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                         </tr>
@@ -607,31 +668,71 @@ function course_box_manager_page() {
                 flex-direction: column;
                 gap: 5px;
             }
+            .date-header {
+                background: #f5f5f5;
+                border-bottom: 2px solid #ddd;
+            }
+            .date-stock-row {
+                transition: background 0.2s;
+            }
+            .date-stock-row:hover {
+                background: #f9f9f9 !important;
+            }
+            .date-stock-row.seat-warning {
+                background: #fff5f5 !important;
+                border-color: #ffcccc !important;
+            }
+            .date-stock-row.seat-caution {
+                background: #fffbf0 !important;
+                border-color: #ffe4b5 !important;
+            }
+            .date-stock-row input {
+                border: 1px solid #ddd;
+                border-radius: 3px;
+            }
+            .date-stock-row input:focus {
+                border-color: #5b9dd9;
+                box-shadow: 0 0 2px rgba(30,140,190,.8);
+                outline: none;
+            }
             .course-date {
                 padding: 5px;
                 font-size: 14px;
-                width: 150px;
             }
-            .remove-date, .add-date {
-                padding: 5px 10px;
-                font-size: 12px;
+            .course-stock {
+                text-align: center;
+            }
+            .remove-date {
+                padding: 2px 8px;
+                font-size: 16px;
                 border: none;
                 border-radius: 3px;
                 cursor: pointer;
-            }
-            .remove-date {
-                background: #ff4444;
+                background: #d54e21;
                 color: white;
+                line-height: 1;
             }
             .remove-date:hover {
                 background: #cc0000;
             }
             .add-date {
-                background: #4CAF50;
+                background: #0073aa;
                 color: white;
+                border: none;
+                cursor: pointer;
             }
             .add-date:hover {
-                background: #45a049;
+                background: #005a87;
+            }
+            .edit-seats {
+                padding: 2px 8px;
+                font-size: 11px;
+            }
+            .button-small {
+                padding: 0 8px;
+                line-height: 26px;
+                height: 28px;
+                font-size: 11px;
             }
             #course-search, #course-group-name {
                 margin-bottom: 10px;
@@ -645,6 +746,30 @@ function course_box_manager_page() {
             .medium-seats {
                 color: #f0ad4e;
                 font-weight: bold;
+            }
+            /* Modal for editing seats */
+            #edit-seats-modal .modal-content {
+                max-width: 400px;
+            }
+            #edit-seats-modal input {
+                width: 100%;
+                padding: 8px;
+                margin: 10px 0;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
+            #edit-seats-modal .info-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 5px 0;
+                border-bottom: 1px solid #eee;
+            }
+            #edit-seats-modal .info-label {
+                font-weight: bold;
+                color: #555;
+            }
+            #edit-seats-modal .info-value {
+                color: #333;
             }
         </style>
 
@@ -797,51 +922,195 @@ function course_box_manager_page() {
                     });
                 });
 
-                // Add/Remove Dates
+                // Add/Remove/Edit Dates
                 document.querySelectorAll('.date-list').forEach(container => {
                     const courseId = container.getAttribute('data-course-id');
                     const addDateButton = container.querySelector('.add-date');
-                    addDateButton.addEventListener('click', function() {
-                        const dateList = container;
-                        const index = dateList.querySelectorAll('.course-date').length;
-                        const wrapper = document.createElement('div');
-                        wrapper.className = 'date-stock-row';
-                        wrapper.style.cssText = 'display: flex; gap: 10px; margin-bottom: 5px;';
-                        
-                        const newDateInput = document.createElement('input');
-                        newDateInput.type = 'text';
-                        newDateInput.className = 'course-date';
-                        newDateInput.setAttribute('data-index', index);
-                        newDateInput.placeholder = '2025-08-01';
-                        newDateInput.style.width = '150px';
-                        
-                        const newStockInput = document.createElement('input');
-                        newStockInput.type = 'number';
-                        newStockInput.className = 'course-stock';
-                        newStockInput.setAttribute('data-index', index);
-                        newStockInput.placeholder = '10';
-                        newStockInput.min = '0';
-                        newStockInput.style.width = '80px';
-                        
-                        const removeButton = document.createElement('button');
-                        removeButton.className = 'remove-date';
-                        removeButton.setAttribute('data-index', index);
-                        removeButton.textContent = 'Remove';
-                        removeButton.addEventListener('click', function() {
-                            wrapper.remove();
+                    const defaultStock = document.querySelector('.webinar-stock').value || 20;
+                    
+                    // Add new date functionality
+                    if (addDateButton) {
+                        addDateButton.addEventListener('click', function() {
+                            const dateList = container;
+                            const existingRows = dateList.querySelectorAll('.date-stock-row');
+                            const index = existingRows.length;
+                            const dateHeader = dateList.querySelector('.date-header');
+                            
+                            const wrapper = document.createElement('div');
+                            wrapper.className = 'date-stock-row';
+                            wrapper.style.cssText = 'display: flex; gap: 10px; margin-bottom: 8px; padding: 8px; background: #fff; border: 1px solid #ddd; border-radius: 4px; align-items: center;';
+                            
+                            // Date input
+                            const newDateInput = document.createElement('input');
+                            newDateInput.type = 'text';
+                            newDateInput.className = 'course-date';
+                            newDateInput.setAttribute('data-index', index);
+                            newDateInput.placeholder = 'YYYY-MM-DD';
+                            newDateInput.style.cssText = 'width: 120px; padding: 5px;';
+                            
+                            // Stock input
+                            const newStockInput = document.createElement('input');
+                            newStockInput.type = 'number';
+                            newStockInput.className = 'course-stock';
+                            newStockInput.setAttribute('data-index', index);
+                            newStockInput.value = defaultStock;
+                            newStockInput.min = '0';
+                            newStockInput.style.cssText = 'width: 80px; padding: 5px;';
+                            
+                            // Sold span
+                            const soldSpan = document.createElement('span');
+                            soldSpan.style.cssText = 'width: 80px; text-align: center; color: #666;';
+                            soldSpan.textContent = '0';
+                            
+                            // Available span
+                            const availableSpan = document.createElement('span');
+                            availableSpan.style.cssText = 'width: 80px; text-align: center; font-weight: bold; color: #46b450;';
+                            availableSpan.textContent = defaultStock;
+                            
+                            // Actions div
+                            const actionsDiv = document.createElement('div');
+                            actionsDiv.style.width = '100px';
+                            
+                            const editButton = document.createElement('button');
+                            editButton.className = 'button button-small edit-seats';
+                            editButton.setAttribute('data-index', index);
+                            editButton.textContent = 'Edit';
+                            editButton.style.marginRight = '5px';
+                            
+                            const removeButton = document.createElement('button');
+                            removeButton.className = 'button button-small remove-date';
+                            removeButton.setAttribute('data-index', index);
+                            removeButton.textContent = '×';
+                            removeButton.style.cssText = 'background: #d54e21; color: white;';
+                            removeButton.addEventListener('click', function() {
+                                wrapper.remove();
+                                updateSummary();
+                            });
+                            
+                            // Listen for stock changes to update available seats
+                            newStockInput.addEventListener('input', function() {
+                                availableSpan.textContent = this.value;
+                                updateAvailableColor(availableSpan, parseInt(this.value));
+                                updateSummary();
+                            });
+                            
+                            actionsDiv.appendChild(editButton);
+                            actionsDiv.appendChild(removeButton);
+                            
+                            wrapper.appendChild(newDateInput);
+                            wrapper.appendChild(newStockInput);
+                            wrapper.appendChild(soldSpan);
+                            wrapper.appendChild(availableSpan);
+                            wrapper.appendChild(actionsDiv);
+                            
+                            // Insert before the add button
+                            const summaryDiv = dateList.querySelector('div[style*="Summary"]');
+                            if (summaryDiv) {
+                                dateList.insertBefore(wrapper, summaryDiv.previousElementSibling);
+                            } else {
+                                dateList.insertBefore(wrapper, addDateButton);
+                            }
+                            
+                            // Focus on the new date input
+                            newDateInput.focus();
                         });
-                        
-                        wrapper.appendChild(newDateInput);
-                        wrapper.appendChild(newStockInput);
-                        wrapper.appendChild(removeButton);
-                        dateList.insertBefore(wrapper, addDateButton);
-                    });
-
+                    }
+                    
+                    // Remove date functionality
                     container.querySelectorAll('.remove-date').forEach(button => {
                         button.addEventListener('click', function() {
-                            button.parentElement.remove();
+                            if (confirm('Are you sure you want to remove this date?')) {
+                                button.closest('.date-stock-row').remove();
+                                updateSummary();
+                            }
                         });
                     });
+                    
+                    // Edit seats functionality (placeholder for future modal)
+                    container.querySelectorAll('.edit-seats').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const row = button.closest('.date-stock-row');
+                            const dateInput = row.querySelector('.course-date');
+                            const stockInput = row.querySelector('.course-stock');
+                            
+                            // For now, just focus on the stock input for quick editing
+                            stockInput.focus();
+                            stockInput.select();
+                        });
+                    });
+                    
+                    // Listen for stock input changes to update UI
+                    container.querySelectorAll('.course-stock').forEach(input => {
+                        input.addEventListener('input', function() {
+                            const row = this.closest('.date-stock-row');
+                            const availableSpan = row.querySelectorAll('span')[1]; // Second span is available
+                            const soldSpan = row.querySelectorAll('span')[0]; // First span is sold
+                            const sold = parseInt(soldSpan.textContent) || 0;
+                            const newStock = parseInt(this.value) || 0;
+                            const available = Math.max(0, newStock - sold);
+                            
+                            availableSpan.textContent = available;
+                            updateAvailableColor(availableSpan, available);
+                            updateRowClass(row, newStock, available);
+                            updateSummary();
+                        });
+                    });
+                    
+                    // Helper function to update available seats color
+                    function updateAvailableColor(element, available) {
+                        if (available <= 5) {
+                            element.style.color = '#d54e21';
+                        } else if (available <= 10) {
+                            element.style.color = '#f0ad4e';
+                        } else {
+                            element.style.color = '#46b450';
+                        }
+                    }
+                    
+                    // Helper function to update row class based on availability
+                    function updateRowClass(row, stock, available) {
+                        row.classList.remove('seat-warning', 'seat-caution');
+                        if (stock > 0) {
+                            const percentage = (available / stock) * 100;
+                            if (percentage <= 20) {
+                                row.classList.add('seat-warning');
+                            } else if (percentage <= 50) {
+                                row.classList.add('seat-caution');
+                            }
+                        }
+                    }
+                    
+                    // Helper function to update summary
+                    function updateSummary() {
+                        const summaryDiv = container.querySelector('div[style*="Summary"]');
+                        if (!summaryDiv) return;
+                        
+                        let totalStock = 0;
+                        let totalSold = 0;
+                        let totalAvailable = 0;
+                        
+                        container.querySelectorAll('.date-stock-row').forEach(row => {
+                            const stockInput = row.querySelector('.course-stock');
+                            const spans = row.querySelectorAll('span');
+                            
+                            if (stockInput && spans.length >= 2) {
+                                const stock = parseInt(stockInput.value) || 0;
+                                const sold = parseInt(spans[0].textContent) || 0;
+                                const available = parseInt(spans[1].textContent) || 0;
+                                
+                                totalStock += stock;
+                                totalSold += sold;
+                                totalAvailable += available;
+                            }
+                        });
+                        
+                        summaryDiv.innerHTML = `
+                            <strong>Summary:</strong> 
+                            Total Seats: ${totalStock} | 
+                            Sold: ${totalSold} | 
+                            Available: <span style="color: ${totalAvailable <= 10 ? '#d54e21' : '#46b450'}">${totalAvailable}</span>
+                        `;
+                    }
                 });
 
                 // Search functionality
