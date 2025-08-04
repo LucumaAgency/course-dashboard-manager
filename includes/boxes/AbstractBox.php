@@ -46,9 +46,12 @@ abstract class AbstractBox {
         error_log('[CBM Debug] - product_id: ' . $this->course_product_id);
         error_log('[CBM Debug] - available_dates: ' . json_encode($this->available_dates));
         
-        $this->is_out_of_stock = $this->course_product_id && 
-                                function_exists('wc_get_product') && 
-                                !wc_get_product($this->course_product_id)->is_in_stock();
+        // Only check stock if product exists
+        $this->is_out_of_stock = false;
+        if ($this->course_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($this->course_product_id);
+            $this->is_out_of_stock = $product ? !$product->is_in_stock() : false;
+        }
         
         $this->launch_date = $this->course_product_id ? 
                             apply_filters('wc_launch_date_get', '', $this->course_product_id) : '';
@@ -97,6 +100,16 @@ abstract class AbstractBox {
         // Use custom button text if available
         if (!empty($this->button_text)) {
             $text = $this->button_text;
+        }
+        
+        // If no product ID, show a placeholder button or link
+        if (!$this->course_product_id) {
+            return sprintf(
+                '<button class="add-to-cart-button no-product" disabled>
+                    <span class="button-text">%s (No Product)</span>
+                </button>',
+                esc_html($text)
+            );
         }
         
         return sprintf(
