@@ -225,11 +225,11 @@ function course_box_manager_page() {
                         $total_available = 0;
                         $dates_with_info = [];
                         
-                        if (!empty($dates) && $product_id) {
+                        if (!empty($dates)) {
                             foreach ($dates as $idx => $date) {
                                 if (isset($date['date'])) {
                                     $stock = isset($date['stock']) ? intval($date['stock']) : $course_stock;
-                                    $sold = calculate_seats_sold($product_id, $date['date']);
+                                    $sold = $product_id ? calculate_seats_sold($product_id, $date['date']) : 0;
                                     $available = max(0, $stock - $sold);
                                     $total_seats += $stock;
                                     $total_available += $available;
@@ -271,7 +271,7 @@ function course_box_manager_page() {
                                             }
                                             ?>
                                             <span class="date-item" style="display: inline-block; margin-right: 10px; margin-bottom: 3px; font-size: 11px;">
-                                                <span style="color: #fff;"><?php echo esc_html($date_info['date']); ?></span>
+                                                <span style="color: #333;"><?php echo esc_html($date_info['date']); ?></span>
                                                 <span style="color: <?php echo $stock_color; ?>; font-weight: bold;">(<?php echo esc_html($date_info['stock']); ?>)</span>
                                             </span>
                                             <?php
@@ -348,7 +348,7 @@ function course_box_manager_page() {
                             foreach ($dates as $date) {
                                 if (isset($date['date'])) {
                                     $stock = isset($date['stock']) ? intval($date['stock']) : $course_stock;
-                                    $sold = calculate_seats_sold($product_id, $date['date']);
+                                    $sold = $product_id ? calculate_seats_sold($product_id, $date['date']) : 0;
                                     $available = max(0, $stock - $sold);
                                     
                                     $total_seats_all += $stock;
@@ -639,68 +639,6 @@ function course_box_manager_page() {
         </div>
 
         <style>
-            /* Main table styles with gray/plomo theme */
-            .wp-list-table {
-                background: #6c757d !important;
-                border: 1px solid #495057 !important;
-            }
-            .wp-list-table thead {
-                background: #495057 !important;
-            }
-            .wp-list-table thead tr {
-                background: #495057 !important;
-            }
-            .wp-list-table thead th {
-                color: #ffffff !important;
-                background: #495057 !important;
-                border-bottom: 2px solid #343a40 !important;
-                font-weight: 600;
-                text-transform: uppercase;
-                font-size: 12px;
-                letter-spacing: 0.5px;
-            }
-            .wp-list-table tbody tr {
-                background: #868e96 !important;
-                border-bottom: 1px solid #6c757d !important;
-            }
-            .wp-list-table tbody tr:nth-child(even) {
-                background: #7d858d !important;
-            }
-            .wp-list-table tbody tr:hover {
-                background: #98a0a8 !important;
-            }
-            .wp-list-table tbody td {
-                color: #ffffff !important;
-                border-bottom: 1px solid #6c757d !important;
-                padding: 12px 10px;
-            }
-            .wp-list-table tbody td a {
-                color: #aed9ff !important;
-                text-decoration: none;
-                font-weight: 500;
-            }
-            .wp-list-table tbody td a:hover {
-                color: #ffffff !important;
-                text-decoration: underline;
-            }
-            /* Buttons in table */
-            .wp-list-table .button {
-                background: #495057 !important;
-                color: #ffffff !important;
-                border: 1px solid #343a40 !important;
-            }
-            .wp-list-table .button:hover {
-                background: #343a40 !important;
-                color: #ffffff !important;
-            }
-            .wp-list-table .button-primary {
-                background: #007cba !important;
-                border-color: #006ba1 !important;
-            }
-            .wp-list-table .button-primary:hover {
-                background: #006ba1 !important;
-            }
-            
             /* Modal styles */
             .modal {
                 display: none;
@@ -746,9 +684,8 @@ function course_box_manager_page() {
                 gap: 5px;
             }
             .date-header {
-                background: #495057 !important;
-                border-bottom: 2px solid #343a40;
-                color: #ffffff !important;
+                background: #f5f5f5;
+                border-bottom: 2px solid #ddd;
             }
             .date-stock-row {
                 transition: background 0.2s;
@@ -814,25 +751,16 @@ function course_box_manager_page() {
             }
             #course-search, #course-group-name {
                 margin-bottom: 10px;
-                padding: 8px 12px;
+                padding: 5px;
                 width: 300px;
-                background: #6c757d;
-                color: #ffffff;
-                border: 1px solid #495057;
-                border-radius: 4px;
-            }
-            #course-search::placeholder, #course-group-name::placeholder {
-                color: #ced4da;
             }
             .low-seats {
-                color: #ff6b6b !important;
+                color: #d54e21;
                 font-weight: bold;
-                text-shadow: 0 0 2px rgba(0,0,0,0.3);
             }
             .medium-seats {
-                color: #ffd93d !important;
+                color: #f0ad4e;
                 font-weight: bold;
-                text-shadow: 0 0 2px rgba(0,0,0,0.3);
             }
             /* Modal for editing seats */
             #edit-seats-modal .modal-content {
@@ -873,24 +801,6 @@ function course_box_manager_page() {
                 padding: 15px 10px;
             }
             
-            /* Seats availability section */
-            div[style*="background: #f1f1f1"] {
-                background: #6c757d !important;
-                color: #ffffff !important;
-            }
-            div[style*="background: #f1f1f1"] h3 {
-                color: #ffffff !important;
-            }
-            div[style*="background: #f1f1f1"] table {
-                color: #ffffff !important;
-            }
-            div[style*="background: #f1f1f1"] table th {
-                border-bottom: 1px solid #495057 !important;
-                color: #ffffff !important;
-            }
-            div[style*="background: #f1f1f1"] table td {
-                color: #ffffff !important;
-            }
         </style>
 
         <script>
