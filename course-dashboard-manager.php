@@ -442,13 +442,6 @@ function course_box_manager_page() {
                         </td>
                     </tr>
                     <tr>
-                        <th><label>Default Stock</label></th>
-                        <td>
-                            <input type="number" class="course-stock-input" data-course-id="<?php echo esc_attr($course_id); ?>" value="<?php echo esc_attr($course_stock); ?>" min="0">
-                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Default stock for new dates</p>
-                        </td>
-                    </tr>
-                    <tr>
                         <th><label>Associated Product</label></th>
                         <td>
                             <select id="linked-product" data-course-id="<?php echo esc_attr($course_id); ?>">
@@ -718,11 +711,6 @@ function course_box_manager_page() {
                 padding: 5px;
                 font-size: 14px;
             }
-            .course-stock-input {
-                width: 100px;
-                padding: 5px;
-                font-size: 14px;
-            }
             .date-list {
                 display: flex;
                 flex-direction: column;
@@ -943,7 +931,7 @@ function course_box_manager_page() {
                         const groupId = document.querySelector(`#course-group[data-course-id="${courseId}"]`).value;
                         const boxState = document.querySelector(`.box-state-select[data-course-id="${courseId}"]`).value;
                         const instructors = Array.from(document.querySelector(`.instructor-select[data-course-id="${courseId}"]`).selectedOptions).map(option => option.value);
-                        const stock = document.querySelector(`.course-stock-input[data-course-id="${courseId}"]`)?.value || '';
+                        const stock = '';
                         const linkedProductElement = document.querySelector(`#linked-product[data-course-id="${courseId}"]`);
                         const linkedProductId = linkedProductElement ? linkedProductElement.value : 0;
                         const dateElements = document.querySelectorAll(`.date-list[data-course-id="${courseId}"] .date-stock-row`);
@@ -1003,7 +991,7 @@ function course_box_manager_page() {
                 document.querySelectorAll('.date-list').forEach(container => {
                     const courseId = container.getAttribute('data-course-id');
                     const addDateButton = container.querySelector('.add-date');
-                    const defaultStock = document.querySelector('.course-stock-input').value || 20;
+                    const defaultStock = 20;
                     
                     // Add new date functionality
                     if (addDateButton) {
