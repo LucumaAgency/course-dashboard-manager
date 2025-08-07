@@ -300,6 +300,7 @@ function course_box_manager_page() {
             $box_state = get_post_meta($course_id, 'box_state', true) ?: 'enroll-course';
             $course_stock = get_field('course_stock', $course_id) ?: 0;
             $dates = get_field('course_dates', $course_id) ?: [];
+            $product_id = get_post_meta($course_id, 'linked_product_id', true);
             $terms = wp_get_post_terms($course_id, 'course_group');
             $group_id = !empty($terms) ? $terms[0]->term_id : 0;
             $group_name = $group_id ? get_term($group_id, 'course_group')->name : 'None';
@@ -402,7 +403,7 @@ function course_box_manager_page() {
                                     </div>
                                     <?php 
                                     foreach ($dates as $index => $date) : 
-                                        $date_stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
+                                        $date_stock = isset($date['stock']) ? intval($date['stock']) : $course_stock;
                                         $date_button_text = isset($date['button_text']) ? $date['button_text'] : 'Enroll Now';
                                         $date_sold = 0;
                                         $date_available = $date_stock;
