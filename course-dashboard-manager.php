@@ -858,8 +858,17 @@ function course_box_manager_page() {
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                alert('Settings saved successfully!');
-                                location.href = '?page=course-box-manager';
+                                // Show success message without redirecting
+                                const button = document.querySelector(`.save-course-settings[data-course-id="${courseId}"]`);
+                                const successMsg = document.createElement('span');
+                                successMsg.style.cssText = 'color: #46b450; margin-left: 10px; font-weight: bold;';
+                                successMsg.textContent = '✓ Settings saved successfully!';
+                                button.parentElement.appendChild(successMsg);
+                                
+                                // Remove the message after 3 seconds
+                                setTimeout(() => {
+                                    successMsg.remove();
+                                }, 3000);
                             } else {
                                 alert('Error: ' + data.data);
                             }
