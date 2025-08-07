@@ -8,7 +8,6 @@
 namespace CourseBoxManager;
 
 use CourseBoxManager\BoxFactory;
-use CourseBoxManager\Boxes\CombinedBox;
 
 class BoxRenderer {
     
@@ -57,10 +56,11 @@ class BoxRenderer {
             return '';
         }
         
-        // Check for mixed states (buy-course and enroll-course)
+        // Check for mixed states and organize courses by type
         $buy_course_id = null;
         $enroll_course_id = null;
         $other_courses = [];
+        $has_mixed_states = false;
         
         foreach ($courses as $course_id) {
             $box_state = get_post_meta($course_id, 'box_state', true);
@@ -73,15 +73,28 @@ class BoxRenderer {
             }
         }
         
+        // Check if we have both states
+        $has_mixed_states = ($buy_course_id && $enroll_course_id);
+        
         $boxes = [];
         
-        // If we have both buy and enroll courses, create a combined box
-        if ($buy_course_id && $enroll_course_id) {
-            error_log('[CBM Debug] Creating combined box for buy course ' . $buy_course_id . ' and enroll course ' . $enroll_course_id);
-            $combined_box = new CombinedBox($buy_course_id, $enroll_course_id);
-            $boxes[] = $combined_box;
+        // If we have both buy and enroll courses, show them in specific order
+        if ($has_mixed_states) {
+            error_log('[CBM Debug] Showing both buy course ' . $buy_course_id . ' and enroll course ' . $enroll_course_id);
             
-            // Add boxes for any other courses
+            // Add buy course box first
+            $buy_box = BoxFactory::get_box($buy_course_id);
+            if ($buy_box) {
+                $boxes[] = $buy_box;
+            }
+            
+            // Add enroll course box second
+            $enroll_box = BoxFactory::get_box($enroll_course_id);
+            if ($enroll_box) {
+                $boxes[] = $enroll_box;
+            }
+            
+            // Add any other courses
             foreach ($other_courses as $course_id) {
                 $box = BoxFactory::get_box($course_id);
                 if ($box) {
@@ -98,7 +111,7 @@ class BoxRenderer {
         ob_start();
         ?>
         <div class="selectable-box-container">
-            <div class="box-container">
+            <div class="box-container" data-has-mixed-states="<?php echo $has_mixed_states ? 'true' : 'false'; ?>">
                 <?php foreach ($boxes as $box) : ?>
                     <?php echo $box->render(); ?>
                 <?php endforeach; ?>
@@ -112,7 +125,7 @@ class BoxRenderer {
         </div>
         <?php
         self::render_styles();
-        self::render_scripts();
+        self::render_scripts($has_mixed_states);
         
         return ob_get_clean();
     }
@@ -184,6 +197,7 @@ class BoxRenderer {
             .box:not(.selected) .circle-container { display: flex; }
             .box.selected .circle-container { display: none; }
             .box.selected .circlecontainer { display: flex; }
+            .box.no-button .add-to-cart-button { display: none; }
             .choose-label { font-size: 0.95em; margin-bottom: 10px; color: #fff; }
             .date-options { display: flex; flex-wrap: wrap; gap: 4px; }
             .date-btn { width: 68px; padding: 5px 8px; border: none; border-radius: 25px; background-color: rgba(255, 255, 255, 0.08); color: white; cursor: pointer; }
@@ -227,7 +241,7 @@ class BoxRenderer {
     /**
      * Render JavaScript
      */
-    protected static function render_scripts() {
+    protected static function render_scripts($has_mixed_states = false) {
         ?>
         <script>
             let selectedDates = {};
@@ -238,6 +252,7 @@ class BoxRenderer {
                 const boxes = element.closest('.box-container').querySelectorAll('.box');
                 boxes.forEach(box => {
                     box.classList.remove('selected');
+                    box.classList.add('no-button');
                     const circleContainer = box.querySelector('.circle-container');
                     const circlecontainer = box.querySelector('.circlecontainer');
                     const startDates = box.querySelector('.start-dates');
@@ -246,6 +261,7 @@ class BoxRenderer {
                     if (startDates) startDates.style.display = 'none';
                 });
                 element.classList.add('selected');
+                element.classList.remove('no-button');
                 const selectedCircleContainer = element.querySelector('.circle-container');
                 const selectedCirclecontainer = element.querySelector('.circlecontainer');
                 const selectedStartDates = element.querySelector('.start-dates');
@@ -283,6 +299,21 @@ class BoxRenderer {
             }
 
             document.addEventListener('DOMContentLoaded', function() {
+                // Auto-select first box if we have mixed states
+                <?php if ($has_mixed_states) : ?>
+                const boxContainer = document.querySelector('.box-container[data-has-mixed-states="true"]');
+                if (boxContainer) {
+                    const buyBox = boxContainer.querySelector('.buy-course');
+                    const enrollBox = boxContainer.querySelector('.enroll-course');
+                    
+                    // Default to selecting buy course box
+                    if (buyBox) {
+                        const courseId = buyBox.getAttribute('data-course-id') || '0';
+                        selectBox(buyBox, 'buy-box', courseId);
+                    }
+                }
+                <?php endif; ?>
+                
                 // Date selection
                 document.querySelectorAll('.date-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
