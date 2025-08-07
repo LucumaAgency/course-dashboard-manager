@@ -200,8 +200,22 @@ class BoxRenderer {
             .box.no-button .add-to-cart-button { display: none; }
             .choose-label { font-size: 0.95em; margin-bottom: 10px; color: #fff; }
             .date-options { display: flex; flex-wrap: wrap; gap: 4px; }
-            .date-btn { width: 68px; padding: 5px 8px; border: none; border-radius: 25px; background-color: rgba(255, 255, 255, 0.08); color: white; cursor: pointer; }
-            .date-btn:hover, .date-btn.selected { background-color: #cc3071; }
+            .date-btn { width: auto; min-width: 68px; padding: 5px 8px; border: none; border-radius: 25px; background-color: rgba(255, 255, 255, 0.08); color: white; cursor: pointer; font-size: 11px; }
+            .date-btn:hover:not(.sold-out), .date-btn.selected { background-color: #cc3071; }
+            .date-btn.sold-out { 
+                background-color: rgba(255, 59, 59, 0.2); 
+                opacity: 0.6; 
+                cursor: not-allowed; 
+                color: rgba(255, 255, 255, 0.5);
+            }
+            .add-to-cart-button.sold-out {
+                background-color: rgba(255, 59, 59, 0.2);
+                cursor: not-allowed;
+                opacity: 0.7;
+            }
+            .add-to-cart-button.sold-out:hover {
+                background-color: rgba(255, 59, 59, 0.2);
+            }
             @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
             @media (max-width: 767px) { .box { padding: 10px; } .box h3 { font-size: 1.2em; } }
             .add-to-cart-button {
@@ -318,10 +332,26 @@ class BoxRenderer {
                 document.querySelectorAll('.date-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        const courseId = this.closest('.box').getAttribute('data-course-id');
-                        document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('selected'));
+                        
+                        // Don't select if sold out
+                        if (this.classList.contains('sold-out')) {
+                            return;
+                        }
+                        
+                        const box = this.closest('.box');
+                        const courseId = box.getAttribute('data-course-id');
+                        const buttonText = this.getAttribute('data-button-text') || 'Enroll Now';
+                        
+                        // Update selection
+                        box.querySelectorAll('.date-btn').forEach(b => b.classList.remove('selected'));
                         this.classList.add('selected');
                         selectedDates[courseId] = this.getAttribute('data-date') || this.textContent.trim();
+                        
+                        // Update button text
+                        const addToCartBtn = box.querySelector('.add-to-cart-button .button-text');
+                        if (addToCartBtn) {
+                            addToCartBtn.textContent = buttonText;
+                        }
                     });
                 });
 

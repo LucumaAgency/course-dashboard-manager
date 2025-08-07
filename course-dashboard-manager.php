@@ -397,11 +397,13 @@ function course_box_manager_page() {
                                         <span style="width: 80px;">Total Seats</span>
                                         <span style="width: 80px;">Sold</span>
                                         <span style="width: 80px;">Available</span>
+                                        <span style="width: 150px;">Button Text</span>
                                         <span style="width: 100px;">Actions</span>
                                     </div>
                                     <?php 
                                     foreach ($dates as $index => $date) : 
                                         $date_stock = isset($date['stock']) ? intval($date['stock']) : $webinar_stock;
+                                        $date_button_text = isset($date['button_text']) ? $date['button_text'] : 'Enroll Now';
                                         $date_sold = 0;
                                         $date_available = $date_stock;
                                         
@@ -432,6 +434,8 @@ function course_box_manager_page() {
                                             <span style="width: 80px; text-align: center; font-weight: bold; color: <?php echo $date_available <= 5 ? '#d54e21' : ($date_available <= 10 ? '#f0ad4e' : '#46b450'); ?>">
                                                 <?php echo esc_html($date_available); ?>
                                             </span>
+                                            
+                                            <input type="text" class="course-button-text" value="<?php echo esc_attr($date_button_text); ?>" data-index="<?php echo esc_attr($index); ?>" placeholder="Enroll Now" style="width: 150px; padding: 5px;">
                                             
                                             <div style="width: 100px;">
                                                 <button class="button button-small edit-seats" data-index="<?php echo esc_attr($index); ?>" style="margin-right: 5px;">Edit</button>
@@ -846,10 +850,12 @@ function course_box_manager_page() {
                         dateElements.forEach(row => {
                             const dateInput = row.querySelector('.course-date');
                             const stockInput = row.querySelector('.course-stock');
+                            const buttonTextInput = row.querySelector('.course-button-text');
                             if (dateInput && dateInput.value.trim() !== '') {
                                 dates.push({
                                     date: dateInput.value.trim(),
-                                    stock: stockInput ? stockInput.value : stock
+                                    stock: stockInput ? stockInput.value : stock,
+                                    button_text: buttonTextInput ? buttonTextInput.value.trim() : 'Enroll Now'
                                 });
                             }
                         });
@@ -994,6 +1000,15 @@ function course_box_manager_page() {
                             availableSpan.style.cssText = 'width: 80px; text-align: center; font-weight: bold; color: #46b450;';
                             availableSpan.textContent = defaultStock;
                             
+                            // Button text input
+                            const buttonTextInput = document.createElement('input');
+                            buttonTextInput.type = 'text';
+                            buttonTextInput.className = 'course-button-text';
+                            buttonTextInput.setAttribute('data-index', index);
+                            buttonTextInput.placeholder = 'Enroll Now';
+                            buttonTextInput.value = 'Enroll Now';
+                            buttonTextInput.style.cssText = 'width: 150px; padding: 5px;';
+                            
                             // Actions div
                             const actionsDiv = document.createElement('div');
                             actionsDiv.style.width = '100px';
@@ -1036,6 +1051,7 @@ function course_box_manager_page() {
                             wrapper.appendChild(newStockInput);
                             wrapper.appendChild(soldSpan);
                             wrapper.appendChild(availableSpan);
+                            wrapper.appendChild(buttonTextInput);
                             wrapper.appendChild(actionsDiv);
                             
                             // Insert before the add button
@@ -1507,11 +1523,12 @@ function save_course_settings() {
             if (is_array($date_info) && isset($date_info['date']) && !empty($date_info['date'])) {
                 $formatted_dates[] = [
                     'date' => $date_info['date'],
-                    'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $stock
+                    'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $stock,
+                    'button_text' => isset($date_info['button_text']) ? sanitize_text_field($date_info['button_text']) : 'Enroll Now'
                 ];
             } elseif (is_string($date_info) && !empty($date_info)) {
                 // Legacy support for simple date strings
-                $formatted_dates[] = ['date' => $date_info, 'stock' => $stock];
+                $formatted_dates[] = ['date' => $date_info, 'stock' => $stock, 'button_text' => 'Enroll Now'];
             }
         }
     }

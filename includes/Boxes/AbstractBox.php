@@ -37,8 +37,9 @@ abstract class AbstractBox {
         $this->course_price = get_field('course_price', $this->course_id) ?: 749.99;
         $this->enroll_price = get_field('enroll_price', $this->course_id) ?: 1249.99;
         
-        $available_dates = get_field('course_dates', $this->course_id) ?: [];
-        $this->available_dates = array_column($available_dates, 'date');
+        $available_dates_raw = get_field('course_dates', $this->course_id) ?: [];
+        $this->available_dates = array_column($available_dates_raw, 'date');
+        $this->available_dates_full = $available_dates_raw; // Keep full date info with stock and button_text
         
         // Debug logging
         error_log('[CBM Debug] Course ' . $this->course_id . ' properties:');
