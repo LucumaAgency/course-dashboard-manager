@@ -8,6 +8,7 @@
 namespace CourseBoxManager;
 
 use CourseBoxManager\BoxFactory;
+use CourseBoxManager\Boxes\CombinedBox;
 
 class BoxRenderer {
     
@@ -56,7 +57,42 @@ class BoxRenderer {
             return '';
         }
         
-        $boxes = BoxFactory::get_boxes_for_courses($courses);
+        // Check for mixed states (buy-course and enroll-course)
+        $buy_course_id = null;
+        $enroll_course_id = null;
+        $other_courses = [];
+        
+        foreach ($courses as $course_id) {
+            $box_state = get_post_meta($course_id, 'box_state', true);
+            if ($box_state === 'buy-course' && !$buy_course_id) {
+                $buy_course_id = $course_id;
+            } elseif ($box_state === 'enroll-course' && !$enroll_course_id) {
+                $enroll_course_id = $course_id;
+            } else {
+                $other_courses[] = $course_id;
+            }
+        }
+        
+        $boxes = [];
+        
+        // If we have both buy and enroll courses, create a combined box
+        if ($buy_course_id && $enroll_course_id) {
+            error_log('[CBM Debug] Creating combined box for buy course ' . $buy_course_id . ' and enroll course ' . $enroll_course_id);
+            $combined_box = new CombinedBox($buy_course_id, $enroll_course_id);
+            $boxes[] = $combined_box;
+            
+            // Add boxes for any other courses
+            foreach ($other_courses as $course_id) {
+                $box = BoxFactory::get_box($course_id);
+                if ($box) {
+                    $boxes[] = $box;
+                }
+            }
+        } else {
+            // No mixed states, use regular box creation
+            $boxes = BoxFactory::get_boxes_for_courses($courses);
+        }
+        
         error_log('[CBM Debug] Created ' . count($boxes) . ' boxes from courses');
         
         ob_start();
