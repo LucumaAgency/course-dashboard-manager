@@ -130,9 +130,10 @@ abstract class AbstractBox {
     protected function format_price($price) {
         // Use webinar_price shortcode if it exists
         if (shortcode_exists('webinar_price')) {
+            // Return the HTML output from the shortcode without escaping
             return do_shortcode('[webinar_price]');
         }
-        // Fallback to original formatting
+        // Fallback to original formatting (this should be escaped when used)
         return sprintf($this->price_format, $price);
     }
     

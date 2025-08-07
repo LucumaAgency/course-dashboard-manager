@@ -37,7 +37,7 @@ class BuyCourseBox extends AbstractBox {
                     <?php echo $this->render_selection_indicator(); ?>
                     <div>
                         <h3>Buy This Course</h3>
-                        <p class="price"><?php echo esc_html($this->format_price($this->course_price)); ?></p>
+                        <div class="box-price"><?php echo $this->format_price($this->course_price); ?></div>
                         <p class="description">Pay once, own the course forever.</p>
                     </div>
                 </div>

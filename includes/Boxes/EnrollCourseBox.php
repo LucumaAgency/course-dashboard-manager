@@ -58,7 +58,7 @@ class EnrollCourseBox extends AbstractBox {
                     <?php echo $this->render_selection_indicator(); ?>
                     <div>
                         <h3>Enroll in the Live Course</h3>
-                        <p><?php echo esc_html($this->format_price($this->enroll_price)); ?></p>
+                        <div class="box-price"><?php echo $this->format_price($this->enroll_price); ?></div>
                         <p class="description">Join weekly live sessions with feedback and expert mentorship.</p>
                     </div>
                 </div>
