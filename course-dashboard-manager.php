@@ -863,6 +863,23 @@ function course_box_manager_page() {
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
+                                // Update box state dropdown if it changed
+                                if (data.data && data.data.updated_box_state) {
+                                    const boxStateSelect = document.querySelector(`.box-state-select[data-course-id="${courseId}"]`);
+                                    if (boxStateSelect) {
+                                        boxStateSelect.value = data.data.updated_box_state;
+                                        
+                                        // Show notification if state was auto-changed to waitlist
+                                        if (data.data.updated_box_state === 'waitlist' && boxState === 'enroll-course' && dates.length === 0) {
+                                            const notification = document.createElement('div');
+                                            notification.style.cssText = 'background: #f0ad4e; color: #333; padding: 10px; margin: 10px 0; border-radius: 4px;';
+                                            notification.textContent = '⚠️ Box state automatically changed to Waitlist because no dates are configured.';
+                                            boxStateSelect.parentElement.appendChild(notification);
+                                            setTimeout(() => notification.remove(), 5000);
+                                        }
+                                    }
+                                }
+                                
                                 // Show success message without redirecting
                                 const button = document.querySelector(`.save-course-settings[data-course-id="${courseId}"]`);
                                 
@@ -1483,6 +1500,27 @@ function save_course_settings() {
         }
     }
 
+    // Process dates first to determine if we need to change state
+    $formatted_dates = [];
+    if ($dates && is_array($dates)) {
+        foreach ($dates as $date_info) {
+            if (is_array($date_info) && isset($date_info['date']) && !empty($date_info['date'])) {
+                $formatted_dates[] = [
+                    'date' => $date_info['date'],
+                    'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $stock
+                ];
+            } elseif (is_string($date_info) && !empty($date_info)) {
+                // Legacy support for simple date strings
+                $formatted_dates[] = ['date' => $date_info, 'stock' => $stock];
+            }
+        }
+    }
+    
+    // Auto-change to waitlist if enroll-course has no dates
+    if ($box_state === 'enroll-course' && empty($formatted_dates)) {
+        $box_state = 'waitlist';
+    }
+    
     update_post_meta($course_id, 'box_state', $box_state);
     update_post_meta($course_id, 'course_instructors', $instructors);
     
@@ -1499,20 +1537,9 @@ function save_course_settings() {
             wp_set_post_terms($linked_product_id, [], 'course_group');
         }
     }
-    if ($dates && !empty($dates)) {
-        // Process dates with stock information
-        $formatted_dates = [];
-        foreach ($dates as $date_info) {
-            if (is_array($date_info) && isset($date_info['date'])) {
-                $formatted_dates[] = [
-                    'date' => $date_info['date'],
-                    'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $stock
-                ];
-            } elseif (is_string($date_info)) {
-                // Legacy support for simple date strings
-                $formatted_dates[] = ['date' => $date_info, 'stock' => $stock];
-            }
-        }
+    
+    // Update or delete dates field
+    if (!empty($formatted_dates)) {
         update_field('course_dates', $formatted_dates, $course_id);
     } else {
         // Delete dates field when empty array or no dates
@@ -1528,7 +1555,7 @@ function save_course_settings() {
         }
     }
 
-    wp_send_json_success();
+    wp_send_json_success(['updated_box_state' => $box_state]);
 }
 
 add_action('wp_ajax_remove_course_from_group', 'remove_course_from_group');
