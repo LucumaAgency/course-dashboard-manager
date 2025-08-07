@@ -324,83 +324,6 @@ function course_box_manager_page() {
                 <a href="?page=course-box-manager" class="button">Back to Groups</a>
             <?php endif; ?>
             <div style="margin-top: 20px;">
-                <?php 
-                // Calculate seats availability for display
-                $product_id = get_post_meta($course_id, 'linked_product_id', true);
-                if ($product_id) {
-                    ?>
-                    <div style="background: #f1f1f1; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-                        <h3 style="margin-top: 0;">Seats Availability</h3>
-                        <?php
-                        if (!empty($dates)) {
-                            echo '<table style="width: 100%; border-collapse: collapse;">';
-                            echo '<thead><tr style="border-bottom: 1px solid #ccc;">';
-                            echo '<th style="text-align: left; padding: 5px;">Date</th>';
-                            echo '<th style="text-align: center; padding: 5px;">Total Seats</th>';
-                            echo '<th style="text-align: center; padding: 5px;">Sold</th>';
-                            echo '<th style="text-align: center; padding: 5px;">Available</th>';
-                            echo '</tr></thead><tbody>';
-                            
-                            $total_seats_all = 0;
-                            $total_sold_all = 0;
-                            $total_available_all = 0;
-                            
-                            foreach ($dates as $date) {
-                                if (isset($date['date'])) {
-                                    $stock = isset($date['stock']) ? intval($date['stock']) : $course_stock;
-                                    $sold = $product_id ? calculate_seats_sold($product_id, $date['date']) : 0;
-                                    $available = max(0, $stock - $sold);
-                                    
-                                    $total_seats_all += $stock;
-                                    $total_sold_all += $sold;
-                                    $total_available_all += $available;
-                                    
-                                    $row_class = '';
-                                    if ($stock > 0) {
-                                        $percentage = ($available / $stock) * 100;
-                                        if ($percentage <= 20) $row_class = 'low-seats';
-                                        elseif ($percentage <= 50) $row_class = 'medium-seats';
-                                    }
-                                    
-                                    echo '<tr>';
-                                    echo '<td style="padding: 5px;">' . esc_html($date['date']) . '</td>';
-                                    echo '<td style="text-align: center; padding: 5px;">' . esc_html($stock) . '</td>';
-                                    echo '<td style="text-align: center; padding: 5px;">' . esc_html($sold) . '</td>';
-                                    echo '<td style="text-align: center; padding: 5px;" class="' . esc_attr($row_class) . '"><strong>' . esc_html($available) . '</strong></td>';
-                                    echo '</tr>';
-                                }
-                            }
-                            
-                            echo '<tr style="border-top: 2px solid #333; font-weight: bold;">';
-                            echo '<td style="padding: 5px;">TOTAL</td>';
-                            echo '<td style="text-align: center; padding: 5px;">' . esc_html($total_seats_all) . '</td>';
-                            echo '<td style="text-align: center; padding: 5px;">' . esc_html($total_sold_all) . '</td>';
-                            echo '<td style="text-align: center; padding: 5px;">' . esc_html($total_available_all) . '</td>';
-                            echo '</tr>';
-                            
-                            echo '</tbody></table>';
-                        } else {
-                            // Single stock for all dates
-                            $sold = calculate_seats_sold($product_id);
-                            $available = max(0, $course_stock - $sold);
-                            
-                            echo '<p><strong>Total Seats:</strong> ' . esc_html($course_stock) . '</p>';
-                            echo '<p><strong>Seats Sold:</strong> ' . esc_html($sold) . '</p>';
-                            echo '<p><strong>Seats Available:</strong> <span class="';
-                            
-                            if ($course_stock > 0) {
-                                $percentage = ($available / $course_stock) * 100;
-                                if ($percentage <= 20) echo 'low-seats';
-                                elseif ($percentage <= 50) echo 'medium-seats';
-                            }
-                            
-                            echo '">' . esc_html($available) . '</span></p>';
-                        }
-                        ?>
-                    </div>
-                    <?php
-                }
-                ?>
                 <h3>Course Settings</h3>
                 <table class="form-table">
                     <tr>
@@ -545,27 +468,6 @@ function course_box_manager_page() {
                                 </div>
                             </td>
                         </tr>
-                    <tr>
-                        <th><label>Associated Product</label></th>
-                        <td>
-                            <select id="linked-product" data-course-id="<?php echo esc_attr($course_id); ?>">
-                                <option value="0">None</option>
-                                <?php
-                                // Get all WooCommerce products
-                                $products = get_posts([
-                                    'post_type' => 'product',
-                                    'posts_per_page' => -1,
-                                    'orderby' => 'title',
-                                    'order' => 'ASC'
-                                ]);
-                                foreach ($products as $product) {
-                                    echo '<option value="' . esc_attr($product->ID) . '"' . ($product_id == $product->ID ? ' selected' : '') . '>' . esc_html($product->post_title) . '</option>';
-                                }
-                                ?>
-                            </select>
-                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Select the WooCommerce product for this course</p>
-                        </td>
-                    </tr>
                     <tr>
                         <th><label>Selling Page</label></th>
                         <td>
