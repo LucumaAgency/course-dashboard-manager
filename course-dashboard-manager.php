@@ -12,6 +12,9 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
+// Debug: Confirm plugin is loaded
+error_log('Course Box Manager plugin loaded');
+
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -31,6 +34,8 @@ spl_autoload_register(function ($class) {
     
     if (file_exists($file)) {
         require_once $file;
+    } else {
+        error_log('Course Box Manager: Failed to load class file: ' . $file);
     }
 });
 
@@ -79,10 +84,11 @@ add_filter('fkcart_disabled_post_types', function ($post_types) {
 // Add admin menu for dashboard
 add_action('admin_menu', 'course_box_manager_menu');
 function course_box_manager_menu() {
+    error_log('Course Box Manager: Adding admin menu');
     add_menu_page(
         'Course Box Manager',
         'Course Boxes',
-        'edit_posts', // Instructors (with edit_posts capability) can view
+        'manage_options', // Changed from edit_posts to manage_options for admin-only access
         'course-box-manager',
         'course_box_manager_page',
         'dashicons-list-view',
@@ -104,6 +110,7 @@ function calculate_seats_sold($product_id, $date_text = null) {
     
     // Check if WooCommerce is available
     if (!function_exists('wc_get_orders')) {
+        error_log('Course Box Manager: WooCommerce not available for calculate_seats_sold');
         return 0;
     }
     
@@ -134,6 +141,7 @@ function calculate_seats_sold($product_id, $date_text = null) {
 
 // Dashboard page content
 function course_box_manager_page() {
+    error_log('Course Box Manager: Rendering course_box_manager_page');
     ?>
     <div class="wrap">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
@@ -298,7 +306,7 @@ function sync_course_to_product_and_page($post_id, $post, $update) {
         update_post_meta($post_id, 'box_state', 'waitlist');
         error_log('No dates available for course ID ' . $post_id . ', setting box_state to waitlist');
     } else {
-        // Optionally, revert to 'enroll-course' if dates are present and box_state is 'waitlist'
+        // Revert to 'enroll-course' if dates are present and box_state is 'waitlist'
         $current_box_state = get_post_meta($post_id, 'box_state', true) ?: 'enroll-course';
         if ($current_box_state === 'waitlist') {
             update_post_meta($post_id, 'box_state', 'enroll-course');
