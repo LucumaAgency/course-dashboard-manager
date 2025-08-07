@@ -674,6 +674,11 @@ function course_box_manager_page() {
             .add-date:hover {
                 background: #005a87;
             }
+            @keyframes pulse {
+                0% { opacity: 1; }
+                50% { opacity: 0.6; }
+                100% { opacity: 1; }
+            }
             .edit-seats {
                 padding: 2px 8px;
                 font-size: 11px;
@@ -860,6 +865,12 @@ function course_box_manager_page() {
                             if (data.success) {
                                 // Show success message without redirecting
                                 const button = document.querySelector(`.save-course-settings[data-course-id="${courseId}"]`);
+                                
+                                // Reset button appearance
+                                button.style.backgroundColor = '';
+                                button.style.animation = '';
+                                button.textContent = 'Save Settings';
+                                
                                 const successMsg = document.createElement('span');
                                 successMsg.style.cssText = 'color: #46b450; margin-left: 10px; font-weight: bold;';
                                 successMsg.textContent = '✓ Settings saved successfully!';
@@ -984,6 +995,14 @@ function course_box_manager_page() {
                             removeButton.addEventListener('click', function() {
                                 wrapper.remove();
                                 updateSummary();
+                                
+                                // Show save reminder
+                                const saveButton = document.querySelector(`.save-course-settings[data-course-id="${courseId}"]`);
+                                if (saveButton) {
+                                    saveButton.style.backgroundColor = '#f0ad4e';
+                                    saveButton.textContent = 'Save Settings (Changes Pending)';
+                                    saveButton.style.animation = 'pulse 1s infinite';
+                                }
                             });
                             
                             // Listen for stock changes to update available seats
@@ -1021,6 +1040,17 @@ function course_box_manager_page() {
                             if (confirm('Are you sure you want to remove this date?')) {
                                 button.closest('.date-stock-row').remove();
                                 updateSummary();
+                                
+                                // Show save reminder
+                                const saveButton = document.querySelector(`.save-course-settings[data-course-id="${courseId}"]`);
+                                if (saveButton) {
+                                    // Add visual indicator that changes need to be saved
+                                    saveButton.style.backgroundColor = '#f0ad4e';
+                                    saveButton.textContent = 'Save Settings (Changes Pending)';
+                                    
+                                    // Add pulsing animation
+                                    saveButton.style.animation = 'pulse 1s infinite';
+                                }
                             }
                         });
                     });
