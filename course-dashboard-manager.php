@@ -284,7 +284,7 @@ function course_box_manager_page() {
                             </td>
                             <td>
                                 <button class="button button-primary edit-course-settings" data-course-id="<?php echo esc_attr($course_id); ?>">Edit</button>
-                                <button class="button delete-course" data-course-id="<?php echo esc_attr($course_id); ?>">Delete</button>
+                                <button class="button remove-from-group" data-course-id="<?php echo esc_attr($course_id); ?>" data-group-id="<?php echo esc_attr($group_id); ?>">Remove from Group</button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -876,10 +876,33 @@ function course_box_manager_page() {
                     });
                 });
 
-                // Delete Course
+                // Remove Course from Group
+                document.querySelectorAll('.remove-from-group').forEach(button => {
+                    button.addEventListener('click', function() {
+                        if (!confirm('Are you sure you want to remove this course from the group?')) return;
+                        const courseId = this.getAttribute('data-course-id');
+                        const groupId = this.getAttribute('data-group-id');
+                        fetch(ajaxurl + '?action=remove_course_from_group', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: 'course_id=' + courseId + '&group_id=' + groupId + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('Course removed from group successfully!');
+                                location.reload();
+                            } else {
+                                alert('Error: ' + data.data);
+                            }
+                        });
+                    });
+                });
+                
+                // Delete Course (only used elsewhere, not in group view)
                 document.querySelectorAll('.delete-course').forEach(button => {
                     button.addEventListener('click', function() {
-                        if (!confirm('Are you sure you want to delete this course?')) return;
+                        if (!confirm('Are you sure you want to delete this course permanently?')) return;
                         const courseId = this.getAttribute('data-course-id');
                         fetch(ajaxurl + '?action=delete_course', {
                             method: 'POST',
@@ -1474,6 +1497,18 @@ function save_course_settings() {
         }
     }
 
+    wp_send_json_success();
+}
+
+add_action('wp_ajax_remove_course_from_group', 'remove_course_from_group');
+function remove_course_from_group() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    $course_id = intval($_POST['course_id']);
+    $group_id = intval($_POST['group_id']);
+    
+    // Remove the course from the group
+    wp_remove_object_terms($course_id, $group_id, 'course_group');
+    
     wp_send_json_success();
 }
 
