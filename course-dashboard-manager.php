@@ -1499,7 +1499,7 @@ function save_course_settings() {
             wp_set_post_terms($linked_product_id, [], 'course_group');
         }
     }
-    if ($dates) {
+    if ($dates && !empty($dates)) {
         // Process dates with stock information
         $formatted_dates = [];
         foreach ($dates as $date_info) {
@@ -1515,6 +1515,7 @@ function save_course_settings() {
         }
         update_field('course_dates', $formatted_dates, $course_id);
     } else {
+        // Delete dates field when empty array or no dates
         delete_field('course_dates', $course_id);
     }
 
@@ -1569,17 +1570,23 @@ function save_inline_dates() {
     $formatted_dates = [];
     $course_stock = get_field('course_stock', $course_id) ?: 0;
     
-    foreach ($dates as $date_info) {
-        if (isset($date_info['date']) && !empty($date_info['date'])) {
-            $formatted_dates[] = [
-                'date' => $date_info['date'],
-                'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $course_stock
-            ];
+    if ($dates && !empty($dates)) {
+        foreach ($dates as $date_info) {
+            if (isset($date_info['date']) && !empty($date_info['date'])) {
+                $formatted_dates[] = [
+                    'date' => $date_info['date'],
+                    'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : $course_stock
+                ];
+            }
         }
     }
     
-    // Update ACF field
-    update_field('course_dates', $formatted_dates, $course_id);
+    // Update or delete ACF field based on whether we have dates
+    if (!empty($formatted_dates)) {
+        update_field('course_dates', $formatted_dates, $course_id);
+    } else {
+        delete_field('course_dates', $course_id);
+    }
     
     // Calculate new summary
     $product_id = get_post_meta($course_id, 'linked_product_id', true);
