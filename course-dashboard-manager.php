@@ -207,28 +207,66 @@ function course_box_tables_page() {
                     ],
                 ],
             ]);
+            
+            // Get first course settings for group defaults
+            $first_course_id = !empty($courses) ? $courses[0]->ID : 0;
+            $default_box_state = $first_course_id ? get_post_meta($first_course_id, 'box_state', true) : 'enroll-course';
+            $default_instructors = $first_course_id ? get_post_meta($first_course_id, 'course_instructors', true) : [];
+            $default_instructor = !empty($default_instructors) ? $default_instructors[0] : '';
             ?>
             <h2>Group: <?php echo esc_html($group->name); ?></h2>
             <a href="?page=course-box-tables" class="button">← Back to Groups</a>
             
+            <!-- Group Settings -->
+            <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px;">
+                <h3 style="margin-top: 0;">Group Settings</h3>
+                <div style="display: flex; gap: 30px; align-items: center;">
+                    <div>
+                        <label for="group-box-state"><strong>Box State:</strong></label>
+                        <select id="group-box-state" style="margin-left: 10px; padding: 5px;">
+                            <option value="enroll-course" <?php selected($default_box_state, 'enroll-course'); ?>>Enroll Course</option>
+                            <option value="buy-course" <?php selected($default_box_state, 'buy-course'); ?>>Buy Course</option>
+                            <option value="countdown" <?php selected($default_box_state, 'countdown'); ?>>Countdown Box</option>
+                            <option value="waitlist" <?php selected($default_box_state, 'waitlist'); ?>>Waitlist</option>
+                            <option value="soldout" <?php selected($default_box_state, 'soldout'); ?>>Sold Out</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="group-instructor"><strong>Instructor:</strong></label>
+                        <select id="group-instructor" style="margin-left: 10px; padding: 5px;">
+                            <option value="">None</option>
+                            <?php
+                            $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1]);
+                            foreach ($all_instructors as $instructor) {
+                                echo '<option value="' . esc_attr($instructor->ID) . '"' . selected($default_instructor, $instructor->ID, false) . '>' . 
+                                     esc_html($instructor->post_title) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div>
+                        <button id="apply-group-settings" class="button button-primary">Apply to All Courses</button>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Courses Table -->
-            <table class="wp-list-table widefat fixed striped" id="courses-table" style="margin-top: 20px;">
-                <thead>
-                    <tr>
-                        <th style="width: 10%;">Date</th>
-                        <th style="width: 15%;">Associated Product</th>
-                        <th style="width: 15%;">Instructor</th>
-                        <th style="width: 8%;">Total Seats</th>
-                        <th style="width: 6%;">Sold</th>
-                        <th style="width: 8%;">Available</th>
-                        <th style="width: 13%;">Button Text</th>
-                        <th style="width: 13%;">Box State</th>
-                        <th style="width: 12%;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    // Get all products for dropdown
+            <div id="table-container">
+                <button id="add-new-row" class="button button-primary" style="margin-bottom: 10px;">+ Add New Row</button>
+                <table class="wp-list-table widefat fixed striped" id="courses-table" style="margin-top: 10px;">
+                    <thead id="table-header">
+                        <!-- Dynamic header based on box state -->
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Dynamic content based on box state -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Hidden data for JavaScript -->
+            <script>
+                var coursesData = <?php 
+                    $courses_json = [];
                     $all_products = [];
                     if (function_exists('wc_get_products')) {
                         $products = wc_get_products(['limit' => -1, 'orderby' => 'title', 'order' => 'ASC', 'status' => 'publish']);
@@ -237,210 +275,24 @@ function course_box_tables_page() {
                         }
                     }
                     
-                    // Get all instructors for dropdown
-                    $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1]);
-                    
-                    foreach ($courses as $course) :
+                    foreach ($courses as $course) {
                         $course_id = $course->ID;
                         $product_id = get_post_meta($course_id, 'linked_product_id', true);
-                        $box_state = get_post_meta($course_id, 'box_state', true) ?: 'enroll-course';
-                        $course_stock = get_field('course_stock', $course_id) ?: 0;
-                        $dates = get_field('course_dates', $course_id) ?: [];
-                        $instructors = get_post_meta($course_id, 'course_instructors', true) ?: [];
-                        
-                        // Process each date as a separate row
-                        if (!empty($dates)) {
-                            foreach ($dates as $date_index => $date_info) :
-                                if (!isset($date_info['date']) || empty($date_info['date'])) continue;
-                                
-                                $stock = isset($date_info['stock']) ? intval($date_info['stock']) : $course_stock;
-                                $button_text = isset($date_info['button_text']) ? $date_info['button_text'] : 'Enroll Now';
-                                $sold = $product_id ? calculate_seats_sold($product_id, $date_info['date']) : 0;
-                                $available = max(0, $stock - $sold);
-                                
-                                // Determine row color based on availability
-                                $row_class = '';
-                                if ($available <= 0) {
-                                    $row_class = 'soldout-row';
-                                } elseif ($available <= 5) {
-                                    $row_class = 'low-stock-row';
-                                } elseif ($available <= 10) {
-                                    $row_class = 'medium-stock-row';
-                                }
-                    ?>
-                                <tr class="course-row editable-row <?php echo esc_attr($row_class); ?>" 
-                                    data-course-id="<?php echo esc_attr($course_id); ?>"
-                                    data-date-index="<?php echo esc_attr($date_index); ?>">
-                                    <td>
-                                        <input type="text" 
-                                               class="inline-edit-date" 
-                                               value="<?php echo esc_attr($date_info['date']); ?>"
-                                               data-course-id="<?php echo esc_attr($course_id); ?>"
-                                               data-date-index="<?php echo esc_attr($date_index); ?>"
-                                               placeholder="YYYY-MM-DD"
-                                               style="width: 100%; padding: 3px;">
-                                    </td>
-                                    <td>
-                                        <select class="inline-edit-product" 
-                                                data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                style="width: 100%; padding: 3px;">
-                                            <option value="">None</option>
-                                            <?php foreach ($all_products as $prod_id => $prod_name) : ?>
-                                                <option value="<?php echo esc_attr($prod_id); ?>" <?php selected($product_id, $prod_id); ?>>
-                                                    <?php echo esc_html($prod_name); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="inline-edit-instructor" 
-                                                data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                style="width: 100%; padding: 3px;">
-                                            <option value="">None</option>
-                                            <?php 
-                                            // Get the first instructor for this course (for simplicity)
-                                            $selected_instructor = !empty($instructors) ? $instructors[0] : '';
-                                            foreach ($all_instructors as $instructor) : ?>
-                                                <option value="<?php echo esc_attr($instructor->ID); ?>" <?php selected($selected_instructor, $instructor->ID); ?>>
-                                                    <?php echo esc_html($instructor->post_title); ?>
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="number" 
-                                               class="inline-edit-stock" 
-                                               value="<?php echo esc_attr($stock); ?>"
-                                               data-course-id="<?php echo esc_attr($course_id); ?>"
-                                               data-date-index="<?php echo esc_attr($date_index); ?>"
-                                               min="0"
-                                               style="width: 100%; padding: 3px;">
-                                    </td>
-                                    <td style="text-align: center;">
-                                        <span class="sold-count"><?php echo esc_html($sold); ?></span>
-                                    </td>
-                                    <td style="text-align: center;">
-                                        <span class="available-count" style="color: <?php echo $available <= 5 ? '#d54e21' : ($available <= 10 ? '#f0ad4e' : '#46b450'); ?>; font-weight: bold;">
-                                            <?php echo esc_html($available); ?>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <input type="text" 
-                                               class="inline-edit-button-text" 
-                                               value="<?php echo esc_attr($button_text); ?>"
-                                               data-course-id="<?php echo esc_attr($course_id); ?>"
-                                               data-date-index="<?php echo esc_attr($date_index); ?>"
-                                               style="width: 100%; padding: 3px;">
-                                    </td>
-                                    <td>
-                                        <select class="inline-edit-box-state" 
-                                                data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                style="width: 100%; padding: 3px;">
-                                            <option value="enroll-course" <?php selected($box_state, 'enroll-course'); ?>>Enroll Course</option>
-                                            <option value="buy-course" <?php selected($box_state, 'buy-course'); ?>>Buy Course</option>
-                                            <option value="waitlist" <?php selected($box_state, 'waitlist'); ?>>Waitlist</option>
-                                            <option value="soldout" <?php selected($box_state, 'soldout'); ?>>Sold Out</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <button class="button button-small button-primary save-row-changes" 
-                                                data-course-id="<?php echo esc_attr($course_id); ?>"
-                                                data-date-index="<?php echo esc_attr($date_index); ?>">
-                                            Save
-                                        </button>
-                                        <span class="save-status" style="margin-left: 5px;"></span>
-                                    </td>
-                                </tr>
-                    <?php 
-                            endforeach;
-                        } else {
-                            // Show course with no dates - allow adding
-                    ?>
-                            <tr class="course-row no-dates-row editable-row" 
-                                data-course-id="<?php echo esc_attr($course_id); ?>"
-                                data-date-index="new">
-                                <td>
-                                    <input type="text" 
-                                           class="inline-edit-date" 
-                                           value=""
-                                           data-course-id="<?php echo esc_attr($course_id); ?>"
-                                           data-date-index="new"
-                                           placeholder="YYYY-MM-DD"
-                                           style="width: 100%; padding: 3px;">
-                                </td>
-                                <td>
-                                    <select class="inline-edit-product" 
-                                            data-course-id="<?php echo esc_attr($course_id); ?>"
-                                            style="width: 100%; padding: 3px;">
-                                        <option value="">None</option>
-                                        <?php foreach ($all_products as $prod_id => $prod_name) : ?>
-                                            <option value="<?php echo esc_attr($prod_id); ?>" <?php selected($product_id, $prod_id); ?>>
-                                                <?php echo esc_html($prod_name); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td>
-                                    <select class="inline-edit-instructor" 
-                                            data-course-id="<?php echo esc_attr($course_id); ?>"
-                                            style="width: 100%; padding: 3px;">
-                                        <option value="">None</option>
-                                        <?php 
-                                        $selected_instructor = !empty($instructors) ? $instructors[0] : '';
-                                        foreach ($all_instructors as $instructor) : ?>
-                                            <option value="<?php echo esc_attr($instructor->ID); ?>" <?php selected($selected_instructor, $instructor->ID); ?>>
-                                                <?php echo esc_html($instructor->post_title); ?>
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="number" 
-                                           class="inline-edit-stock" 
-                                           value="20"
-                                           data-course-id="<?php echo esc_attr($course_id); ?>"
-                                           data-date-index="new"
-                                           min="0"
-                                           style="width: 100%; padding: 3px;">
-                                </td>
-                                <td style="text-align: center;">
-                                    <span class="sold-count">0</span>
-                                </td>
-                                <td style="text-align: center;">
-                                    <span class="available-count" style="color: #46b450; font-weight: bold;">20</span>
-                                </td>
-                                <td>
-                                    <input type="text" 
-                                           class="inline-edit-button-text" 
-                                           value="Enroll Now"
-                                           data-course-id="<?php echo esc_attr($course_id); ?>"
-                                           data-date-index="new"
-                                           style="width: 100%; padding: 3px;">
-                                </td>
-                                <td>
-                                    <select class="inline-edit-box-state" 
-                                            data-course-id="<?php echo esc_attr($course_id); ?>"
-                                            style="width: 100%; padding: 3px;">
-                                        <option value="enroll-course" <?php selected($box_state, 'enroll-course'); ?>>Enroll Course</option>
-                                        <option value="buy-course" <?php selected($box_state, 'buy-course'); ?>>Buy Course</option>
-                                        <option value="waitlist" <?php selected($box_state, 'waitlist'); ?>>Waitlist</option>
-                                        <option value="soldout" <?php selected($box_state, 'soldout'); ?>>Sold Out</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <button class="button button-small button-primary save-row-changes" 
-                                            data-course-id="<?php echo esc_attr($course_id); ?>"
-                                            data-date-index="new">
-                                        Add
-                                    </button>
-                                    <span class="save-status" style="margin-left: 5px;"></span>
-                                </td>
-                            </tr>
-                    <?php
-                        }
-                    endforeach; ?>
-                </tbody>
-            </table>
+                        $launch_date = $product_id ? get_post_meta($product_id, '_launch_date', true) : '';
+                        $courses_json[] = [
+                            'id' => $course_id,
+                            'title' => $course->post_title,
+                            'product_id' => $product_id,
+                            'launch_date' => $launch_date,
+                            'dates' => get_field('course_dates', $course_id) ?: [],
+                            'stock' => get_field('course_stock', $course_id) ?: 0
+                        ];
+                    }
+                    echo json_encode($courses_json);
+                ?>;
+                var allProducts = <?php echo json_encode($all_products); ?>;
+                var groupId = <?php echo $group_id; ?>;
+            </script>
         <?php endif; ?>
         
         <style>
@@ -493,109 +345,316 @@ function course_box_tables_page() {
         
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                // Track changes in editable fields
-                document.querySelectorAll('.editable-row input, .editable-row select').forEach(field => {
-                    field.addEventListener('change', function() {
-                        const row = this.closest('tr');
-                        row.classList.add('has-changes');
-                        
-                        // Update available seats when stock changes
-                        if (this.classList.contains('inline-edit-stock')) {
-                            const soldCount = parseInt(row.querySelector('.sold-count').textContent) || 0;
-                            const newStock = parseInt(this.value) || 0;
-                            const available = Math.max(0, newStock - soldCount);
-                            const availableSpan = row.querySelector('.available-count');
-                            availableSpan.textContent = available;
+                let currentBoxState = document.getElementById('group-box-state').value;
+                let rowCounter = 0;
+                
+                // Function to render table based on box state
+                function renderTable(boxState) {
+                    const tableHeader = document.getElementById('table-header');
+                    const tableBody = document.getElementById('table-body');
+                    const addButton = document.getElementById('add-new-row');
+                    const tableContainer = document.getElementById('table-container');
+                    
+                    // Clear existing content
+                    tableHeader.innerHTML = '';
+                    tableBody.innerHTML = '';
+                    
+                    // Show/hide elements based on state
+                    if (boxState === 'waitlist') {
+                        tableContainer.style.display = 'none';
+                        return;
+                    } else {
+                        tableContainer.style.display = 'block';
+                    }
+                    
+                    // Build header based on box state
+                    let headerHTML = '<tr>';
+                    if (boxState === 'enroll-course' || boxState === 'soldout') {
+                        headerHTML += '<th style="width: 15%;">Date</th>';
+                        headerHTML += '<th style="width: 20%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 12%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 10%;">Sold</th>';
+                        headerHTML += '<th style="width: 12%;">Available</th>';
+                        headerHTML += '<th style="width: 18%;">Button Text</th>';
+                        headerHTML += '<th style="width: 13%;">Actions</th>';
+                    } else if (boxState === 'buy-course') {
+                        headerHTML += '<th style="width: 30%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 15%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 15%;">Available</th>';
+                        headerHTML += '<th style="width: 25%;">Button Text</th>';
+                        headerHTML += '<th style="width: 15%;">Actions</th>';
+                    } else if (boxState === 'countdown') {
+                        headerHTML += '<th style="width: 12%;">Date</th>';
+                        headerHTML += '<th style="width: 18%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 18%;">Launch Date & Time</th>';
+                        headerHTML += '<th style="width: 10%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 8%;">Sold</th>';
+                        headerHTML += '<th style="width: 10%;">Available</th>';
+                        headerHTML += '<th style="width: 14%;">Button Text</th>';
+                        headerHTML += '<th style="width: 10%;">Actions</th>';
+                    }
+                    headerHTML += '</tr>';
+                    tableHeader.innerHTML = headerHTML;
+                    
+                    // Build table rows
+                    coursesData.forEach(course => {
+                        if (boxState === 'buy-course') {
+                            // Single row per course for buy-course
+                            addTableRow(course, null, boxState);
+                        } else if (course.dates && course.dates.length > 0) {
+                            // Multiple rows for dates
+                            course.dates.forEach((dateInfo, index) => {
+                                addTableRow(course, {date: dateInfo, index: index}, boxState);
+                            });
+                        } else {
+                            // Add empty row for course without dates
+                            addTableRow(course, null, boxState);
+                        }
+                    });
+                }
+                
+                // Function to add a table row
+                function addTableRow(course, dateInfo, boxState) {
+                    const tableBody = document.getElementById('table-body');
+                    const row = document.createElement('tr');
+                    row.className = 'course-row editable-row';
+                    row.dataset.courseId = course.id;
+                    
+                    if (dateInfo) {
+                        row.dataset.dateIndex = dateInfo.index;
+                    } else {
+                        row.dataset.dateIndex = 'new';
+                    }
+                    
+                    let rowHTML = '';
+                    const stock = boxState === 'soldout' ? 0 : (dateInfo && dateInfo.date.stock ? dateInfo.date.stock : course.stock || 20);
+                    const sold = 0; // Will be calculated server-side
+                    const available = Math.max(0, stock - sold);
+                    const buttonText = dateInfo && dateInfo.date.button_text ? dateInfo.date.button_text : 'Enroll Now';
+                    
+                    if (boxState === 'enroll-course' || boxState === 'soldout') {
+                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" ${boxState === 'soldout' ? 'readonly' : ''} style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
+                        rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
+                        rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${buttonText}" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>
+                            <button class="button button-small button-primary save-row">Save</button>
+                            <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
+                            <span class="save-status" style="margin-left: 5px;"></span>
+                        </td>`;
+                    } else if (boxState === 'buy-course') {
+                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
+                        rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${buttonText}" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>
+                            <button class="button button-small button-primary save-row">Save</button>
+                            <span class="save-status" style="margin-left: 5px;"></span>
+                        </td>`;
+                    } else if (boxState === 'countdown') {
+                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
+                        rowHTML += `<td><input type="datetime-local" class="inline-edit-launch-date" value="${course.launch_date || ''}" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
+                        rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
+                        rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${buttonText}" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>
+                            <button class="button button-small button-primary save-row">Save</button>
+                            <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
+                            <span class="save-status" style="margin-left: 5px;"></span>
+                        </td>`;
+                    }
+                    
+                    row.innerHTML = rowHTML;
+                    tableBody.appendChild(row);
+                    attachRowEventListeners(row);
+                }
+                
+                // Build product select dropdown
+                function buildProductSelect(selectedId) {
+                    let html = '<select class="inline-edit-product" style="width: 100%; padding: 3px;"><option value="">None</option>';
+                    for (let id in allProducts) {
+                        html += `<option value="${id}" ${selectedId == id ? 'selected' : ''}>${allProducts[id]}</option>`;
+                    }
+                    html += '</select>';
+                    return html;
+                }
+                
+                // Attach event listeners to row
+                function attachRowEventListeners(row) {
+                    // Track changes
+                    row.querySelectorAll('input, select').forEach(field => {
+                        field.addEventListener('change', function() {
+                            row.classList.add('has-changes');
                             
-                            // Update color based on availability
-                            if (available <= 5) {
-                                availableSpan.style.color = '#d54e21';
-                            } else if (available <= 10) {
-                                availableSpan.style.color = '#f0ad4e';
-                            } else {
-                                availableSpan.style.color = '#46b450';
+                            // Update available when stock changes
+                            if (this.classList.contains('inline-edit-stock')) {
+                                const soldCount = parseInt(row.querySelector('.sold-count')?.textContent) || 0;
+                                const newStock = parseInt(this.value) || 0;
+                                const available = Math.max(0, newStock - soldCount);
+                                const availableSpan = row.querySelector('.available-count');
+                                if (availableSpan) {
+                                    availableSpan.textContent = available;
+                                    availableSpan.style.color = available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450');
+                                }
                             }
+                        });
+                    });
+                    
+                    // Save button
+                    const saveBtn = row.querySelector('.save-row');
+                    if (saveBtn) {
+                        saveBtn.addEventListener('click', function() {
+                            saveRow(row);
+                        });
+                    }
+                    
+                    // Delete button
+                    const deleteBtn = row.querySelector('.delete-row');
+                    if (deleteBtn) {
+                        deleteBtn.addEventListener('click', function() {
+                            if (confirm('Delete this row?')) {
+                                deleteRow(row);
+                            }
+                        });
+                    }
+                }
+                
+                // Save row function
+                function saveRow(row) {
+                    const courseId = row.dataset.courseId;
+                    const dateIndex = row.dataset.dateIndex;
+                    const statusSpan = row.querySelector('.save-status');
+                    const boxState = document.getElementById('group-box-state').value;
+                    const instructorId = document.getElementById('group-instructor').value;
+                    
+                    let data = {
+                        course_id: courseId,
+                        date_index: dateIndex,
+                        box_state: boxState,
+                        instructor_id: instructorId,
+                        product_id: row.querySelector('.inline-edit-product')?.value || '',
+                        stock: row.querySelector('.inline-edit-stock')?.value || 0,
+                        button_text: row.querySelector('.inline-edit-button-text')?.value || 'Enroll Now'
+                    };
+                    
+                    if (boxState !== 'buy-course') {
+                        data.date = row.querySelector('.inline-edit-date')?.value || '';
+                        if (!data.date) {
+                            alert('Please enter a date');
+                            return;
+                        }
+                    }
+                    
+                    if (boxState === 'countdown') {
+                        data.launch_date = row.querySelector('.inline-edit-launch-date')?.value || '';
+                    }
+                    
+                    statusSpan.className = 'save-status saving';
+                    statusSpan.textContent = 'Saving...';
+                    
+                    fetch(ajaxurl + '?action=save_table_row_data', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: Object.keys(data).map(key => `${key}=${encodeURIComponent(data[key])}`).join('&') + 
+                              '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            statusSpan.className = 'save-status success';
+                            statusSpan.textContent = '✓';
+                            row.classList.remove('has-changes');
+                            setTimeout(() => { statusSpan.textContent = ''; }, 3000);
                             
-                            // Update row class
-                            row.classList.remove('soldout-row', 'low-stock-row', 'medium-stock-row');
-                            if (available <= 0) {
-                                row.classList.add('soldout-row');
-                            } else if (available <= 5) {
-                                row.classList.add('low-stock-row');
-                            } else if (available <= 10) {
-                                row.classList.add('medium-stock-row');
+                            if (dateIndex === 'new') {
+                                setTimeout(() => location.reload(), 1000);
                             }
+                        } else {
+                            statusSpan.className = 'save-status error';
+                            statusSpan.textContent = '✗ ' + (result.data || 'Error');
+                        }
+                    });
+                }
+                
+                // Delete row function
+                function deleteRow(row) {
+                    const courseId = row.dataset.courseId;
+                    const dateIndex = row.dataset.dateIndex;
+                    
+                    if (dateIndex === 'new') {
+                        row.remove();
+                        return;
+                    }
+                    
+                    fetch(ajaxurl + '?action=delete_table_row', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'course_id=' + courseId + '&date_index=' + dateIndex +
+                              '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            row.remove();
+                        } else {
+                            alert('Error deleting row');
+                        }
+                    });
+                }
+                
+                // Add new row button
+                document.getElementById('add-new-row').addEventListener('click', function() {
+                    const firstCourse = coursesData[0] || {id: 0, product_id: '', stock: 20};
+                    addTableRow(firstCourse, null, currentBoxState);
+                });
+                
+                // Box state change handler
+                document.getElementById('group-box-state').addEventListener('change', function() {
+                    currentBoxState = this.value;
+                    renderTable(currentBoxState);
+                    
+                    // Auto-set stock to 0 for sold out
+                    if (currentBoxState === 'soldout') {
+                        document.querySelectorAll('.inline-edit-stock').forEach(input => {
+                            input.value = 0;
+                            input.readOnly = true;
+                            input.dispatchEvent(new Event('change'));
+                        });
+                    }
+                });
+                
+                // Apply group settings button
+                document.getElementById('apply-group-settings').addEventListener('click', function() {
+                    const boxState = document.getElementById('group-box-state').value;
+                    const instructorId = document.getElementById('group-instructor').value;
+                    
+                    if (!confirm('Apply these settings to all courses in the group?')) return;
+                    
+                    fetch(ajaxurl + '?action=apply_group_settings', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'group_id=' + groupId + 
+                              '&box_state=' + boxState +
+                              '&instructor_id=' + instructorId +
+                              '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            alert('Settings applied successfully');
+                            location.reload();
+                        } else {
+                            alert('Error applying settings');
                         }
                     });
                 });
                 
-                // Save row changes
-                document.querySelectorAll('.save-row-changes').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const row = this.closest('tr');
-                        const courseId = this.dataset.courseId;
-                        const dateIndex = this.dataset.dateIndex;
-                        const statusSpan = row.querySelector('.save-status');
-                        
-                        // Collect data from the row
-                        const date = row.querySelector('.inline-edit-date').value;
-                        const productId = row.querySelector('.inline-edit-product').value;
-                        const instructorId = row.querySelector('.inline-edit-instructor').value;
-                        const stock = row.querySelector('.inline-edit-stock').value;
-                        const buttonText = row.querySelector('.inline-edit-button-text').value;
-                        const boxState = row.querySelector('.inline-edit-box-state').value;
-                        
-                        // Validate date is not empty
-                        if (!date) {
-                            alert('Please enter a date');
-                            return;
-                        }
-                        
-                        // Show saving status
-                        statusSpan.className = 'save-status saving';
-                        statusSpan.textContent = 'Saving...';
-                        
-                        // Send AJAX request
-                        fetch(ajaxurl + '?action=save_table_row_data', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                            body: 'course_id=' + courseId + 
-                                  '&date_index=' + dateIndex +
-                                  '&date=' + encodeURIComponent(date) +
-                                  '&product_id=' + productId +
-                                  '&instructor_id=' + instructorId +
-                                  '&stock=' + stock +
-                                  '&button_text=' + encodeURIComponent(buttonText) +
-                                  '&box_state=' + boxState +
-                                  '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                statusSpan.className = 'save-status success';
-                                statusSpan.textContent = '✓';
-                                row.classList.remove('has-changes');
-                                
-                                // If it was a new row, reload to get proper index
-                                if (dateIndex === 'new') {
-                                    setTimeout(() => location.reload(), 1000);
-                                } else {
-                                    setTimeout(() => {
-                                        statusSpan.textContent = '';
-                                    }, 3000);
-                                }
-                            } else {
-                                statusSpan.className = 'save-status error';
-                                statusSpan.textContent = '✗ ' + (data.data || 'Error');
-                            }
-                        })
-                        .catch(error => {
-                            statusSpan.className = 'save-status error';
-                            statusSpan.textContent = '✗ Error';
-                            console.error('Save error:', error);
-                        });
-                    });
-                });
+                // Initial render
+                renderTable(currentBoxState);
             });
         </script>
     </div>
@@ -2136,20 +2195,27 @@ function save_table_row_data() {
     
     $course_id = intval($_POST['course_id']);
     $date_index = sanitize_text_field($_POST['date_index']);
-    $date = sanitize_text_field($_POST['date']);
     $product_id = intval($_POST['product_id']);
     $instructor_id = intval($_POST['instructor_id']);
     $stock = intval($_POST['stock']);
     $button_text = sanitize_text_field($_POST['button_text']);
     $box_state = sanitize_text_field($_POST['box_state']);
+    $launch_date = isset($_POST['launch_date']) ? sanitize_text_field($_POST['launch_date']) : '';
     
-    if (!$course_id || !$date) {
+    // Date is optional for buy-course state
+    $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
+    if (!$course_id || ($box_state !== 'buy-course' && !$date)) {
         wp_send_json_error('Invalid course ID or date');
     }
     
     // Update product association
     if ($product_id) {
         update_post_meta($course_id, 'linked_product_id', $product_id);
+        
+        // Update launch date on product if provided
+        if ($launch_date && $box_state === 'countdown') {
+            update_post_meta($product_id, '_launch_date', $launch_date);
+        }
     } else {
         delete_post_meta($course_id, 'linked_product_id');
     }
@@ -2167,33 +2233,131 @@ function save_table_row_data() {
         delete_field('course_instructors', $course_id);
     }
     
-    // Get existing dates
-    $existing_dates = get_field('course_dates', $course_id) ?: [];
-    
-    // Update or add the date entry
-    if ($date_index === 'new') {
-        // Adding a new date
-        $existing_dates[] = [
-            'date' => $date,
-            'stock' => $stock,
-            'button_text' => $button_text
-        ];
+    // Handle dates based on box state
+    if ($box_state === 'buy-course' || $box_state === 'waitlist') {
+        // These states don't use dates
+        delete_field('course_dates', $course_id);
+        // Store stock directly on course
+        update_field('course_stock', $stock, $course_id);
     } else {
-        // Updating existing date
-        $index = intval($date_index);
-        if (isset($existing_dates[$index])) {
-            $existing_dates[$index] = [
+        // Get existing dates
+        $existing_dates = get_field('course_dates', $course_id) ?: [];
+        
+        // Update or add the date entry
+        if ($date_index === 'new') {
+            // Adding a new date
+            $existing_dates[] = [
                 'date' => $date,
                 'stock' => $stock,
                 'button_text' => $button_text
             ];
+        } else {
+            // Updating existing date
+            $index = intval($date_index);
+            if (isset($existing_dates[$index])) {
+                $existing_dates[$index] = [
+                    'date' => $date,
+                    'stock' => $stock,
+                    'button_text' => $button_text
+                ];
+            }
+        }
+        
+        // Save the updated dates
+        update_field('course_dates', $existing_dates, $course_id);
+    }
+    
+    wp_send_json_success(['message' => 'Data saved successfully']);
+}
+
+// AJAX Handler for deleting table row
+add_action('wp_ajax_delete_table_row', 'delete_table_row');
+function delete_table_row() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    
+    $course_id = intval($_POST['course_id']);
+    $date_index = intval($_POST['date_index']);
+    
+    if (!$course_id) {
+        wp_send_json_error('Invalid course ID');
+    }
+    
+    // Get existing dates
+    $existing_dates = get_field('course_dates', $course_id) ?: [];
+    
+    // Remove the date at the specified index
+    if (isset($existing_dates[$date_index])) {
+        array_splice($existing_dates, $date_index, 1);
+        
+        // Save the updated dates
+        if (!empty($existing_dates)) {
+            update_field('course_dates', $existing_dates, $course_id);
+        } else {
+            delete_field('course_dates', $course_id);
+        }
+        
+        wp_send_json_success(['message' => 'Row deleted successfully']);
+    } else {
+        wp_send_json_error('Invalid date index');
+    }
+}
+
+// AJAX Handler for applying group settings
+add_action('wp_ajax_apply_group_settings', 'apply_group_settings');
+function apply_group_settings() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    
+    $group_id = intval($_POST['group_id']);
+    $box_state = sanitize_text_field($_POST['box_state']);
+    $instructor_id = intval($_POST['instructor_id']);
+    
+    if (!$group_id) {
+        wp_send_json_error('Invalid group ID');
+    }
+    
+    // Get all courses in the group
+    $courses = get_posts([
+        'post_type' => 'course',
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'tax_query' => [
+            [
+                'taxonomy' => 'course_group',
+                'field' => 'term_id',
+                'terms' => $group_id,
+            ],
+        ],
+    ]);
+    
+    // Apply settings to each course
+    foreach ($courses as $course_id) {
+        // Update box state
+        update_post_meta($course_id, 'box_state', $box_state);
+        
+        // Update instructor
+        if ($instructor_id) {
+            $instructors = [$instructor_id];
+            update_post_meta($course_id, 'course_instructors', $instructors);
+            update_field('course_instructors', $instructors, $course_id);
+        } else {
+            delete_post_meta($course_id, 'course_instructors');
+            delete_field('course_instructors', $course_id);
+        }
+        
+        // If sold out, set all stocks to 0
+        if ($box_state === 'soldout') {
+            $dates = get_field('course_dates', $course_id) ?: [];
+            foreach ($dates as &$date) {
+                $date['stock'] = 0;
+            }
+            if (!empty($dates)) {
+                update_field('course_dates', $dates, $course_id);
+            }
+            update_field('course_stock', 0, $course_id);
         }
     }
     
-    // Save the updated dates
-    update_field('course_dates', $existing_dates, $course_id);
-    
-    wp_send_json_success(['message' => 'Data saved successfully']);
+    wp_send_json_success(['message' => 'Settings applied to all courses']);
 }
 
 // Shortcode to render boxes
