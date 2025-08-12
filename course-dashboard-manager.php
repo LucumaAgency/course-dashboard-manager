@@ -16,6 +16,23 @@ if (!defined('ABSPATH')) {
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
 
+// Helper function to safely get ACF field
+function cbm_cbm_get_field($field, $post_id = false, $default = null) {
+    if (function_exists('get_field')) {
+        $value = cbm_get_field($field, $post_id);
+        return $value !== false ? $value : $default;
+    }
+    return $default;
+}
+
+// Helper function to safely update ACF field
+function cbm_cbm_update_field($field, $value, $post_id = false) {
+    if (function_exists('update_field')) {
+        return cbm_update_field($field, $value, $post_id);
+    }
+    return false;
+}
+
 // Autoloader for classes
 spl_autoload_register(function ($class) {
     $prefix = 'CourseBoxManager\\';
@@ -77,7 +94,7 @@ add_filter('fkcart_disabled_post_types', function ($post_types) {
 });
 
 // Add admin menu for dashboard
-add_action('admin_menu', 'course_box_manager_menu');
+add_action('admin_menu', 'course_box_manager_menu', 15); // Priority 15 to ensure proper loading
 function course_box_manager_menu() {
     // Main menu now redirects to Tables view
     add_menu_page(
@@ -156,7 +173,7 @@ function calculate_seats_sold($product_id, $date_text = null) {
 }
 
 // Handle course group creation and deletion
-add_action('admin_init', 'handle_course_group_actions');
+add_action('admin_init', 'handle_course_group_actions', 20); // Priority 20 to ensure ACF is loaded
 function handle_course_group_actions() {
     // Only process on admin pages
     if (!is_admin()) {
@@ -466,8 +483,8 @@ function course_box_tables_page() {
                             'title' => $course->post_title,
                             'product_id' => $product_id,
                             'launch_date' => $launch_date,
-                            'dates' => get_field('course_dates', $course_id) ?: [],
-                            'stock' => get_field('course_stock', $course_id) ?: 0
+                            'dates' => cbm_get_field('course_dates', $course_id) ?: [],
+                            'stock' => cbm_get_field('course_stock', $course_id) ?: 0
                         ];
                     }
                     echo json_encode($courses_json);
@@ -996,8 +1013,8 @@ function course_box_manager_page() {
                         $instructors = get_post_meta($course_id, 'course_instructors', true) ?: [];
                         $instructor_names = array_map(function($id) { return get_the_title($id); }, $instructors);
                         $box_state = get_post_meta($course_id, 'box_state', true) ?: 'enroll-course';
-                        $course_stock = get_field('course_stock', $course_id) ?: 0;
-                        $dates = get_field('course_dates', $course_id) ?: [];
+                        $course_stock = cbm_get_field('course_stock', $course_id) ?: 0;
+                        $dates = cbm_get_field('course_dates', $course_id) ?: [];
                         $product_id = get_post_meta($course_id, 'linked_product_id', true);
                         
                         // Calculate seats availability
@@ -1079,8 +1096,8 @@ function course_box_manager_page() {
             $title = get_the_title($course_id);
             $instructors = get_post_meta($course_id, 'course_instructors', true) ?: [];
             $box_state = get_post_meta($course_id, 'box_state', true) ?: 'enroll-course';
-            $course_stock = get_field('course_stock', $course_id) ?: 0;
-            $dates = get_field('course_dates', $course_id) ?: [];
+            $course_stock = cbm_get_field('course_stock', $course_id) ?: 0;
+            $dates = cbm_get_field('course_dates', $course_id) ?: [];
             $product_id = get_post_meta($course_id, 'linked_product_id', true);
             $terms = wp_get_post_terms($course_id, 'course_group');
             $group_id = !empty($terms) ? $terms[0]->term_id : 0;
@@ -2233,7 +2250,7 @@ function assign_course_to_group() {
     // Update instructors for this course
     if (!empty($instructors)) {
         update_post_meta($course_id, 'course_instructors', $instructors);
-        update_field('course_instructors', $instructors, $course_id); // Update ACF field if exists
+        cbm_update_field('course_instructors', $instructors, $course_id); // Update ACF field if exists
         
         // Update instructor meta - clear from all instructors first
         $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1, 'fields' => 'ids']);
@@ -2339,7 +2356,7 @@ function save_course_settings() {
     
     // Update or delete dates field
     if (!empty($formatted_dates)) {
-        update_field('course_dates', $formatted_dates, $course_id);
+        cbm_update_field('course_dates', $formatted_dates, $course_id);
     } else {
         // Delete dates field when empty array or no dates
         delete_field('course_dates', $course_id);
@@ -2394,7 +2411,7 @@ function save_inline_dates() {
     
     // Format dates for ACF field
     $formatted_dates = [];
-    $course_stock = get_field('course_stock', $course_id) ?: 0;
+    $course_stock = cbm_get_field('course_stock', $course_id) ?: 0;
     
     if ($dates && !empty($dates)) {
         foreach ($dates as $date_info) {
@@ -2409,7 +2426,7 @@ function save_inline_dates() {
     
     // Update or delete ACF field based on whether we have dates
     if (!empty($formatted_dates)) {
-        update_field('course_dates', $formatted_dates, $course_id);
+        cbm_update_field('course_dates', $formatted_dates, $course_id);
     } else {
         delete_field('course_dates', $course_id);
     }
@@ -2479,7 +2496,7 @@ function save_table_row_data() {
     if ($instructor_id) {
         $instructors = [$instructor_id]; // Store as array for consistency
         update_post_meta($course_id, 'course_instructors', $instructors);
-        update_field('course_instructors', $instructors, $course_id);
+        cbm_update_field('course_instructors', $instructors, $course_id);
     } else {
         delete_post_meta($course_id, 'course_instructors');
         delete_field('course_instructors', $course_id);
@@ -2490,10 +2507,10 @@ function save_table_row_data() {
         // These states don't use dates
         delete_field('course_dates', $course_id);
         // Store stock directly on course
-        update_field('course_stock', $stock, $course_id);
+        cbm_update_field('course_stock', $stock, $course_id);
     } else {
         // Get existing dates
-        $existing_dates = get_field('course_dates', $course_id) ?: [];
+        $existing_dates = cbm_get_field('course_dates', $course_id) ?: [];
         
         // Update or add the date entry
         if ($date_index === 'new') {
@@ -2516,7 +2533,7 @@ function save_table_row_data() {
         }
         
         // Save the updated dates
-        update_field('course_dates', $existing_dates, $course_id);
+        cbm_update_field('course_dates', $existing_dates, $course_id);
     }
     
     wp_send_json_success(['message' => 'Data saved successfully']);
@@ -2535,7 +2552,7 @@ function delete_table_row() {
     }
     
     // Get existing dates
-    $existing_dates = get_field('course_dates', $course_id) ?: [];
+    $existing_dates = cbm_get_field('course_dates', $course_id) ?: [];
     
     // Remove the date at the specified index
     if (isset($existing_dates[$date_index])) {
@@ -2543,7 +2560,7 @@ function delete_table_row() {
         
         // Save the updated dates
         if (!empty($existing_dates)) {
-            update_field('course_dates', $existing_dates, $course_id);
+            cbm_update_field('course_dates', $existing_dates, $course_id);
         } else {
             delete_field('course_dates', $course_id);
         }
@@ -2596,7 +2613,7 @@ function apply_group_settings() {
         if ($instructor_id) {
             $instructors = [$instructor_id];
             update_post_meta($course_id, 'course_instructors', $instructors);
-            update_field('course_instructors', $instructors, $course_id);
+            cbm_update_field('course_instructors', $instructors, $course_id);
         } else {
             delete_post_meta($course_id, 'course_instructors');
             delete_field('course_instructors', $course_id);
@@ -2609,14 +2626,14 @@ function apply_group_settings() {
         
         // If sold out, set all stocks to 0
         if ($box_state === 'soldout') {
-            $dates = get_field('course_dates', $course_id) ?: [];
+            $dates = cbm_get_field('course_dates', $course_id) ?: [];
             foreach ($dates as &$date) {
                 $date['stock'] = 0;
             }
             if (!empty($dates)) {
-                update_field('course_dates', $dates, $course_id);
+                cbm_update_field('course_dates', $dates, $course_id);
             }
-            update_field('course_stock', 0, $course_id);
+            cbm_update_field('course_stock', 0, $course_id);
         }
     }
     
@@ -2664,7 +2681,7 @@ function course_box_manager_shortcode() {
             $debug_info .= '<p><strong>Group ID:</strong> ' . $group_id . '</p>';
             $debug_info .= '<p><strong>Box State:</strong> ' . get_post_meta($post_id, 'box_state', true) . '</p>';
             $debug_info .= '<p><strong>Product ID:</strong> ' . get_post_meta($post_id, 'linked_product_id', true) . '</p>';
-            $debug_info .= '<p><strong>Dates:</strong> <pre>' . print_r(get_field('course_dates', $post_id), true) . '</pre></p>';
+            $debug_info .= '<p><strong>Dates:</strong> <pre>' . print_r(cbm_get_field('course_dates', $post_id), true) . '</pre></p>';
             $debug_info .= '<p><strong>Output Empty?</strong> ' . (empty($output) ? 'YES' : 'NO') . '</p>';
             $debug_info .= '</div>';
             $output = $debug_info . $output;
@@ -2731,7 +2748,7 @@ function sync_course_to_product_and_page($post_id, $post, $update) {
         $product->set_name($post->post_title);
         $product->set_status('publish');
         $product->set_virtual(true);
-        $product->set_price(get_field('course_price', $post_id) ?: 749.99);
+        $product->set_price(cbm_get_field('course_price', $post_id) ?: 749.99);
         $product_id = $product->save();
         if ($group_id) {
             wp_set_post_terms($product_id, [$group_id], 'course_group');
@@ -2744,7 +2761,7 @@ function sync_course_to_product_and_page($post_id, $post, $update) {
 add_action('acf/save_post', 'sync_course_instructors', 20);
 function sync_course_instructors($post_id) {
     if (get_post_type($post_id) !== 'course') return;
-    $instructors = get_field('course_instructors', $post_id) ?: [];
+    $instructors = cbm_get_field('course_instructors', $post_id) ?: [];
     update_post_meta($post_id, 'course_instructors', $instructors);
 
     // Clear existing instructor courses

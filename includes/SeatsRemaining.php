@@ -24,13 +24,13 @@ class SeatsRemaining {
         // Get available start dates and stocks from course_dates field
         $available_dates = [];
         $date_stocks = [];
-        $dates = get_field('course_dates', $post_id) ?: [];
+        $dates = cbm_get_field('course_dates', $post_id) ?: [];
         
         foreach ($dates as $date_entry) {
             if (!empty($date_entry['date'])) {
                 $sanitized_date = sanitize_text_field($date_entry['date']);
                 $stock = isset($date_entry['stock']) ? intval($date_entry['stock']) : 
-                        (get_field('course_stock', $post_id) ?: 10);
+                        (cbm_get_field('course_stock', $post_id) ?: 10);
                 $available_dates[] = $sanitized_date;
                 $date_stocks[$sanitized_date] = $stock;
                 error_log('Seats Remaining Shortcode: Available date added: ' . $sanitized_date . ', Stock: ' . $stock);
@@ -66,7 +66,7 @@ class SeatsRemaining {
         
         // If not found, try from ACF field
         if (!$enroll_product_id) {
-            $enroll_product_link = get_field('field_6821879e21941', $post_id);
+            $enroll_product_link = cbm_get_field('field_6821879e21941', $post_id);
             if (!empty($enroll_product_link)) {
                 $url_parts = parse_url($enroll_product_link, PHP_URL_QUERY);
                 parse_str($url_parts, $query_params);
@@ -271,13 +271,13 @@ class SeatsRemaining {
         // Get available start dates and stocks
         $available_dates = [];
         $date_stocks = [];
-        $dates = get_field('course_dates', $post_id) ?: [];
+        $dates = cbm_get_field('course_dates', $post_id) ?: [];
         
         foreach ($dates as $date_entry) {
             if (!empty($date_entry['date'])) {
                 $sanitized_date = sanitize_text_field($date_entry['date']);
                 $stock = isset($date_entry['stock']) ? intval($date_entry['stock']) : 
-                        (get_field('course_stock', $post_id) ?: 10);
+                        (cbm_get_field('course_stock', $post_id) ?: 10);
                 $available_dates[] = $sanitized_date;
                 $date_stocks[$sanitized_date] = $stock;
             }

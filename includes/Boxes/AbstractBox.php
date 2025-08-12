@@ -34,10 +34,10 @@ abstract class AbstractBox {
     protected function initialize_properties() {
         $this->box_state = get_post_meta($this->course_id, 'box_state', true) ?: 'enroll-course';
         $this->course_product_id = get_post_meta($this->course_id, 'linked_product_id', true);
-        $this->course_price = get_field('course_price', $this->course_id) ?: 749.99;
-        $this->enroll_price = get_field('enroll_price', $this->course_id) ?: 1249.99;
+        $this->course_price = cbm_get_field('course_price', $this->course_id, 749.99);
+        $this->enroll_price = cbm_get_field('enroll_price', $this->course_id, 1249.99);
         
-        $available_dates_raw = get_field('course_dates', $this->course_id) ?: [];
+        $available_dates_raw = cbm_get_field('course_dates', $this->course_id, []);
         $this->available_dates = array_column($available_dates_raw, 'date');
         $this->available_dates_full = $available_dates_raw; // Keep full date info with stock and button_text
         
