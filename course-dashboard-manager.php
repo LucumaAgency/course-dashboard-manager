@@ -88,6 +88,16 @@ function course_box_manager_menu() {
         'dashicons-list-view',
         20
     );
+    
+    // Add submenu for Tables view
+    add_submenu_page(
+        'course-box-manager',
+        'Course Tables',
+        'Tables',
+        'edit_posts',
+        'course-box-tables',
+        'course_box_tables_page'
+    );
 }
 
 // Helper function to calculate seats sold for a course
@@ -130,6 +140,227 @@ function calculate_seats_sold($product_id, $date_text = null) {
     }
     
     return $sales_count;
+}
+
+// Tables page content
+function course_box_tables_page() {
+    ?>
+    <div class="wrap">
+        <h1>Course Tables</h1>
+        
+        <?php if (!isset($_GET['group_id'])) : ?>
+            <!-- Groups List View -->
+            <h2>Course Groups</h2>
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th>Group Name</th>
+                        <th>Number of Courses</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $groups = get_terms(['taxonomy' => 'course_group', 'hide_empty' => false]);
+                    foreach ($groups as $group) :
+                        $courses_in_group = get_posts([
+                            'post_type' => 'course',
+                            'posts_per_page' => -1,
+                            'fields' => 'ids',
+                            'tax_query' => [
+                                [
+                                    'taxonomy' => 'course_group',
+                                    'field' => 'term_id',
+                                    'terms' => $group->term_id,
+                                ],
+                            ],
+                        ]);
+                    ?>
+                        <tr>
+                            <td>
+                                <a href="?page=course-box-tables&group_id=<?php echo esc_attr($group->term_id); ?>">
+                                    <?php echo esc_html($group->name); ?>
+                                </a>
+                            </td>
+                            <td><?php echo count($courses_in_group); ?></td>
+                            <td>
+                                <a href="?page=course-box-tables&group_id=<?php echo esc_attr($group->term_id); ?>" class="button">View Courses</a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        
+        <?php else : ?>
+            <!-- Group Detail View with Courses Table -->
+            <?php
+            $group_id = intval($_GET['group_id']);
+            $group = get_term($group_id, 'course_group');
+            $courses = get_posts([
+                'post_type' => 'course',
+                'posts_per_page' => -1,
+                'tax_query' => [
+                    [
+                        'taxonomy' => 'course_group',
+                        'field' => 'term_id',
+                        'terms' => $group_id,
+                    ],
+                ],
+            ]);
+            ?>
+            <h2>Group: <?php echo esc_html($group->name); ?></h2>
+            <a href="?page=course-box-tables" class="button">← Back to Groups</a>
+            
+            <!-- Instructor Selection -->
+            <div style="margin: 20px 0;">
+                <label for="instructor-filter"><strong>Filter by Instructor:</strong></label>
+                <select id="instructor-filter" style="margin-left: 10px;">
+                    <option value="">All Instructors</option>
+                    <?php
+                    $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1]);
+                    foreach ($all_instructors as $instructor) {
+                        echo '<option value="' . esc_attr($instructor->ID) . '">' . esc_html($instructor->post_title) . '</option>';
+                    }
+                    ?>
+                </select>
+            </div>
+            
+            <!-- Courses Table -->
+            <table class="wp-list-table widefat fixed striped" id="courses-table" style="margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Associated Product</th>
+                        <th>Total Seats</th>
+                        <th>Sold</th>
+                        <th>Available Seats</th>
+                        <th>Button Text</th>
+                        <th>Box State</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($courses as $course) :
+                        $course_id = $course->ID;
+                        $product_id = get_post_meta($course_id, 'linked_product_id', true);
+                        $product_name = $product_id ? get_the_title($product_id) : 'None';
+                        $box_state = get_post_meta($course_id, 'box_state', true) ?: 'enroll-course';
+                        $course_stock = get_field('course_stock', $course_id) ?: 0;
+                        $dates = get_field('course_dates', $course_id) ?: [];
+                        $instructors = get_post_meta($course_id, 'course_instructors', true) ?: [];
+                        
+                        // Process each date as a separate row
+                        if (!empty($dates)) {
+                            foreach ($dates as $date_info) :
+                                if (!isset($date_info['date']) || empty($date_info['date'])) continue;
+                                
+                                $stock = isset($date_info['stock']) ? intval($date_info['stock']) : $course_stock;
+                                $button_text = isset($date_info['button_text']) ? $date_info['button_text'] : 'Enroll Now';
+                                $sold = $product_id ? calculate_seats_sold($product_id, $date_info['date']) : 0;
+                                $available = max(0, $stock - $sold);
+                                
+                                // Determine row color based on availability
+                                $row_class = '';
+                                if ($available <= 0) {
+                                    $row_class = 'soldout-row';
+                                } elseif ($available <= 5) {
+                                    $row_class = 'low-stock-row';
+                                } elseif ($available <= 10) {
+                                    $row_class = 'medium-stock-row';
+                                }
+                    ?>
+                                <tr class="course-row <?php echo esc_attr($row_class); ?>" 
+                                    data-course-id="<?php echo esc_attr($course_id); ?>"
+                                    data-instructors="<?php echo esc_attr(json_encode($instructors)); ?>">
+                                    <td><?php echo esc_html($date_info['date']); ?></td>
+                                    <td><?php echo esc_html($product_name); ?></td>
+                                    <td><?php echo esc_html($stock); ?></td>
+                                    <td><?php echo esc_html($sold); ?></td>
+                                    <td>
+                                        <span style="color: <?php echo $available <= 5 ? '#d54e21' : ($available <= 10 ? '#f0ad4e' : '#46b450'); ?>; font-weight: bold;">
+                                            <?php echo esc_html($available); ?>
+                                        </span>
+                                    </td>
+                                    <td><?php echo esc_html($button_text); ?></td>
+                                    <td><?php echo esc_html(ucfirst(str_replace('-', ' ', $box_state))); ?></td>
+                                    <td>
+                                        <a href="?page=course-box-manager&course_id=<?php echo esc_attr($course_id); ?>&group_id=<?php echo esc_attr($group_id); ?>" class="button button-small">Edit</a>
+                                    </td>
+                                </tr>
+                    <?php 
+                            endforeach;
+                        } else {
+                            // Show course with no dates
+                    ?>
+                            <tr class="course-row no-dates-row" 
+                                data-course-id="<?php echo esc_attr($course_id); ?>"
+                                data-instructors="<?php echo esc_attr(json_encode($instructors)); ?>">
+                                <td colspan="5" style="color: #999; font-style: italic;">No dates configured for <?php echo esc_html($course->post_title); ?></td>
+                                <td>-</td>
+                                <td><?php echo esc_html(ucfirst(str_replace('-', ' ', $box_state))); ?></td>
+                                <td>
+                                    <a href="?page=course-box-manager&course_id=<?php echo esc_attr($course_id); ?>&group_id=<?php echo esc_attr($group_id); ?>" class="button button-small">Edit</a>
+                                </td>
+                            </tr>
+                    <?php
+                        }
+                    endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
+        
+        <style>
+            .soldout-row {
+                background-color: #ffebee !important;
+            }
+            .low-stock-row {
+                background-color: #fff3e0 !important;
+            }
+            .medium-stock-row {
+                background-color: #fffde7 !important;
+            }
+            .no-dates-row {
+                background-color: #f5f5f5 !important;
+            }
+            #courses-table th {
+                font-weight: bold;
+                background-color: #f0f0f0;
+            }
+            #instructor-filter {
+                padding: 5px 10px;
+                font-size: 14px;
+            }
+        </style>
+        
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Instructor filter functionality
+                const instructorFilter = document.getElementById('instructor-filter');
+                const coursesTable = document.getElementById('courses-table');
+                
+                if (instructorFilter && coursesTable) {
+                    instructorFilter.addEventListener('change', function() {
+                        const selectedInstructor = this.value;
+                        const rows = coursesTable.querySelectorAll('tbody tr.course-row');
+                        
+                        rows.forEach(row => {
+                            if (!selectedInstructor) {
+                                row.style.display = '';
+                            } else {
+                                const instructors = JSON.parse(row.dataset.instructors || '[]');
+                                if (instructors.includes(parseInt(selectedInstructor))) {
+                                    row.style.display = '';
+                                } else {
+                                    row.style.display = 'none';
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+        </script>
+    </div>
+    <?php
 }
 
 // Dashboard page content
