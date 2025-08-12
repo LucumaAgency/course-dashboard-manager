@@ -492,7 +492,6 @@ function course_box_tables_page() {
                 var allProducts = <?php echo json_encode($all_products); ?>;
                 var groupId = <?php echo $group_id; ?>;
             </script>
-        <?php endif; ?>
         
         <style>
             .soldout-row {
