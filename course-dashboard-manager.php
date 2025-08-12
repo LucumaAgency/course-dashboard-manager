@@ -898,11 +898,10 @@ function course_box_tables_page() {
                 renderTable(currentBoxState);
             });
         </script>
-        
         <?php endif; // End of group detail view ?>
         
+        <!-- JavaScript for Add New Group form (only on groups list view) -->
         <?php if (!isset($_GET['group_id'])) : ?>
-        <!-- JavaScript for Add New Group form -->
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const addButton = document.getElementById('add-new-group');
