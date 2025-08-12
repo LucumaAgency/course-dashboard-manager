@@ -211,31 +211,18 @@ function course_box_tables_page() {
             <h2>Group: <?php echo esc_html($group->name); ?></h2>
             <a href="?page=course-box-tables" class="button">← Back to Groups</a>
             
-            <!-- Instructor Selection -->
-            <div style="margin: 20px 0;">
-                <label for="instructor-filter"><strong>Filter by Instructor:</strong></label>
-                <select id="instructor-filter" style="margin-left: 10px;">
-                    <option value="">All Instructors</option>
-                    <?php
-                    $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1]);
-                    foreach ($all_instructors as $instructor) {
-                        echo '<option value="' . esc_attr($instructor->ID) . '">' . esc_html($instructor->post_title) . '</option>';
-                    }
-                    ?>
-                </select>
-            </div>
-            
             <!-- Courses Table -->
             <table class="wp-list-table widefat fixed striped" id="courses-table" style="margin-top: 20px;">
                 <thead>
                     <tr>
-                        <th style="width: 12%;">Date</th>
-                        <th style="width: 18%;">Associated Product</th>
-                        <th style="width: 10%;">Total Seats</th>
-                        <th style="width: 8%;">Sold</th>
-                        <th style="width: 10%;">Available</th>
-                        <th style="width: 15%;">Button Text</th>
-                        <th style="width: 15%;">Box State</th>
+                        <th style="width: 10%;">Date</th>
+                        <th style="width: 15%;">Associated Product</th>
+                        <th style="width: 15%;">Instructor</th>
+                        <th style="width: 8%;">Total Seats</th>
+                        <th style="width: 6%;">Sold</th>
+                        <th style="width: 8%;">Available</th>
+                        <th style="width: 13%;">Button Text</th>
+                        <th style="width: 13%;">Box State</th>
                         <th style="width: 12%;">Actions</th>
                     </tr>
                 </thead>
@@ -249,6 +236,9 @@ function course_box_tables_page() {
                             $all_products[$product->get_id()] = $product->get_name();
                         }
                     }
+                    
+                    // Get all instructors for dropdown
+                    $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1]);
                     
                     foreach ($courses as $course) :
                         $course_id = $course->ID;
@@ -280,14 +270,14 @@ function course_box_tables_page() {
                     ?>
                                 <tr class="course-row editable-row <?php echo esc_attr($row_class); ?>" 
                                     data-course-id="<?php echo esc_attr($course_id); ?>"
-                                    data-date-index="<?php echo esc_attr($date_index); ?>"
-                                    data-instructors="<?php echo esc_attr(json_encode($instructors)); ?>">
+                                    data-date-index="<?php echo esc_attr($date_index); ?>">
                                     <td>
-                                        <input type="date" 
+                                        <input type="text" 
                                                class="inline-edit-date" 
                                                value="<?php echo esc_attr($date_info['date']); ?>"
                                                data-course-id="<?php echo esc_attr($course_id); ?>"
                                                data-date-index="<?php echo esc_attr($date_index); ?>"
+                                               placeholder="YYYY-MM-DD"
                                                style="width: 100%; padding: 3px;">
                                     </td>
                                     <td>
@@ -298,6 +288,21 @@ function course_box_tables_page() {
                                             <?php foreach ($all_products as $prod_id => $prod_name) : ?>
                                                 <option value="<?php echo esc_attr($prod_id); ?>" <?php selected($product_id, $prod_id); ?>>
                                                     <?php echo esc_html($prod_name); ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="inline-edit-instructor" 
+                                                data-course-id="<?php echo esc_attr($course_id); ?>"
+                                                style="width: 100%; padding: 3px;">
+                                            <option value="">None</option>
+                                            <?php 
+                                            // Get the first instructor for this course (for simplicity)
+                                            $selected_instructor = !empty($instructors) ? $instructors[0] : '';
+                                            foreach ($all_instructors as $instructor) : ?>
+                                                <option value="<?php echo esc_attr($instructor->ID); ?>" <?php selected($selected_instructor, $instructor->ID); ?>>
+                                                    <?php echo esc_html($instructor->post_title); ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -353,15 +358,14 @@ function course_box_tables_page() {
                     ?>
                             <tr class="course-row no-dates-row editable-row" 
                                 data-course-id="<?php echo esc_attr($course_id); ?>"
-                                data-date-index="new"
-                                data-instructors="<?php echo esc_attr(json_encode($instructors)); ?>">
+                                data-date-index="new">
                                 <td>
-                                    <input type="date" 
+                                    <input type="text" 
                                            class="inline-edit-date" 
                                            value=""
                                            data-course-id="<?php echo esc_attr($course_id); ?>"
                                            data-date-index="new"
-                                           placeholder="Select date"
+                                           placeholder="YYYY-MM-DD"
                                            style="width: 100%; padding: 3px;">
                                 </td>
                                 <td>
@@ -372,6 +376,20 @@ function course_box_tables_page() {
                                         <?php foreach ($all_products as $prod_id => $prod_name) : ?>
                                             <option value="<?php echo esc_attr($prod_id); ?>" <?php selected($product_id, $prod_id); ?>>
                                                 <?php echo esc_html($prod_name); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="inline-edit-instructor" 
+                                            data-course-id="<?php echo esc_attr($course_id); ?>"
+                                            style="width: 100%; padding: 3px;">
+                                        <option value="">None</option>
+                                        <?php 
+                                        $selected_instructor = !empty($instructors) ? $instructors[0] : '';
+                                        foreach ($all_instructors as $instructor) : ?>
+                                            <option value="<?php echo esc_attr($instructor->ID); ?>" <?php selected($selected_instructor, $instructor->ID); ?>>
+                                                <?php echo esc_html($instructor->post_title); ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
@@ -475,30 +493,6 @@ function course_box_tables_page() {
         
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                // Instructor filter functionality
-                const instructorFilter = document.getElementById('instructor-filter');
-                const coursesTable = document.getElementById('courses-table');
-                
-                if (instructorFilter && coursesTable) {
-                    instructorFilter.addEventListener('change', function() {
-                        const selectedInstructor = this.value;
-                        const rows = coursesTable.querySelectorAll('tbody tr.course-row');
-                        
-                        rows.forEach(row => {
-                            if (!selectedInstructor) {
-                                row.style.display = '';
-                            } else {
-                                const instructors = JSON.parse(row.dataset.instructors || '[]');
-                                if (instructors.includes(parseInt(selectedInstructor))) {
-                                    row.style.display = '';
-                                } else {
-                                    row.style.display = 'none';
-                                }
-                            }
-                        });
-                    });
-                }
-                
                 // Track changes in editable fields
                 document.querySelectorAll('.editable-row input, .editable-row select').forEach(field => {
                     field.addEventListener('change', function() {
@@ -546,13 +540,14 @@ function course_box_tables_page() {
                         // Collect data from the row
                         const date = row.querySelector('.inline-edit-date').value;
                         const productId = row.querySelector('.inline-edit-product').value;
+                        const instructorId = row.querySelector('.inline-edit-instructor').value;
                         const stock = row.querySelector('.inline-edit-stock').value;
                         const buttonText = row.querySelector('.inline-edit-button-text').value;
                         const boxState = row.querySelector('.inline-edit-box-state').value;
                         
                         // Validate date is not empty
                         if (!date) {
-                            alert('Please select a date');
+                            alert('Please enter a date');
                             return;
                         }
                         
@@ -568,6 +563,7 @@ function course_box_tables_page() {
                                   '&date_index=' + dateIndex +
                                   '&date=' + encodeURIComponent(date) +
                                   '&product_id=' + productId +
+                                  '&instructor_id=' + instructorId +
                                   '&stock=' + stock +
                                   '&button_text=' + encodeURIComponent(buttonText) +
                                   '&box_state=' + boxState +
@@ -2142,6 +2138,7 @@ function save_table_row_data() {
     $date_index = sanitize_text_field($_POST['date_index']);
     $date = sanitize_text_field($_POST['date']);
     $product_id = intval($_POST['product_id']);
+    $instructor_id = intval($_POST['instructor_id']);
     $stock = intval($_POST['stock']);
     $button_text = sanitize_text_field($_POST['button_text']);
     $box_state = sanitize_text_field($_POST['box_state']);
@@ -2159,6 +2156,16 @@ function save_table_row_data() {
     
     // Update box state
     update_post_meta($course_id, 'box_state', $box_state);
+    
+    // Update instructor
+    if ($instructor_id) {
+        $instructors = [$instructor_id]; // Store as array for consistency
+        update_post_meta($course_id, 'course_instructors', $instructors);
+        update_field('course_instructors', $instructors, $course_id);
+    } else {
+        delete_post_meta($course_id, 'course_instructors');
+        delete_field('course_instructors', $course_id);
+    }
     
     // Get existing dates
     $existing_dates = get_field('course_dates', $course_id) ?: [];
