@@ -359,17 +359,19 @@ function course_box_tables_page() {
                     tableHeader.innerHTML = '';
                     tableBody.innerHTML = '';
                     
-                    // Show/hide elements based on state
-                    if (boxState === 'waitlist') {
-                        tableContainer.style.display = 'none';
-                        return;
+                    // Always show table container
+                    tableContainer.style.display = 'block';
+                    
+                    // Show/hide add button based on state (only for enroll-course)
+                    if (boxState === 'enroll-course') {
+                        addButton.style.display = 'inline-block';
                     } else {
-                        tableContainer.style.display = 'block';
+                        addButton.style.display = 'none';
                     }
                     
                     // Build header based on box state
                     let headerHTML = '<tr>';
-                    if (boxState === 'enroll-course' || boxState === 'soldout') {
+                    if (boxState === 'enroll-course') {
                         headerHTML += '<th style="width: 15%;">Date</th>';
                         headerHTML += '<th style="width: 20%;">Associated Product</th>';
                         headerHTML += '<th style="width: 12%;">Total Seats</th>';
@@ -392,25 +394,41 @@ function course_box_tables_page() {
                         headerHTML += '<th style="width: 10%;">Available</th>';
                         headerHTML += '<th style="width: 14%;">Button Text</th>';
                         headerHTML += '<th style="width: 10%;">Actions</th>';
+                    } else if (boxState === 'waitlist') {
+                        headerHTML += '<th style="width: 30%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 30%;">Button Text</th>';
+                        headerHTML += '<th style="width: 40%;">Actions</th>';
+                    } else if (boxState === 'soldout') {
+                        headerHTML += '<th style="width: 15%;">Date</th>';
+                        headerHTML += '<th style="width: 20%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 12%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 10%;">Sold</th>';
+                        headerHTML += '<th style="width: 12%;">Available</th>';
+                        headerHTML += '<th style="width: 18%;">Button Text</th>';
+                        headerHTML += '<th style="width: 13%;">Actions</th>';
                     }
                     headerHTML += '</tr>';
                     tableHeader.innerHTML = headerHTML;
                     
-                    // Build table rows
-                    coursesData.forEach(course => {
-                        if (boxState === 'buy-course') {
-                            // Single row per course for buy-course
-                            addTableRow(course, null, boxState);
-                        } else if (course.dates && course.dates.length > 0) {
-                            // Multiple rows for dates
-                            course.dates.forEach((dateInfo, index) => {
-                                addTableRow(course, {date: dateInfo, index: index}, boxState);
-                            });
-                        } else {
-                            // Add empty row for course without dates
-                            addTableRow(course, null, boxState);
-                        }
-                    });
+                    // Build table rows based on box state
+                    if (boxState === 'enroll-course') {
+                        // Multiple rows allowed for enroll-course
+                        coursesData.forEach(course => {
+                            if (course.dates && course.dates.length > 0) {
+                                course.dates.forEach((dateInfo, index) => {
+                                    addTableRow(course, {date: dateInfo, index: index}, boxState);
+                                });
+                            } else {
+                                addTableRow(course, null, boxState);
+                            }
+                        });
+                    } else {
+                        // Single row for all other states
+                        const firstCourse = coursesData[0] || {id: 0, product_id: '', stock: 20};
+                        const firstDate = firstCourse.dates && firstCourse.dates.length > 0 ? 
+                                         {date: firstCourse.dates[0], index: 0} : null;
+                        addTableRow(firstCourse, firstDate, boxState);
+                    }
                 }
                 
                 // Function to add a table row
@@ -430,15 +448,28 @@ function course_box_tables_page() {
                     const stock = boxState === 'soldout' ? 0 : (dateInfo && dateInfo.date.stock ? dateInfo.date.stock : course.stock || 20);
                     const sold = 0; // Will be calculated server-side
                     const available = Math.max(0, stock - sold);
-                    const buttonText = dateInfo && dateInfo.date.button_text ? dateInfo.date.button_text : 'Enroll Now';
+                    const buttonText = dateInfo && dateInfo.date.button_text ? dateInfo.date.button_text : 
+                                      (boxState === 'waitlist' ? 'Join Waitlist' : 'Enroll Now');
                     
-                    if (boxState === 'enroll-course' || boxState === 'soldout') {
+                    if (boxState === 'enroll-course') {
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" ${boxState === 'soldout' ? 'readonly' : ''} style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${buttonText}" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>
+                            <button class="button button-small button-primary save-row">Save</button>
+                            <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
+                            <span class="save-status" style="margin-left: 5px;"></span>
+                        </td>`;
+                    } else if (boxState === 'soldout') {
+                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-stock" value="0" min="0" readonly style="width: 100%; padding: 3px; background: #f0f0f0;"></td>`;
+                        rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
+                        rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: #d54e21; font-weight: bold;">0</span></td>`;
+                        rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Sold Out" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>
                             <button class="button button-small button-primary save-row">Save</button>
                             <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
@@ -448,9 +479,10 @@ function course_box_tables_page() {
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
-                        rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${buttonText}" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Buy Now" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>
                             <button class="button button-small button-primary save-row">Save</button>
+                            <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
                     } else if (boxState === 'countdown') {
@@ -461,6 +493,14 @@ function course_box_tables_page() {
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${buttonText}" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>
+                            <button class="button button-small button-primary save-row">Save</button>
+                            <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
+                            <span class="save-status" style="margin-left: 5px;"></span>
+                        </td>`;
+                    } else if (boxState === 'waitlist') {
+                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
+                        rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Join Waitlist" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>
                             <button class="button button-small button-primary save-row">Save</button>
                             <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
@@ -541,7 +581,7 @@ function course_box_tables_page() {
                         button_text: row.querySelector('.inline-edit-button-text')?.value || 'Enroll Now'
                     };
                     
-                    if (boxState !== 'buy-course') {
+                    if (boxState === 'enroll-course' || boxState === 'soldout' || boxState === 'countdown') {
                         data.date = row.querySelector('.inline-edit-date')?.value || '';
                         if (!data.date) {
                             alert('Please enter a date');
