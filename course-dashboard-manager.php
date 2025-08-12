@@ -213,6 +213,25 @@ function course_box_tables_page() {
             $default_box_state = $first_course_id ? get_post_meta($first_course_id, 'box_state', true) : 'enroll-course';
             $default_instructors = $first_course_id ? get_post_meta($first_course_id, 'course_instructors', true) : [];
             $default_instructor = !empty($default_instructors) ? $default_instructors[0] : '';
+            
+            // Get selling page for the group
+            $selling_page_id = 0;
+            $group_courses = get_posts([
+                'post_type' => 'course',
+                'posts_per_page' => 1,
+                'meta_key' => 'is_selling_page',
+                'meta_value' => '1',
+                'tax_query' => [
+                    [
+                        'taxonomy' => 'course_group',
+                        'field' => 'term_id',
+                        'terms' => $group_id,
+                    ],
+                ],
+            ]);
+            if (!empty($group_courses)) {
+                $selling_page_id = $group_courses[0]->ID;
+            }
             ?>
             <h2>Group: <?php echo esc_html($group->name); ?></h2>
             <a href="?page=course-box-tables" class="button">← Back to Groups</a>
@@ -220,10 +239,10 @@ function course_box_tables_page() {
             <!-- Group Settings -->
             <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px;">
                 <h3 style="margin-top: 0;">Group Settings</h3>
-                <div style="display: flex; gap: 30px; align-items: center;">
+                <div style="display: flex; gap: 25px; align-items: center; flex-wrap: wrap;">
                     <div>
                         <label for="group-box-state"><strong>Box State:</strong></label>
-                        <select id="group-box-state" style="margin-left: 10px; padding: 5px;">
+                        <select id="group-box-state" style="margin-left: 10px; padding: 5px; min-width: 150px;">
                             <option value="enroll-course" <?php selected($default_box_state, 'enroll-course'); ?>>Enroll Course</option>
                             <option value="buy-course" <?php selected($default_box_state, 'buy-course'); ?>>Buy Course</option>
                             <option value="countdown" <?php selected($default_box_state, 'countdown'); ?>>Countdown Box</option>
@@ -233,13 +252,26 @@ function course_box_tables_page() {
                     </div>
                     <div>
                         <label for="group-instructor"><strong>Instructor:</strong></label>
-                        <select id="group-instructor" style="margin-left: 10px; padding: 5px;">
+                        <select id="group-instructor" style="margin-left: 10px; padding: 5px; min-width: 150px;">
                             <option value="">None</option>
                             <?php
                             $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1]);
                             foreach ($all_instructors as $instructor) {
                                 echo '<option value="' . esc_attr($instructor->ID) . '"' . selected($default_instructor, $instructor->ID, false) . '>' . 
                                      esc_html($instructor->post_title) . '</option>';
+                            }
+                            ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="group-selling-page"><strong>Selling Page:</strong></label>
+                        <select id="group-selling-page" style="margin-left: 10px; padding: 5px; min-width: 200px;">
+                            <option value="">None</option>
+                            <?php
+                            // Get all courses in the group for selling page selection
+                            foreach ($courses as $course) {
+                                echo '<option value="' . esc_attr($course->ID) . '"' . selected($selling_page_id, $course->ID, false) . '>' . 
+                                     esc_html($course->post_title) . '</option>';
                             }
                             ?>
                         </select>
@@ -671,6 +703,7 @@ function course_box_tables_page() {
                 document.getElementById('apply-group-settings').addEventListener('click', function() {
                     const boxState = document.getElementById('group-box-state').value;
                     const instructorId = document.getElementById('group-instructor').value;
+                    const sellingPageId = document.getElementById('group-selling-page').value;
                     
                     if (!confirm('Apply these settings to all courses in the group?')) return;
                     
@@ -680,6 +713,7 @@ function course_box_tables_page() {
                         body: 'group_id=' + groupId + 
                               '&box_state=' + boxState +
                               '&instructor_id=' + instructorId +
+                              '&selling_page_id=' + sellingPageId +
                               '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                     })
                     .then(response => response.json())
@@ -2350,6 +2384,7 @@ function apply_group_settings() {
     $group_id = intval($_POST['group_id']);
     $box_state = sanitize_text_field($_POST['box_state']);
     $instructor_id = intval($_POST['instructor_id']);
+    $selling_page_id = intval($_POST['selling_page_id']);
     
     if (!$group_id) {
         wp_send_json_error('Invalid group ID');
@@ -2369,6 +2404,11 @@ function apply_group_settings() {
         ],
     ]);
     
+    // First, clear all selling page flags
+    foreach ($courses as $course_id) {
+        delete_post_meta($course_id, 'is_selling_page');
+    }
+    
     // Apply settings to each course
     foreach ($courses as $course_id) {
         // Update box state
@@ -2382,6 +2422,11 @@ function apply_group_settings() {
         } else {
             delete_post_meta($course_id, 'course_instructors');
             delete_field('course_instructors', $course_id);
+        }
+        
+        // Set selling page flag
+        if ($selling_page_id && $course_id == $selling_page_id) {
+            update_post_meta($course_id, 'is_selling_page', '1');
         }
         
         // If sold out, set all stocks to 0
