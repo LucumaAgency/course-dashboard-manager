@@ -158,8 +158,18 @@ function calculate_seats_sold($product_id, $date_text = null) {
 // Handle course group creation and deletion
 add_action('admin_init', 'handle_course_group_actions');
 function handle_course_group_actions() {
+    // Only process on admin pages
+    if (!is_admin()) {
+        return;
+    }
+    
+    // Only process on our specific page
+    if (!isset($_GET['page']) || $_GET['page'] !== 'course-box-tables') {
+        return;
+    }
+    
     // Handle group deletion
-    if (isset($_GET['action']) && $_GET['action'] === 'delete_group' && isset($_GET['group_id'])) {
+    if (isset($_GET['action']) && $_GET['action'] === 'delete_group' && isset($_GET['group_id']) && isset($_GET['_wpnonce'])) {
         $group_id = intval($_GET['group_id']);
         
         // Verify nonce
