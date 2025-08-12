@@ -898,7 +898,8 @@ function course_box_tables_page() {
                 renderTable(currentBoxState);
             });
         </script>
-        <?php endif; ?>
+        
+        <?php endif; // End of group detail view ?>
         
         <?php if (!isset($_GET['group_id'])) : ?>
         <!-- JavaScript for Add New Group form -->
