@@ -79,25 +79,38 @@ add_filter('fkcart_disabled_post_types', function ($post_types) {
 // Add admin menu for dashboard
 add_action('admin_menu', 'course_box_manager_menu');
 function course_box_manager_menu() {
+    // Main menu now redirects to Tables view
     add_menu_page(
-        'Course Box Manager',
-        'Course Boxes',
+        'Course Tables',
+        'Course Tables',
         'edit_posts', // Instructors (with edit_posts capability) can view
-        'course-box-manager',
-        'course_box_manager_page',
+        'course-box-tables',
+        'course_box_tables_page',
         'dashicons-list-view',
         20
     );
     
-    // Add submenu for Tables view
+    // Add submenu for Tables view (same as main)
     add_submenu_page(
-        'course-box-manager',
+        'course-box-tables',
         'Course Tables',
         'Tables',
         'edit_posts',
         'course-box-tables',
         'course_box_tables_page'
     );
+    
+    // Course Boxes submenu - disabled (commented out)
+    /*
+    add_submenu_page(
+        'course-box-tables',
+        'Course Boxes',
+        'Course Boxes',
+        'edit_posts',
+        'course-box-manager',
+        'course_box_manager_page'
+    );
+    */
 }
 
 // Helper function to calculate seats sold for a course
@@ -142,15 +155,135 @@ function calculate_seats_sold($product_id, $date_text = null) {
     return $sales_count;
 }
 
+// Handle course group creation and deletion
+add_action('admin_init', 'handle_course_group_actions');
+function handle_course_group_actions() {
+    // Handle group deletion
+    if (isset($_GET['action']) && $_GET['action'] === 'delete_group' && isset($_GET['group_id'])) {
+        $group_id = intval($_GET['group_id']);
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_GET['_wpnonce'], 'delete_group_' . $group_id)) {
+            wp_die('Security check failed');
+        }
+        
+        // Check permissions
+        if (!current_user_can('edit_posts')) {
+            wp_die('You do not have permission to delete course groups');
+        }
+        
+        // Check if group has courses
+        $courses = get_posts([
+            'post_type' => 'course',
+            'posts_per_page' => 1,
+            'fields' => 'ids',
+            'tax_query' => [
+                [
+                    'taxonomy' => 'course_group',
+                    'field' => 'term_id',
+                    'terms' => $group_id,
+                ],
+            ],
+        ]);
+        
+        if (!empty($courses)) {
+            wp_die('Cannot delete a group that contains courses');
+        }
+        
+        // Delete the term
+        $result = wp_delete_term($group_id, 'course_group');
+        
+        if (is_wp_error($result)) {
+            wp_die('Error deleting group: ' . $result->get_error_message());
+        }
+        
+        // Redirect back to tables page
+        wp_redirect(admin_url('admin.php?page=course-box-tables&group_deleted=1'));
+        exit;
+    }
+    
+    // Handle group creation
+    if (isset($_POST['action']) && $_POST['action'] === 'create_course_group') {
+        // Verify nonce
+        if (!isset($_POST['course_group_nonce']) || !wp_verify_nonce($_POST['course_group_nonce'], 'create_course_group')) {
+            wp_die('Security check failed');
+        }
+        
+        // Check permissions
+        if (!current_user_can('edit_posts')) {
+            wp_die('You do not have permission to create course groups');
+        }
+        
+        // Get and sanitize input
+        $group_name = sanitize_text_field($_POST['group_name']);
+        $group_description = sanitize_textarea_field($_POST['group_description'] ?? '');
+        
+        if (empty($group_name)) {
+            wp_die('Group name is required');
+        }
+        
+        // Create the term
+        $result = wp_insert_term(
+            $group_name,
+            'course_group',
+            [
+                'description' => $group_description,
+            ]
+        );
+        
+        if (is_wp_error($result)) {
+            wp_die('Error creating group: ' . $result->get_error_message());
+        }
+        
+        // Redirect back to tables page
+        wp_redirect(admin_url('admin.php?page=course-box-tables&group_created=1'));
+        exit;
+    }
+}
+
 // Tables page content
 function course_box_tables_page() {
+    // Show success messages
+    if (isset($_GET['group_created'])) {
+        echo '<div class="notice notice-success is-dismissible"><p>Course group created successfully!</p></div>';
+    }
+    if (isset($_GET['group_deleted'])) {
+        echo '<div class="notice notice-success is-dismissible"><p>Course group deleted successfully!</p></div>';
+    }
     ?>
     <div class="wrap">
         <h1>Course Tables</h1>
         
         <?php if (!isset($_GET['group_id'])) : ?>
             <!-- Groups List View -->
-            <h2>Course Groups</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Course Groups</h2>
+                <button id="add-new-group" class="button button-primary">Add New Group</button>
+            </div>
+            
+            <!-- Add New Group Form (hidden by default) -->
+            <div id="new-group-form" style="display: none; margin-bottom: 20px; padding: 15px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px;">
+                <h3>Create New Course Group</h3>
+                <form method="post" action="">
+                    <?php wp_nonce_field('create_course_group', 'course_group_nonce'); ?>
+                    <input type="hidden" name="action" value="create_course_group">
+                    <table class="form-table">
+                        <tr>
+                            <th><label for="group_name">Group Name</label></th>
+                            <td><input type="text" id="group_name" name="group_name" required class="regular-text" /></td>
+                        </tr>
+                        <tr>
+                            <th><label for="group_description">Description (optional)</label></th>
+                            <td><textarea id="group_description" name="group_description" class="regular-text" rows="3"></textarea></td>
+                        </tr>
+                    </table>
+                    <p class="submit">
+                        <input type="submit" class="button button-primary" value="Create Group" />
+                        <button type="button" id="cancel-new-group" class="button">Cancel</button>
+                    </p>
+                </form>
+            </div>
+            
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
@@ -185,6 +318,13 @@ function course_box_tables_page() {
                             <td><?php echo count($courses_in_group); ?></td>
                             <td>
                                 <a href="?page=course-box-tables&group_id=<?php echo esc_attr($group->term_id); ?>" class="button">View Courses</a>
+                                <?php if (count($courses_in_group) === 0) : ?>
+                                    <a href="<?php echo wp_nonce_url('?page=course-box-tables&action=delete_group&group_id=' . $group->term_id, 'delete_group_' . $group->term_id); ?>" 
+                                       class="button button-link-delete" 
+                                       onclick="return confirm('Are you sure you want to delete this group?');">
+                                        Delete
+                                    </a>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -731,6 +871,34 @@ function course_box_tables_page() {
                 renderTable(currentBoxState);
             });
         </script>
+        <?php endif; ?>
+        
+        <?php if (!isset($_GET['group_id'])) : ?>
+        <!-- JavaScript for Add New Group form -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const addButton = document.getElementById('add-new-group');
+                const formContainer = document.getElementById('new-group-form');
+                const cancelButton = document.getElementById('cancel-new-group');
+                
+                if (addButton) {
+                    addButton.addEventListener('click', function() {
+                        formContainer.style.display = 'block';
+                        addButton.style.display = 'none';
+                    });
+                }
+                
+                if (cancelButton) {
+                    cancelButton.addEventListener('click', function() {
+                        formContainer.style.display = 'none';
+                        addButton.style.display = 'inline-block';
+                        document.getElementById('group_name').value = '';
+                        document.getElementById('group_description').value = '';
+                    });
+                }
+            });
+        </script>
+        <?php endif; ?>
     </div>
     <?php
 }
