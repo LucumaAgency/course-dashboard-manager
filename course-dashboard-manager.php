@@ -474,30 +474,44 @@ function course_box_tables_page() {
                 var coursesData = <?php 
                     $courses_json = [];
                     $all_products = [];
+                    
+                    // Safely get WooCommerce products
                     if (function_exists('wc_get_products')) {
-                        $products = wc_get_products(['limit' => -1, 'orderby' => 'title', 'order' => 'ASC', 'status' => 'publish']);
-                        foreach ($products as $product) {
-                            $all_products[$product->get_id()] = $product->get_name();
+                        try {
+                            $products = wc_get_products(['limit' => -1, 'orderby' => 'title', 'order' => 'ASC', 'status' => 'publish']);
+                            foreach ($products as $product) {
+                                $all_products[$product->get_id()] = $product->get_name();
+                            }
+                        } catch (Exception $e) {
+                            error_log('[CBM Debug] Error getting WooCommerce products: ' . $e->getMessage());
                         }
                     }
                     
-                    foreach ($courses as $course) {
-                        $course_id = $course->ID;
-                        $product_id = get_post_meta($course_id, 'linked_product_id', true);
-                        $launch_date = $product_id ? get_post_meta($product_id, '_launch_date', true) : '';
-                        $courses_json[] = [
-                            'id' => $course_id,
-                            'title' => $course->post_title,
-                            'product_id' => $product_id,
-                            'launch_date' => $launch_date,
-                            'dates' => cbm_get_field('course_dates', $course_id) ?: [],
-                            'stock' => cbm_get_field('course_stock', $course_id) ?: 0
-                        ];
+                    // Process courses safely
+                    if (!empty($courses)) {
+                        foreach ($courses as $course) {
+                            $course_id = $course->ID;
+                            $product_id = get_post_meta($course_id, 'linked_product_id', true);
+                            $launch_date = $product_id ? get_post_meta($product_id, '_launch_date', true) : '';
+                            
+                            // Use safe field retrieval
+                            $dates = function_exists('get_field') ? get_field('course_dates', $course_id) : get_post_meta($course_id, 'course_dates', true);
+                            $stock = function_exists('get_field') ? get_field('course_stock', $course_id) : get_post_meta($course_id, 'course_stock', true);
+                            
+                            $courses_json[] = [
+                                'id' => $course_id,
+                                'title' => $course->post_title,
+                                'product_id' => $product_id,
+                                'launch_date' => $launch_date,
+                                'dates' => $dates ?: [],
+                                'stock' => $stock ?: 0
+                            ];
+                        }
                     }
                     echo json_encode($courses_json);
                 ?>;
                 var allProducts = <?php echo json_encode($all_products); ?>;
-                var groupId = <?php echo $group_id; ?>;
+                var groupId = <?php echo intval($group_id); ?>;
             </script>
         
         <style>
