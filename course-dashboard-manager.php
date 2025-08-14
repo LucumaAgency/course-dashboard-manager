@@ -435,8 +435,9 @@ function course_box_tables_page() {
                         <select id="group-selling-page" style="margin-left: 10px; padding: 5px; min-width: 200px;">
                             <option value="">None</option>
                             <?php
-                            // Get all courses in the group for selling page selection
-                            foreach ($courses as $course) {
+                            // Get all courses for selling page selection
+                            $all_courses = get_posts(['post_type' => 'course', 'posts_per_page' => -1, 'orderby' => 'title', 'order' => 'ASC']);
+                            foreach ($all_courses as $course) {
                                 echo '<option value="' . esc_attr($course->ID) . '"' . selected($selling_page_id, $course->ID, false) . '>' . 
                                      esc_html($course->post_title) . '</option>';
                             }
