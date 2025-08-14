@@ -976,7 +976,7 @@ function course_box_tables_page() {
                     <option value="">Select a course...</option>
                     <?php
                     // Get all available courses
-                    $all_courses = get_posts([
+                    $all_courses_modal = get_posts([
                         'post_type' => 'course',
                         'posts_per_page' => -1,
                         'orderby' => 'title',
@@ -990,7 +990,7 @@ function course_box_tables_page() {
                     }
                     
                     // Display only courses not already in the group
-                    foreach ($all_courses as $course) {
+                    foreach ($all_courses_modal as $course) {
                         if (!in_array($course->ID, $existing_course_ids)) {
                             echo '<option value="' . esc_attr($course->ID) . '">' . esc_html($course->post_title) . '</option>';
                         }
