@@ -452,7 +452,7 @@ function course_box_tables_page() {
             
             <!-- Courses Table -->
             <div id="table-container">
-                <button id="add-new-row" class="button button-primary" style="margin-bottom: 10px;">+ Add New Row</button>
+                <button id="add-new-row" class="button button-primary" style="margin-bottom: 10px;">+ Add Course/Date</button>
                 <table class="wp-list-table widefat fixed striped" id="courses-table" style="margin-top: 10px;">
                     <thead id="table-header">
                         <!-- Dynamic header based on box state -->
@@ -855,12 +855,19 @@ function course_box_tables_page() {
                 
                 // Add new row button
                 document.getElementById('add-new-row').addEventListener('click', function() {
-                    // Need at least one course to add a row
+                    // If no courses in group, open the add course modal
                     if (!coursesData || coursesData.length === 0) {
-                        alert('Please add at least one course to the group first.');
+                        // Check if we have the add course modal
+                        const addCourseModal = document.getElementById('add-course-modal');
+                        if (addCourseModal) {
+                            addCourseModal.style.display = 'block';
+                        } else {
+                            alert('Please add at least one course to the group first using the "Add Course to Group" button.');
+                        }
                         return;
                     }
                     
+                    // If we have courses, add a new date row for the first course
                     const firstCourse = coursesData[0];
                     console.log('[CBM Debug] Adding new row with course:', firstCourse);
                     addTableRow(firstCourse, null, currentBoxState);
