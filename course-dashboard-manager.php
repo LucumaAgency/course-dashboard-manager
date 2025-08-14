@@ -199,10 +199,10 @@ function handle_course_group_actions() {
             wp_die('You do not have permission to delete course groups');
         }
         
-        // Check if group has courses
+        // Get all courses in the group to unassign them
         $courses = get_posts([
             'post_type' => 'course',
-            'posts_per_page' => 1,
+            'posts_per_page' => -1,
             'fields' => 'ids',
             'tax_query' => [
                 [
@@ -213,8 +213,11 @@ function handle_course_group_actions() {
             ],
         ]);
         
+        // If group has courses, unassign them first
         if (!empty($courses)) {
-            wp_die('Cannot delete a group that contains courses');
+            foreach ($courses as $course_id) {
+                wp_remove_object_terms($course_id, $group_id, 'course_group');
+            }
         }
         
         // Delete the term
@@ -345,13 +348,16 @@ function course_box_tables_page() {
                             <td><?php echo count($courses_in_group); ?></td>
                             <td>
                                 <a href="?page=course-box-tables&group_id=<?php echo esc_attr($group->term_id); ?>" class="button">View Courses</a>
-                                <?php if (count($courses_in_group) === 0) : ?>
-                                    <a href="<?php echo wp_nonce_url('?page=course-box-tables&action=delete_group&group_id=' . $group->term_id, 'delete_group_' . $group->term_id); ?>" 
-                                       class="button button-link-delete" 
-                                       onclick="return confirm('Are you sure you want to delete this group?');">
-                                        Delete
-                                    </a>
-                                <?php endif; ?>
+                                <?php 
+                                $delete_message = count($courses_in_group) > 0 
+                                    ? 'This group contains ' . count($courses_in_group) . ' course(s). Deleting the group will unassign all courses from it. Are you sure?'
+                                    : 'Are you sure you want to delete this group?';
+                                ?>
+                                <a href="<?php echo wp_nonce_url('?page=course-box-tables&action=delete_group&group_id=' . $group->term_id, 'delete_group_' . $group->term_id); ?>" 
+                                   class="button button-link-delete" 
+                                   onclick="return confirm('<?php echo esc_js($delete_message); ?>');">
+                                    Delete
+                                </a>
                             </td>
                         </tr>
                     <?php endforeach; ?>
