@@ -26,9 +26,9 @@ function cbm_cbm_get_field($field, $post_id = false, $default = null) {
 }
 
 // Helper function to safely update ACF field
-function cbm_cbm_update_field($field, $value, $post_id = false) {
+function cbm_update_field($field, $value, $post_id = false) {
     if (function_exists('update_field')) {
-        return cbm_update_field($field, $value, $post_id);
+        return update_field($field, $value, $post_id);
     }
     return false;
 }
@@ -1040,20 +1040,33 @@ function course_box_tables_page() {
                         }
                         
                         // Send AJAX request to add course to group
+                        console.log('[CBM Debug] Adding course:', courseId, 'to group:', groupId);
+                        
                         fetch(ajaxurl + '?action=assign_course_to_group', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                             body: 'course_id=' + courseId + '&group_id=' + groupId + 
                                   '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                         })
-                        .then(response => response.json())
+                        .then(response => {
+                            console.log('[CBM Debug] Response status:', response.status);
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
                         .then(result => {
+                            console.log('[CBM Debug] AJAX result:', result);
                             if (result.success) {
                                 // Reload the page to show the new course
                                 location.reload();
                             } else {
                                 alert('Error: ' + (result.data || 'Failed to add course'));
                             }
+                        })
+                        .catch(error => {
+                            console.error('[CBM Debug] Fetch error:', error);
+                            alert('Error adding course to group. Please check the console for details.');
                         });
                     });
                 }
@@ -2390,12 +2403,18 @@ function delete_course_group() {
 // AJAX Handler for Assigning Course to Group
 add_action('wp_ajax_assign_course_to_group', 'assign_course_to_group');
 function assign_course_to_group() {
+    error_log('[CBM Debug] assign_course_to_group called');
+    error_log('[CBM Debug] POST data: ' . print_r($_POST, true));
+    
     check_ajax_referer('course_box_nonce', 'nonce');
     $course_id = intval($_POST['course_id']);
     $group_id = intval($_POST['group_id']);
     $instructors = isset($_POST['instructors']) ? json_decode(stripslashes($_POST['instructors']), true) : [];
     
+    error_log('[CBM Debug] Course ID: ' . $course_id . ', Group ID: ' . $group_id);
+    
     if (!$course_id) {
+        error_log('[CBM Debug] No course selected');
         wp_send_json_error('No course selected.');
     }
     
@@ -2404,7 +2423,9 @@ function assign_course_to_group() {
     
     if ($group_id > 0) {
         $result = wp_set_post_terms($course_id, [$group_id], 'course_group');
+        error_log('[CBM Debug] wp_set_post_terms result: ' . print_r($result, true));
         if (is_wp_error($result)) {
+            error_log('[CBM Debug] Error setting terms: ' . $result->get_error_message());
             wp_send_json_error($result->get_error_message());
         }
     }
