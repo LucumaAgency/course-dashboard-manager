@@ -10,9 +10,8 @@ namespace CourseBoxManager\Boxes;
 class BuyCourseBox extends AbstractBox {
     
     public function should_display() {
-        return $this->box_state === 'buy-course' && 
-               !$this->is_out_of_stock && 
-               !$this->show_countdown;
+        // Display when box_state is buy-course, regardless of stock
+        return $this->box_state === 'buy-course';
     }
     
     protected function get_box_classes() {

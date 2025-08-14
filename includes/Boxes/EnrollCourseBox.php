@@ -10,11 +10,8 @@ namespace CourseBoxManager\Boxes;
 class EnrollCourseBox extends AbstractBox {
     
     public function should_display() {
-        // Allow display if box_state is enroll-course and not out of stock/countdown
-        // Don't require valid dates - any text is acceptable
-        return $this->box_state === 'enroll-course' && 
-               !$this->is_out_of_stock && 
-               !$this->show_countdown;
+        // Display when box_state is enroll-course, regardless of stock or countdown
+        return $this->box_state === 'enroll-course';
     }
     
     protected function get_box_classes() {

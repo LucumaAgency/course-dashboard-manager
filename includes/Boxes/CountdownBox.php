@@ -10,7 +10,8 @@ namespace CourseBoxManager\Boxes;
 class CountdownBox extends AbstractBox {
     
     public function should_display() {
-        return $this->show_countdown && $this->launch_date;
+        // Only display when explicitly set to countdown state
+        return $this->box_state === 'countdown' && $this->show_countdown && $this->launch_date;
     }
     
     protected function get_box_classes() {

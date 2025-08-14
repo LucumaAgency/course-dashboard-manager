@@ -10,7 +10,8 @@ namespace CourseBoxManager\Boxes;
 class SoldOutBox extends AbstractBox {
     
     public function should_display() {
-        return $this->box_state === 'soldout' && $this->is_out_of_stock;
+        // Display when box_state is soldout, regardless of actual stock
+        return $this->box_state === 'soldout';
     }
     
     protected function get_box_classes() {

@@ -10,9 +10,8 @@ namespace CourseBoxManager\Boxes;
 class WaitlistBox extends AbstractBox {
     
     public function should_display() {
-        return $this->box_state === 'waitlist' && 
-               empty($this->available_dates) && 
-               !$this->is_out_of_stock;
+        // Display when box_state is waitlist, regardless of dates or stock
+        return $this->box_state === 'waitlist';
     }
     
     protected function get_box_classes() {
