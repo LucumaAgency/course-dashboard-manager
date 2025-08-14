@@ -782,6 +782,8 @@ function course_box_tables_page() {
                     
                     if (boxState === 'enroll-course' || boxState === 'soldout' || boxState === 'countdown') {
                         data.date = row.querySelector('.inline-edit-date')?.value || '';
+                        console.log('[CBM Debug] Date input element:', row.querySelector('.inline-edit-date'));
+                        console.log('[CBM Debug] Date value:', data.date);
                         if (!data.date) {
                             alert('Please enter a date');
                             return;
@@ -794,6 +796,9 @@ function course_box_tables_page() {
                     
                     statusSpan.className = 'save-status saving';
                     statusSpan.textContent = 'Saving...';
+                    
+                    console.log('[CBM Debug] Sending data to server:', data);
+                    console.log('[CBM Debug] Box state:', boxState);
                     
                     fetch(ajaxurl + '?action=save_table_row_data', {
                         method: 'POST',
@@ -813,6 +818,7 @@ function course_box_tables_page() {
                                 setTimeout(() => location.reload(), 1000);
                             }
                         } else {
+                            console.error('[CBM Debug] Save failed:', result);
                             statusSpan.className = 'save-status error';
                             statusSpan.textContent = '✗ ' + (result.data || 'Error');
                         }
@@ -2473,8 +2479,19 @@ function save_table_row_data() {
     
     // Date is optional for buy-course state
     $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
-    if (!$course_id || ($box_state !== 'buy-course' && !$date)) {
-        wp_send_json_error('Invalid course ID or date');
+    
+    // Debug logging
+    error_log('[CBM Debug] save_table_row_data - Course ID: ' . $course_id . ', Box State: ' . $box_state . ', Date: ' . $date . ', Date Index: ' . $date_index);
+    
+    if (!$course_id) {
+        error_log('[CBM Debug] Error: Invalid course ID');
+        wp_send_json_error('Invalid course ID');
+    }
+    
+    // Date is required for states that use dates (enroll-course, soldout, countdown)
+    if (in_array($box_state, ['enroll-course', 'soldout', 'countdown']) && empty($date)) {
+        error_log('[CBM Debug] Error: Date required for box state ' . $box_state . ' but was empty');
+        wp_send_json_error('Date is required for ' . $box_state . ' state');
     }
     
     // Update product association
