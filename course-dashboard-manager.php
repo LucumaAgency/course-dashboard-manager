@@ -637,6 +637,8 @@ function course_box_tables_page() {
                     row.className = 'course-row editable-row';
                     row.dataset.courseId = course.id;
                     
+                    console.log('[CBM Debug] addTableRow - Course ID:', course.id, 'Date Info:', dateInfo);
+                    
                     if (dateInfo) {
                         row.dataset.dateIndex = dateInfo.index;
                     } else {
@@ -853,7 +855,14 @@ function course_box_tables_page() {
                 
                 // Add new row button
                 document.getElementById('add-new-row').addEventListener('click', function() {
-                    const firstCourse = coursesData[0] || {id: 0, product_id: '', stock: 20};
+                    // Need at least one course to add a row
+                    if (!coursesData || coursesData.length === 0) {
+                        alert('Please add at least one course to the group first.');
+                        return;
+                    }
+                    
+                    const firstCourse = coursesData[0];
+                    console.log('[CBM Debug] Adding new row with course:', firstCourse);
                     addTableRow(firstCourse, null, currentBoxState);
                 });
                 
