@@ -595,8 +595,16 @@ function course_box_tables_page() {
         
         <script>
             document.addEventListener('DOMContentLoaded', function() {
+                console.log('[CBM Debug] DOMContentLoaded - Tables view script starting');
+                console.log('[CBM Debug] Group ID:', typeof groupId !== 'undefined' ? groupId : 'NOT DEFINED');
+                console.log('[CBM Debug] Courses data available:', typeof coursesData !== 'undefined' ? 'YES' : 'NO');
+                console.log('[CBM Debug] All products available:', typeof allProducts !== 'undefined' ? 'YES' : 'NO');
+                
                 let currentBoxState = document.getElementById('group-box-state').value;
                 let rowCounter = 0;
+                
+                console.log('[CBM Debug] Current box state:', currentBoxState);
+                console.log('[CBM Debug] Courses data:', typeof coursesData !== 'undefined' ? coursesData : 'NOT DEFINED');
                 
                 // Function to render table based on box state
                 function renderTable(boxState) {
@@ -905,24 +913,37 @@ function course_box_tables_page() {
                 }
                 
                 // Add new row button
-                document.getElementById('add-new-row').addEventListener('click', function() {
-                    // If no courses in group, open the add course modal
-                    if (!coursesData || coursesData.length === 0) {
-                        // Check if we have the add course modal
-                        const addCourseModal = document.getElementById('add-course-modal');
-                        if (addCourseModal) {
-                            addCourseModal.style.display = 'block';
-                        } else {
-                            alert('Please add at least one course to the group first using the "Add Course to Group" button.');
+                const addNewRowBtn = document.getElementById('add-new-row');
+                console.log('[CBM Debug] Add new row button element:', addNewRowBtn);
+                
+                if (addNewRowBtn) {
+                    addNewRowBtn.addEventListener('click', function() {
+                        console.log('[CBM Debug] Add new row button clicked!');
+                        console.log('[CBM Debug] coursesData:', coursesData);
+                        
+                        // If no courses in group, open the add course modal
+                        if (!coursesData || coursesData.length === 0) {
+                            console.log('[CBM Debug] No courses in group, opening modal...');
+                            // Check if we have the add course modal
+                            const addCourseModal = document.getElementById('add-course-modal');
+                            console.log('[CBM Debug] Modal element:', addCourseModal);
+                            
+                            if (addCourseModal) {
+                                addCourseModal.style.display = 'block';
+                            } else {
+                                alert('Please add at least one course to the group first using the "Add Course to Group" button.');
+                            }
+                            return;
                         }
-                        return;
-                    }
-                    
-                    // If we have courses, add a new date row for the first course
-                    const firstCourse = coursesData[0];
-                    console.log('[CBM Debug] Adding new row with course:', firstCourse);
-                    addTableRow(firstCourse, null, currentBoxState);
-                });
+                        
+                        // If we have courses, add a new date row for the first course
+                        const firstCourse = coursesData[0];
+                        console.log('[CBM Debug] Adding new row with course:', firstCourse);
+                        addTableRow(firstCourse, null, currentBoxState);
+                    });
+                } else {
+                    console.error('[CBM Debug] Add new row button not found!');
+                }
                 
                 // Box state change handler
                 document.getElementById('group-box-state').addEventListener('change', function() {
@@ -940,14 +961,27 @@ function course_box_tables_page() {
                 });
                 
                 // Apply group settings button
-                document.getElementById('apply-group-settings').addEventListener('click', function() {
-                    const boxState = document.getElementById('group-box-state').value;
-                    const instructorId = document.getElementById('group-instructor').value;
-                    const sellingPageId = document.getElementById('group-selling-page').value;
-                    
-                    if (!confirm('Apply these settings to all courses in the group?')) return;
-                    
-                    fetch(ajaxurl + '?action=apply_group_settings', {
+                const applySettingsBtn = document.getElementById('apply-group-settings');
+                console.log('[CBM Debug] Apply settings button element:', applySettingsBtn);
+                
+                if (applySettingsBtn) {
+                    applySettingsBtn.addEventListener('click', function() {
+                        console.log('[CBM Debug] Apply settings button clicked!');
+                        
+                        const boxState = document.getElementById('group-box-state').value;
+                        const instructorId = document.getElementById('group-instructor').value;
+                        const sellingPageId = document.getElementById('group-selling-page').value;
+                        
+                        console.log('[CBM Debug] Settings to apply:', {boxState, instructorId, sellingPageId});
+                        
+                        if (!confirm('Apply these settings to all courses in the group?')) {
+                            console.log('[CBM Debug] User cancelled apply settings');
+                            return;
+                        }
+                        
+                        console.log('[CBM Debug] Sending apply settings request...');
+                        
+                        fetch(ajaxurl + '?action=apply_group_settings', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                         body: 'group_id=' + groupId + 
@@ -958,14 +992,22 @@ function course_box_tables_page() {
                     })
                     .then(response => response.json())
                     .then(result => {
+                        console.log('[CBM Debug] Apply settings result:', result);
                         if (result.success) {
                             alert('Settings applied successfully');
                             location.reload();
                         } else {
-                            alert('Error applying settings');
+                            alert('Error applying settings: ' + (result.data || 'Unknown error'));
                         }
+                    })
+                    .catch(error => {
+                        console.error('[CBM Debug] Apply settings error:', error);
+                        alert('Error applying settings. Check console for details.');
                     });
-                });
+                    });
+                } else {
+                    console.error('[CBM Debug] Apply settings button not found!');
+                }
                 
                 // Initial render
                 renderTable(currentBoxState);
