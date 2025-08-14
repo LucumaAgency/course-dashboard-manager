@@ -31,7 +31,7 @@ class SoldOutBox extends AbstractBox {
                 </div>
                 <h3>Join Waitlist for Free</h3>
                 <p class="description">Gain access to live streams, free credits for Arcana, and more.</p>
-                <?php echo do_shortcode('[contact-form-7 id="c2b4e27" title="Course Sold Out"]'); ?>
+                <?php echo do_shortcode('[contact-form-7 id="255b390" title="Course Launch"]'); ?>
                 <p class="terms">By signing up, you agree to the Terms & Conditions.</p>
             <?php else : ?>
                 <?php echo $custom_text; ?>
