@@ -485,7 +485,8 @@ function course_box_tables_page() {
                             foreach ($products as $product) {
                                 $all_products[$product->get_id()] = [
                                     'name' => $product->get_name(),
-                                    'price' => $product->get_price()
+                                    'regular_price' => $product->get_regular_price(),
+                                    'sale_price' => $product->get_sale_price()
                                 ];
                             }
                         } catch (Exception $e) {
@@ -650,45 +651,50 @@ function course_box_tables_page() {
                     // Build header based on box state
                     let headerHTML = '<tr>';
                     if (boxState === 'enroll-course') {
-                        headerHTML += '<th style="width: 12%;">Date</th>';
-                        headerHTML += '<th style="width: 18%;">Associated Product</th>';
-                        headerHTML += '<th style="width: 10%;">Price</th>';
-                        headerHTML += '<th style="width: 10%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 8%;">Sold</th>';
-                        headerHTML += '<th style="width: 10%;">Available</th>';
-                        headerHTML += '<th style="width: 17%;">Button Text</th>';
-                        headerHTML += '<th style="width: 15%;">Actions</th>';
-                    } else if (boxState === 'buy-course') {
-                        headerHTML += '<th style="width: 25%;">Associated Product</th>';
-                        headerHTML += '<th style="width: 15%;">Price</th>';
-                        headerHTML += '<th style="width: 15%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 15%;">Available</th>';
-                        headerHTML += '<th style="width: 20%;">Button Text</th>';
-                        headerHTML += '<th style="width: 10%;">Actions</th>';
-                    } else if (boxState === 'countdown') {
                         headerHTML += '<th style="width: 10%;">Date</th>';
                         headerHTML += '<th style="width: 15%;">Associated Product</th>';
-                        headerHTML += '<th style="width: 10%;">Price</th>';
-                        headerHTML += '<th style="width: 15%;">Launch Date & Time</th>';
+                        headerHTML += '<th style="width: 8%;">Regular Price</th>';
+                        headerHTML += '<th style="width: 8%;">Sale Price</th>';
                         headerHTML += '<th style="width: 8%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 8%;">Sold</th>';
-                        headerHTML += '<th style="width: 10%;">Available</th>';
-                        headerHTML += '<th style="width: 14%;">Button Text</th>';
-                        headerHTML += '<th style="width: 10%;">Actions</th>';
-                    } else if (boxState === 'waitlist') {
-                        headerHTML += '<th style="width: 25%;">Associated Product</th>';
-                        headerHTML += '<th style="width: 15%;">Price</th>';
-                        headerHTML += '<th style="width: 25%;">Button Text</th>';
-                        headerHTML += '<th style="width: 35%;">Actions</th>';
-                    } else if (boxState === 'soldout') {
-                        headerHTML += '<th style="width: 12%;">Date</th>';
-                        headerHTML += '<th style="width: 18%;">Associated Product</th>';
-                        headerHTML += '<th style="width: 10%;">Price</th>';
-                        headerHTML += '<th style="width: 10%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 8%;">Sold</th>';
-                        headerHTML += '<th style="width: 10%;">Available</th>';
+                        headerHTML += '<th style="width: 7%;">Sold</th>';
+                        headerHTML += '<th style="width: 8%;">Available</th>';
+                        headerHTML += '<th style="width: 15%;">Button Text</th>';
+                        headerHTML += '<th style="width: 21%;">Actions</th>';
+                    } else if (boxState === 'buy-course') {
+                        headerHTML += '<th style="width: 20%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 12%;">Regular Price</th>';
+                        headerHTML += '<th style="width: 12%;">Sale Price</th>';
+                        headerHTML += '<th style="width: 12%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 12%;">Available</th>';
                         headerHTML += '<th style="width: 17%;">Button Text</th>';
                         headerHTML += '<th style="width: 15%;">Actions</th>';
+                    } else if (boxState === 'countdown') {
+                        headerHTML += '<th style="width: 8%;">Date</th>';
+                        headerHTML += '<th style="width: 13%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 8%;">Regular Price</th>';
+                        headerHTML += '<th style="width: 8%;">Sale Price</th>';
+                        headerHTML += '<th style="width: 13%;">Launch Date & Time</th>';
+                        headerHTML += '<th style="width: 7%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 7%;">Sold</th>';
+                        headerHTML += '<th style="width: 8%;">Available</th>';
+                        headerHTML += '<th style="width: 13%;">Button Text</th>';
+                        headerHTML += '<th style="width: 15%;">Actions</th>';
+                    } else if (boxState === 'waitlist') {
+                        headerHTML += '<th style="width: 20%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 15%;">Regular Price</th>';
+                        headerHTML += '<th style="width: 15%;">Sale Price</th>';
+                        headerHTML += '<th style="width: 20%;">Button Text</th>';
+                        headerHTML += '<th style="width: 30%;">Actions</th>';
+                    } else if (boxState === 'soldout') {
+                        headerHTML += '<th style="width: 10%;">Date</th>';
+                        headerHTML += '<th style="width: 15%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 8%;">Regular Price</th>';
+                        headerHTML += '<th style="width: 8%;">Sale Price</th>';
+                        headerHTML += '<th style="width: 8%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 7%;">Sold</th>';
+                        headerHTML += '<th style="width: 8%;">Available</th>';
+                        headerHTML += '<th style="width: 15%;">Button Text</th>';
+                        headerHTML += '<th style="width: 21%;">Actions</th>';
                     }
                     headerHTML += '</tr>';
                     tableHeader.innerHTML = headerHTML;
@@ -739,7 +745,8 @@ function course_box_tables_page() {
                     if (boxState === 'enroll-course') {
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-price" value="${getProductPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
@@ -752,7 +759,8 @@ function course_box_tables_page() {
                     } else if (boxState === 'soldout') {
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-price" value="${getProductPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="0" min="0" readonly style="width: 100%; padding: 3px; background: #f0f0f0;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: #d54e21; font-weight: bold;">0</span></td>`;
@@ -764,7 +772,8 @@ function course_box_tables_page() {
                         </td>`;
                     } else if (boxState === 'buy-course') {
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-price" value="${getProductPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Buy Now" style="width: 100%; padding: 3px;"></td>`;
@@ -776,7 +785,8 @@ function course_box_tables_page() {
                     } else if (boxState === 'countdown') {
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-price" value="${getProductPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="datetime-local" class="inline-edit-launch-date" value="${course.launch_date || ''}" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
@@ -789,7 +799,8 @@ function course_box_tables_page() {
                         </td>`;
                     } else if (boxState === 'waitlist') {
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-price" value="${getProductPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Join Waitlist" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>
                             <button class="button button-small button-primary save-row">Save</button>
@@ -814,21 +825,30 @@ function course_box_tables_page() {
                     return html;
                 }
                 
-                // Get current product price
-                function getProductPrice(productId) {
+                // Get product regular price
+                function getProductRegularPrice(productId) {
                     if (!productId || !allProducts[productId]) return '';
-                    return allProducts[productId].price || '';
+                    return allProducts[productId].regular_price || '';
                 }
                 
-                // Update price field when product changes
+                // Get product sale price
+                function getProductSalePrice(productId) {
+                    if (!productId || !allProducts[productId]) return '';
+                    return allProducts[productId].sale_price || '';
+                }
+                
+                // Update price fields when product changes
                 window.updateProductPrice = function(selectElement) {
                     const productId = selectElement.value;
                     const row = selectElement.closest('tr');
-                    const priceInput = row.querySelector('.inline-edit-price');
+                    const regularPriceInput = row.querySelector('.inline-edit-regular-price');
+                    const salePriceInput = row.querySelector('.inline-edit-sale-price');
                     
-                    if (priceInput) {
-                        const price = getProductPrice(productId);
-                        priceInput.value = price || '';
+                    if (regularPriceInput) {
+                        regularPriceInput.value = getProductRegularPrice(productId) || '';
+                    }
+                    if (salePriceInput) {
+                        salePriceInput.value = getProductSalePrice(productId) || '';
                     }
                 }
                 
@@ -886,7 +906,8 @@ function course_box_tables_page() {
                         box_state: boxState,
                         instructor_id: instructorId,
                         product_id: row.querySelector('.inline-edit-product')?.value || '',
-                        product_price: row.querySelector('.inline-edit-price')?.value || '',
+                        regular_price: row.querySelector('.inline-edit-regular-price')?.value || '',
+                        sale_price: row.querySelector('.inline-edit-sale-price')?.value || '',
                         stock: row.querySelector('.inline-edit-stock')?.value || 0,
                         button_text: row.querySelector('.inline-edit-button-text')?.value || 'Enroll Now'
                     };
@@ -2740,7 +2761,8 @@ function save_table_row_data() {
     $course_id = intval($_POST['course_id']);
     $date_index = sanitize_text_field($_POST['date_index']);
     $product_id = intval($_POST['product_id']);
-    $product_price = isset($_POST['product_price']) ? floatval($_POST['product_price']) : null;
+    $regular_price = isset($_POST['regular_price']) ? floatval($_POST['regular_price']) : null;
+    $sale_price = isset($_POST['sale_price']) ? floatval($_POST['sale_price']) : null;
     $instructor_id = intval($_POST['instructor_id']);
     $stock = intval($_POST['stock']);
     $button_text = sanitize_text_field($_POST['button_text']);
@@ -2764,18 +2786,37 @@ function save_table_row_data() {
         wp_send_json_error('Date is required for ' . $box_state . ' state');
     }
     
-    // Update product association and price
+    // Update product association and prices
     if ($product_id) {
         update_post_meta($course_id, 'linked_product_id', $product_id);
         
-        // Update product price in WooCommerce if provided
-        if ($product_price !== null && function_exists('wc_get_product')) {
+        // Update product prices in WooCommerce if provided
+        if (function_exists('wc_get_product')) {
             $product = wc_get_product($product_id);
             if ($product) {
-                $product->set_regular_price($product_price);
-                $product->set_price($product_price);
-                $product->save();
-                error_log('[CBM Debug] Updated product ' . $product_id . ' price to: ' . $product_price);
+                $price_updated = false;
+                
+                // Update regular price if provided
+                if ($regular_price !== null && $regular_price >= 0) {
+                    $product->set_regular_price($regular_price);
+                    $price_updated = true;
+                    error_log('[CBM Debug] Updated product ' . $product_id . ' regular price to: ' . $regular_price);
+                }
+                
+                // Update sale price if provided
+                if ($sale_price !== null && $sale_price !== '') {
+                    if ($sale_price > 0) {
+                        $product->set_sale_price($sale_price);
+                    } else {
+                        $product->set_sale_price(''); // Clear sale price if 0 or empty
+                    }
+                    $price_updated = true;
+                    error_log('[CBM Debug] Updated product ' . $product_id . ' sale price to: ' . $sale_price);
+                }
+                
+                if ($price_updated) {
+                    $product->save();
+                }
             }
         }
         
