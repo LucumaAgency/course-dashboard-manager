@@ -17,12 +17,14 @@ define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Helper function to safely get ACF field
-function cbm_cbm_get_field($field, $post_id = false, $default = null) {
+function cbm_get_field($field, $post_id = false, $default = null) {
     if (function_exists('get_field')) {
-        $value = cbm_get_field($field, $post_id);
+        $value = get_field($field, $post_id);
         return $value !== false ? $value : $default;
     }
-    return $default;
+    // Fallback to post meta
+    $value = get_post_meta($post_id, $field, true);
+    return $value !== '' ? $value : $default;
 }
 
 // Helper function to safely update ACF field
@@ -30,7 +32,8 @@ function cbm_update_field($field, $value, $post_id = false) {
     if (function_exists('update_field')) {
         return update_field($field, $value, $post_id);
     }
-    return false;
+    // Fallback to post meta
+    return update_post_meta($post_id, $field, $value);
 }
 
 // Autoloader for classes
@@ -2746,21 +2749,37 @@ function save_table_row_data() {
     if ($instructor_id) {
         $instructors = [$instructor_id]; // Store as array for consistency
         update_post_meta($course_id, 'course_instructors', $instructors);
-        cbm_update_field('course_instructors', $instructors, $course_id);
+        if (function_exists('update_field')) {
+            update_field('course_instructors', $instructors, $course_id);
+        }
     } else {
         delete_post_meta($course_id, 'course_instructors');
-        delete_field('course_instructors', $course_id);
+        if (function_exists('delete_field')) {
+            delete_field('course_instructors', $course_id);
+        }
     }
     
     // Handle dates based on box state
     if ($box_state === 'buy-course' || $box_state === 'waitlist') {
         // These states don't use dates
-        delete_field('course_dates', $course_id);
+        if (function_exists('delete_field')) {
+            delete_field('course_dates', $course_id);
+        } else {
+            delete_post_meta($course_id, 'course_dates');
+        }
         // Store stock directly on course
-        cbm_update_field('course_stock', $stock, $course_id);
+        update_post_meta($course_id, 'course_stock', $stock);
+        if (function_exists('update_field')) {
+            update_field('course_stock', $stock, $course_id);
+        }
     } else {
         // Get existing dates
-        $existing_dates = cbm_get_field('course_dates', $course_id) ?: [];
+        $existing_dates = [];
+        if (function_exists('get_field')) {
+            $existing_dates = get_field('course_dates', $course_id) ?: [];
+        } else {
+            $existing_dates = get_post_meta($course_id, 'course_dates', true) ?: [];
+        }
         
         // Update or add the date entry
         if ($date_index === 'new') {
@@ -2783,7 +2802,10 @@ function save_table_row_data() {
         }
         
         // Save the updated dates
-        cbm_update_field('course_dates', $existing_dates, $course_id);
+        update_post_meta($course_id, 'course_dates', $existing_dates);
+        if (function_exists('update_field')) {
+            update_field('course_dates', $existing_dates, $course_id);
+        }
     }
     
     wp_send_json_success(['message' => 'Data saved successfully']);
