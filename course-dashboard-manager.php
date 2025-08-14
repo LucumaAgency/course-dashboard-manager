@@ -540,6 +540,51 @@ function course_box_tables_page() {
                 color: #f0ad4e;
                 font-style: italic;
             }
+            /* Modal styles for tables view */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.4);
+            }
+            .modal-content {
+                background-color: #fff;
+                margin: 15% auto;
+                padding: 20px;
+                border: 1px solid #888;
+                width: 80%;
+                max-width: 500px;
+                border-radius: 5px;
+            }
+            .modal-close {
+                color: #aaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            .modal-close:hover,
+            .modal-close:focus {
+                color: #000;
+            }
+            .modal-content h2 {
+                margin-top: 0;
+            }
+            .modal-content label {
+                display: block;
+                margin: 15px 0 5px;
+            }
+            .modal-content select {
+                width: 100%;
+                padding: 8px;
+                margin-bottom: 15px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+            }
         </style>
         
         <script>
@@ -920,6 +965,95 @@ function course_box_tables_page() {
                 renderTable(currentBoxState);
             });
         </script>
+        
+        <!-- Modal for Adding Course in Tables View -->
+        <div id="add-course-modal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <span class="modal-close">×</span>
+                <h2>Add Course to Group</h2>
+                <label>Select Course:</label>
+                <select id="course-select" style="width: 100%; margin-bottom: 15px;">
+                    <option value="">Select a course...</option>
+                    <?php
+                    // Get all available courses
+                    $all_courses = get_posts([
+                        'post_type' => 'course',
+                        'posts_per_page' => -1,
+                        'orderby' => 'title',
+                        'order' => 'ASC'
+                    ]);
+                    
+                    // Get courses already in the group
+                    $existing_course_ids = [];
+                    foreach ($courses as $course) {
+                        $existing_course_ids[] = $course->ID;
+                    }
+                    
+                    // Display only courses not already in the group
+                    foreach ($all_courses as $course) {
+                        if (!in_array($course->ID, $existing_course_ids)) {
+                            echo '<option value="' . esc_attr($course->ID) . '">' . esc_html($course->post_title) . '</option>';
+                        }
+                    }
+                    ?>
+                </select>
+                <button class="button button-primary" id="add-course-to-group">Add to Group</button>
+            </div>
+        </div>
+        
+        <script>
+            // Modal functionality for tables view
+            document.addEventListener('DOMContentLoaded', function() {
+                const modal = document.getElementById('add-course-modal');
+                const closeBtn = modal?.querySelector('.modal-close');
+                const addBtn = document.getElementById('add-course-to-group');
+                
+                // Close modal when clicking X
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function() {
+                        modal.style.display = 'none';
+                    });
+                }
+                
+                // Close modal when clicking outside
+                window.addEventListener('click', function(event) {
+                    if (event.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+                
+                // Add course to group
+                if (addBtn) {
+                    addBtn.addEventListener('click', function() {
+                        const courseId = document.getElementById('course-select').value;
+                        const groupId = <?php echo intval($group_id); ?>;
+                        
+                        if (!courseId) {
+                            alert('Please select a course');
+                            return;
+                        }
+                        
+                        // Send AJAX request to add course to group
+                        fetch(ajaxurl + '?action=assign_course_to_group', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: 'course_id=' + courseId + '&group_id=' + groupId + 
+                                  '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                // Reload the page to show the new course
+                                location.reload();
+                            } else {
+                                alert('Error: ' + (result.data || 'Failed to add course'));
+                            }
+                        });
+                    });
+                }
+            });
+        </script>
+        
         <?php endif; // End of group detail view ?>
         
         <!-- JavaScript for Add New Group form (only on groups list view) -->
