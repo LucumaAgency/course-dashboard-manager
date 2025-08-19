@@ -2998,6 +2998,75 @@ function apply_group_settings() {
     wp_send_json_success(['message' => 'Settings applied to all courses']);
 }
 
+// AJAX Handler for popup boxes
+add_action('wp_ajax_cbm_get_course_boxes', 'cbm_get_course_boxes');
+add_action('wp_ajax_nopriv_cbm_get_course_boxes', 'cbm_get_course_boxes');
+function cbm_get_course_boxes() {
+    // Verify nonce
+    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cbm_popup_nonce')) {
+        wp_send_json_error('Invalid nonce');
+    }
+    
+    $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+    $context = isset($_POST['context']) ? sanitize_text_field($_POST['context']) : 'popup';
+    
+    if (!$course_id) {
+        // Try to get from referer URL
+        $referer = wp_get_referer();
+        if ($referer) {
+            $post_id = url_to_postid($referer);
+            if ($post_id && get_post_type($post_id) === 'course') {
+                $course_id = $post_id;
+            }
+        }
+    }
+    
+    if (!$course_id) {
+        wp_send_json_error('Course ID not provided');
+    }
+    
+    // Include the popup renderer
+    require_once CBM_PLUGIN_DIR . 'includes/Popup/PopupBoxRenderer.php';
+    
+    $renderer = new \CourseBoxManager\Popup\PopupBoxRenderer();
+    $html = $renderer->render($course_id, $context);
+    
+    wp_send_json_success(['html' => $html]);
+}
+
+// Enqueue popup scripts and styles
+add_action('wp_enqueue_scripts', 'cbm_enqueue_popup_assets');
+function cbm_enqueue_popup_assets() {
+    // Register the popup script
+    wp_register_script(
+        'cbm-popup-auto',
+        CBM_PLUGIN_URL . 'assets/js/cbm-popup-auto.js',
+        array('jquery'),
+        '1.0.0',
+        true
+    );
+    
+    // Register the popup styles
+    wp_register_style(
+        'cbm-popup',
+        CBM_PLUGIN_URL . 'assets/css/cbm-popup.css',
+        array(),
+        '1.0.0'
+    );
+    
+    // Localize script with AJAX data
+    wp_localize_script('cbm-popup-auto', 'cbm_ajax', array(
+        'url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('cbm_popup_nonce')
+    ));
+    
+    // Always enqueue on frontend (will only activate if trigger class is found)
+    if (!is_admin()) {
+        wp_enqueue_script('cbm-popup-auto');
+        wp_enqueue_style('cbm-popup');
+    }
+}
+
 // Shortcode to render boxes
 function course_box_manager_shortcode() {
     global $post;

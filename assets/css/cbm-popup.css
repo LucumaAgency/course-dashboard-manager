@@ -1,0 +1,323 @@
+/**
+ * Course Box Manager - Popup Styles
+ * Responsive popup with automatic tab conversion for mobile
+ */
+
+/* Overlay */
+.cbm-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 99998;
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Container */
+.cbm-popup-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 99999;
+    animation: slideIn 0.3s ease;
+}
+
+/* Close button */
+.cbm-popup-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    cursor: pointer;
+    color: #666;
+    z-index: 100000;
+    transition: color 0.3s ease;
+}
+
+.cbm-popup-close:hover {
+    color: #000;
+}
+
+/* Content wrapper */
+.cbm-popup-content {
+    padding: 30px;
+    position: relative;
+}
+
+/* Loader */
+.cbm-loader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+}
+
+.cbm-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Error message */
+.cbm-error {
+    padding: 20px;
+    text-align: center;
+    color: #e74c3c;
+    font-size: 16px;
+}
+
+/* No boxes message */
+.cbm-no-boxes {
+    padding: 40px;
+    text-align: center;
+    color: #666;
+    font-size: 16px;
+}
+
+/* Tabs System */
+.cbm-tabs {
+    width: 100%;
+}
+
+.cbm-tabs-header {
+    display: flex;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.cbm-tab-btn {
+    flex: 1;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.cbm-tab-btn:hover {
+    color: #333;
+}
+
+.cbm-tab-btn.active {
+    color: #F22EBE;
+    font-weight: 600;
+}
+
+.cbm-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #F22EBE;
+}
+
+.cbm-tabs-content {
+    padding: 10px 0;
+}
+
+.cbm-tab-pane {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.cbm-tab-pane.active {
+    display: block;
+}
+
+/* Single box container */
+.cbm-popup-container.has-one-box .cbm-popup-content {
+    padding: 20px;
+}
+
+/* Multiple boxes (3+) */
+.cbm-popup-container.has-multiple-boxes .cbm-box-wrapper {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.cbm-popup-container.has-multiple-boxes .cbm-box-wrapper:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* Desktop view */
+.cbm-popup-container.desktop-view {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 30px;
+}
+
+.cbm-popup-container.desktop-view .box {
+    flex: 1;
+    min-width: 250px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .cbm-popup-container {
+        max-width: 95%;
+        max-height: 95vh;
+        margin: 10px;
+    }
+    
+    .cbm-popup-content {
+        padding: 20px 15px;
+    }
+    
+    .cbm-popup-close {
+        top: 10px;
+        right: 10px;
+        width: 25px;
+        height: 25px;
+        font-size: 24px;
+    }
+    
+    /* Tab buttons on mobile */
+    .cbm-tab-btn {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    
+    /* Ensure boxes fill width on mobile */
+    .cbm-popup-container .box {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    /* Stack desktop view on mobile */
+    .cbm-popup-container.desktop-view {
+        flex-direction: column;
+        padding: 20px;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+    .cbm-popup-container {
+        max-width: 100%;
+        height: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        margin: 0;
+    }
+    
+    .cbm-popup-content {
+        padding: 15px 10px;
+    }
+    
+    .cbm-tabs-header {
+        margin-bottom: 15px;
+    }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Accessibility */
+.cbm-popup-container:focus-visible {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Ensure proper scrolling */
+body.cbm-popup-open {
+    overflow: hidden;
+}
+
+/* Box specific adjustments in popup */
+.cbm-popup-container .box {
+    margin: 0;
+    box-shadow: none;
+    border: 1px solid #e0e0e0;
+}
+
+.cbm-popup-container .box.selected {
+    border-color: #F22EBE;
+    box-shadow: 0 0 10px rgba(242, 46, 190, 0.2);
+}
+
+/* Date buttons in popup */
+.cbm-popup-container .date-btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 10px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.cbm-popup-container .date-btn:hover {
+    background: #e8e8e8;
+    border-color: #bbb;
+}
+
+.cbm-popup-container .date-btn.selected {
+    background: #F22EBE;
+    color: white;
+    border-color: #F22EBE;
+}
+
+/* Ensure trigger button is visible */
+.cbm-popup-trigger {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.cbm-popup-trigger:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+}
