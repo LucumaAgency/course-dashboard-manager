@@ -19,13 +19,16 @@ class EnrollCourseBox extends AbstractBox {
     }
     
     public function render() {
-        // Get actual price from WooCommerce product if available
+        // Get actual price and stock from WooCommerce product if available
         $display_price = $this->enroll_price;
+        $product_in_stock = true;
+        
         if ($this->course_product_id && function_exists('wc_get_product')) {
             $product = wc_get_product($this->course_product_id);
             if ($product) {
                 $display_price = $product->get_price();
-                error_log('[EnrollCourseBox] Using WooCommerce price: ' . $display_price . ' for product ID: ' . $this->course_product_id);
+                $product_in_stock = $product->is_in_stock();
+                error_log('[EnrollCourseBox] Product ID: ' . $this->course_product_id . ', Price: ' . $display_price . ', In Stock: ' . ($product_in_stock ? 'yes' : 'no'));
             }
         }
         
@@ -75,7 +78,13 @@ class EnrollCourseBox extends AbstractBox {
         
         // Determine button state and text
         $button_html = '';
-        if ($all_sold_out) {
+        if (!$product_in_stock) {
+            // Product is out of stock in WooCommerce
+            $button_html = '<button class="add-to-cart-button sold-out" disabled>
+                <span class="button-text">Out of Stock</span>
+            </button>';
+        } elseif ($all_sold_out) {
+            // All dates are sold out
             $button_html = '<button class="add-to-cart-button sold-out" disabled>
                 <span class="button-text">Sold Out</span>
             </button>';

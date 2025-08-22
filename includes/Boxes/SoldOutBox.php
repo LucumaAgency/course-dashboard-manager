@@ -10,8 +10,21 @@ namespace CourseBoxManager\Boxes;
 class SoldOutBox extends AbstractBox {
     
     public function should_display() {
-        // Display when box_state is soldout, regardless of actual stock
-        return $this->box_state === 'soldout';
+        // Display when box_state is soldout OR when the product is actually out of stock
+        if ($this->box_state === 'soldout') {
+            return true;
+        }
+        
+        // Check actual WooCommerce product stock
+        if ($this->course_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($this->course_product_id);
+            if ($product && !$product->is_in_stock()) {
+                error_log('[SoldOutBox] Product ' . $this->course_product_id . ' is out of stock, displaying sold out box');
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     protected function get_box_classes() {

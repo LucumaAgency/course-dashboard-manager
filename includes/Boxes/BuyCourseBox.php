@@ -19,22 +19,30 @@ class BuyCourseBox extends AbstractBox {
     }
     
     public function render() {
-        // Get actual price from WooCommerce product if available
+        // Get actual price and stock from WooCommerce product if available
         $display_price = $this->course_price;
+        $is_in_stock = true;
+        
         if ($this->course_product_id && function_exists('wc_get_product')) {
             $product = wc_get_product($this->course_product_id);
             if ($product) {
                 $display_price = $product->get_price();
-                error_log('[BuyCourseBox] Using WooCommerce price: ' . $display_price . ' for product ID: ' . $this->course_product_id);
+                $is_in_stock = $product->is_in_stock();
+                error_log('[BuyCourseBox] Product ID: ' . $this->course_product_id . ', Price: ' . $display_price . ', In Stock: ' . ($is_in_stock ? 'yes' : 'no'));
             }
         }
         
         error_log('[BuyCourseBox] Rendering with price: ' . $display_price . ' and product ID: ' . $this->course_product_id);
         
+        // Render button based on stock status
+        $button_html = $is_in_stock 
+            ? $this->render_add_to_cart_button('Buy Course')
+            : '<button class="add-to-cart-button sold-out" disabled><span class="button-text">Out of Stock</span></button>';
+        
         // Get custom text or use default
         $custom_text = $this->process_custom_text('buy', [
             'price' => $this->format_price($display_price),
-            'button' => $this->render_add_to_cart_button('Buy Course')
+            'button' => $button_html
         ]);
         
         ob_start();
@@ -52,7 +60,7 @@ class BuyCourseBox extends AbstractBox {
                         <p class="description">Pay once, own the course forever.</p>
                     </div>
                 </div>
-                <?php echo $this->render_add_to_cart_button('Buy Course'); ?>
+                <?php echo $button_html; ?>
             <?php else : ?>
                 <?php echo $this->render_selection_indicator(); ?>
                 <div class="box-content">
