@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.5.2
+ * Version: 1.5.4
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,6 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('CBM_VERSION', '1.5.4');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -103,6 +104,48 @@ add_filter('fkcart_disabled_post_types', function ($post_types) {
 
 // Add admin menu for dashboard
 add_action('admin_menu', 'course_box_manager_menu', 15); // Priority 15 to ensure proper loading
+
+// Add diagnostic admin notice to verify STM courses
+add_action('admin_notices', 'cbm_stm_diagnostic_notice');
+function cbm_stm_diagnostic_notice() {
+    // Only show on course tables page
+    if (!isset($_GET['page']) || $_GET['page'] !== 'course-box-tables') {
+        return;
+    }
+    
+    // Check for cache clear request
+    if (isset($_GET['cbm_clear_cache']) && $_GET['cbm_clear_cache'] === '1') {
+        // Clear WordPress object cache
+        wp_cache_flush();
+        
+        // Clear transients
+        global $wpdb;
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_%'");
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_site_transient_%'");
+        
+        echo '<div class="notice notice-success is-dismissible"><p>Cache cleared successfully! Plugin version: ' . CBM_VERSION . '</p></div>';
+    }
+    
+    // STM diagnostic
+    $stm_post_types = ['stm-courses', 'stm_lms_courses', 'stm-course', 'stm_course'];
+    $found_type = null;
+    $course_count = 0;
+    
+    foreach ($stm_post_types as $type) {
+        $posts = get_posts(['post_type' => $type, 'posts_per_page' => -1, 'post_status' => 'publish']);
+        if (!empty($posts)) {
+            $found_type = $type;
+            $course_count = count($posts);
+            break;
+        }
+    }
+    
+    if ($found_type) {
+        echo '<div class="notice notice-info"><p><strong>STM LMS Diagnostic:</strong> Found ' . $course_count . ' courses with post type: ' . $found_type . ' | Plugin Version: ' . CBM_VERSION . ' | <a href="?page=course-box-tables&cbm_clear_cache=1">Clear Cache</a></p></div>';
+    } else {
+        echo '<div class="notice notice-warning"><p><strong>STM LMS Diagnostic:</strong> No STM courses found. Checked post types: ' . implode(', ', $stm_post_types) . ' | Plugin Version: ' . CBM_VERSION . ' | <a href="?page=course-box-tables&cbm_clear_cache=1">Clear Cache</a></p></div>';
+    }
+}
 function course_box_manager_menu() {
     // Main menu now redirects to Tables view
     add_menu_page(
@@ -1983,6 +2026,11 @@ function course_box_manager_page() {
                             <p style="font-size: 11px; color: #0073aa; margin-top: 5px; padding: 5px; background: #e7f3ff; border-radius: 3px;">
                                 ℹ️ This field should show STM courses. Check browser console and WordPress logs for debugging info.
                             </p>
+                            <script>
+                            console.log('[CBM] STM Course field rendered for course <?php echo $course_id; ?>');
+                            console.log('[CBM] Plugin version: <?php echo CBM_VERSION; ?>');
+                            console.log('[CBM] STM selector found:', document.getElementById('stm-course') ? 'YES' : 'NO');
+                            </script>
                         </td>
                     </tr>
                     
