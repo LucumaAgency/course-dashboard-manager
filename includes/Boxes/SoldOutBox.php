@@ -65,9 +65,7 @@ class SoldOutBox extends AbstractBox {
         ?>
         <div class="<?php echo esc_attr($this->get_box_classes()); ?>">
             <?php if (empty($custom_text)) : ?>
-                <div class="soldout-header">
-                    <span>THE COURSE IS SOLD OUT</span>
-                </div>
+                <div class="soldout-header"><span>SOLD OUT</span></div>
                 <h3>Join Waitlist for Free</h3>
                 <p class="description">Gain access to live streams, free credits for Arcana, and more.</p>
                 <?php echo do_shortcode('[contact-form-7 id="255b390" title="Course Launch"]'); ?>

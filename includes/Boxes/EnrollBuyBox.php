@@ -208,14 +208,13 @@ class EnrollBuyBox extends AbstractBox {
             display: flex !important;
         }
         
-        /* Ensure boxes in combo don't respond to selectBox */
-        .enroll-buy-combo .box {
-            cursor: default;
+        /* Ensure boxes in combo show their radio buttons properly */
+        .enroll-buy-combo .box.selected .circlecontainer {
+            display: flex !important;
         }
         
-        .enroll-buy-combo .box .circlecontainer,
-        .enroll-buy-combo .box .circle-container {
-            display: none !important;
+        .enroll-buy-combo .box:not(.selected) .circle-container {
+            display: flex !important;
         }
         
         /* Mobile only elements */
@@ -241,7 +240,7 @@ class EnrollBuyBox extends AbstractBox {
             
             .enroll-buy-combo .cbm-tabs-header {
                 display: flex;
-                border-bottom: 2px solid #ddd;
+                border-bottom: 2px solid rgba(255, 255, 255, 0.2);
                 margin-bottom: 20px;
             }
             
@@ -254,10 +253,11 @@ class EnrollBuyBox extends AbstractBox {
                 cursor: pointer;
                 font-size: 16px;
                 transition: all 0.3s;
+                color: white;
             }
             
             .enroll-buy-combo .cbm-tab-btn.active {
-                border-bottom-color: #333;
+                border-bottom-color: #DE04A4;
                 font-weight: bold;
             }
             

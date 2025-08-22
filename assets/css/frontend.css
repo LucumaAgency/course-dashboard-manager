@@ -1,200 +1,204 @@
 /* Course Box Manager - Frontend Styles */
 
 /* Box Container */
-.course-boxes-container {
+.course-boxes-container,
+.box-container {
+    padding: 0;
+    max-width: 1200px;
+    margin: 0 auto;
     display: flex;
-    gap: 20px;
-    margin: 20px 0;
     flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.selectable-box-container {
+    max-width: 350px;
 }
 
 /* Base Box Styles */
 .box {
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    padding: 20px;
-    background: #fff;
     position: relative;
+    max-width: 350px;
+    width: 100%;
+    padding: 15px;
+    background: transparent;
+    border: 2px solid #9B9FAA7A;
+    border-radius: 15px;
+    color: white;
     cursor: pointer;
     transition: all 0.3s ease;
-    flex: 1;
-    min-width: 280px;
-    max-width: 400px;
-}
-
-.box:hover {
-    border-color: #0073aa;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    box-sizing: border-box;
 }
 
 .box.selected {
-    border-color: #0073aa;
-    background: #f0f8ff;
+    background: linear-gradient(180deg, rgba(242, 46, 190, 0.2), rgba(170, 0, 212, 0.2)) !important;
+    border: none;
+    padding: 16px 12px;
 }
 
-/* Box States */
-.box.enroll-course {
-    border-color: #4CAF50;
+.box:not(.selected) {
+    opacity: 0.7;
 }
 
-.box.buy-course {
-    border-color: #2196F3;
+.box h3 {
+    color: #fff;
+    margin-left: 10px;
+    margin-top: 0;
+    font-size: 1.5em;
 }
 
-.box.countdown-course {
-    border-color: #FF9800;
+.box p {
+    color: #fff;
+    margin-left: 10px;
 }
 
-.box.waitlist-course {
-    border-color: #9C27B0;
+.box .description {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.64);
+    margin: 10px 0;
 }
 
-.box.soldout-course {
-    border-color: #F44336;
-    background: #ffebee;
+.statebox {
+    display: flex;
 }
 
-/* Selection Indicators */
-.circlecontainer, .circle-container {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+/* Radio button selected state */
+.circlecontainer {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .outer-circle {
-    width: 24px;
-    height: 24px;
-    border: 2px solid #0073aa;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
+    background-color: #DE04A4;
+    border: 1.45px solid #DE04A4;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .middle-circle {
-    width: 16px;
-    height: 16px;
-    border: 1px solid #0073aa;
+    width: 11.77px;
+    height: 11.77px;
     border-radius: 50%;
+    background-color: #050505;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .inner-circle {
-    width: 8px;
-    height: 8px;
-    background: #0073aa;
+    width: 6.16px;
+    height: 6.16px;
     border-radius: 50%;
+    background-color: #DE04A4;
+}
+
+/* Radio button unselected state */
+.circle-container {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .circle {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #ddd;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-}
-
-/* Headers and Content */
-.box h3 {
-    margin: 0 0 10px 0;
-    font-size: 20px;
-    font-weight: 600;
-    color: #333;
-}
-
-.box-price {
-    font-size: 32px;
-    font-weight: bold;
-    color: #0073aa;
-    margin: 10px 0;
-}
-
-.box .description {
-    color: #666;
-    font-size: 14px;
-    line-height: 1.6;
-    margin: 15px 0;
+    border: 2px solid rgba(155, 159, 170, 0.24);
 }
 
 /* Divider */
-.box hr.divider {
+.divider {
     border: none;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
     margin: 20px 0;
 }
 
-/* Date Selection */
+/* Date selection */
 .start-dates {
-    margin: 15px 0;
+    margin-top: 15px;
+    animation: fadeIn 0.4s ease;
 }
 
 .choose-label {
-    font-weight: 600;
-    color: #333;
+    font-size: 0.95em;
     margin-bottom: 10px;
-    display: block;
+    color: #fff;
 }
 
 .date-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 4px;
 }
 
 .date-btn {
-    padding: 8px 16px;
-    border: 1px solid #ddd;
-    background: #fff;
-    border-radius: 4px;
+    width: auto;
+    min-width: 68px;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 25px;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: white;
     cursor: pointer;
     transition: all 0.3s;
     font-size: 14px;
 }
 
-.date-btn:hover {
-    border-color: #0073aa;
-    background: #f0f8ff;
+.date-btn:hover:not(:disabled),
+.date-btn.selected:not(:disabled) {
+    background-color: #cc3071;
 }
 
-.date-btn.selected {
-    background: #0073aa;
-    color: #fff;
-    border-color: #0073aa;
-}
-
-.date-btn.sold-out {
-    background: #f5f5f5;
+.date-btn.sold-out,
+.date-btn:disabled {
+    background-color: #555;
     color: #999;
     cursor: not-allowed;
-    text-decoration: line-through;
+    opacity: 0.6;
 }
 
 /* Buttons */
 .add-to-cart-button {
-    width: 100%;
-    padding: 12px 20px;
-    background: #0073aa;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.3s;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    width: 100%;
+    height: 40px;
+    padding: 5px 12px;
+    background-color: rgba(255, 255, 255, 0.08);
+    border: none;
+    border-radius: 4px;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.box:not(.selected) .add-to-cart-button {
+    background-color: #cc3071;
 }
 
 .add-to-cart-button:hover {
-    background: #005a87;
+    opacity: 0.8;
 }
 
-.add-to-cart-button.sold-out {
+.add-to-cart-button.sold-out,
+.add-to-cart-button:disabled {
     background: #ccc;
     cursor: not-allowed;
+    opacity: 0.6;
 }
 
 .add-to-cart-button.loading {
@@ -206,57 +210,78 @@
     display: inline-block;
 }
 
-/* Countdown Styles */
-.countdown-timer {
-    display: flex;
-    justify-content: space-around;
-    margin: 20px 0;
-    padding: 15px;
-    background: #f9f9f9;
-    border-radius: 8px;
+/* Loader */
+.loader {
+    width: 8px;
+    height: 8px;
+    border: 2px solid transparent;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
-.countdown-unit {
+/* Sold out box */
+.soldout-header {
+    background: #ff3e3e;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
     text-align: center;
 }
 
-.countdown-value {
-    font-size: 28px;
+.soldout-header span {
+    color: #fff;
     font-weight: bold;
-    color: #333;
-    display: block;
-}
-
-.countdown-label {
-    font-size: 12px;
-    color: #666;
     text-transform: uppercase;
-    margin-top: 5px;
 }
 
-/* State-specific styles */
-.statebox {
+/* Countdown */
+.countdown {
+    background: #800080;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
     display: flex;
-    align-items: flex-start;
+    justify-content: center;
+    align-items: center;
     gap: 15px;
 }
 
-.soldout-header {
-    background: #F44336;
+.countdown span {
     color: #fff;
-    padding: 8px 16px;
-    border-radius: 4px;
-    display: inline-block;
-    margin-bottom: 15px;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 12px;
+    font-size: 0.9em;
+}
+
+.countdown-timer {
+    display: flex;
+    gap: 15px;
+}
+
+.time-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.time-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #fff;
+}
+
+.time-label {
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 /* Terms text */
 .terms {
     font-size: 11px;
-    color: #999;
+    color: rgba(255, 255, 255, 0.6);
     text-align: center;
     margin-top: 15px;
 }
@@ -272,7 +297,6 @@
 }
 
 .enroll-buy-combo .box {
-    cursor: default;
     max-width: 100%;
 }
 
@@ -283,7 +307,7 @@
 
 .cbm-tabs-header {
     display: flex;
-    border-bottom: 2px solid #ddd;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
     margin-bottom: 20px;
 }
 
@@ -296,10 +320,11 @@
     cursor: pointer;
     font-size: 16px;
     transition: all 0.3s;
+    color: white;
 }
 
 .cbm-tab-btn.active {
-    border-bottom-color: #333;
+    border-bottom-color: #DE04A4;
     font-weight: bold;
 }
 
@@ -311,9 +336,26 @@
     display: block;
 }
 
+/* Animations */
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(-5px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
-    .course-boxes-container {
+    .course-boxes-container,
+    .box-container {
         flex-direction: column;
     }
     
@@ -328,4 +370,26 @@
     .date-btn {
         width: 100%;
     }
+}
+
+/* Override for specific box states if needed */
+.box.enroll-course {
+    /* Can add specific styles */
+}
+
+.box.buy-course {
+    /* Can add specific styles */
+}
+
+.box.countdown-course,
+.box.course-launch {
+    /* Can add specific styles */
+}
+
+.box.waitlist-course {
+    /* Can add specific styles */
+}
+
+.box.soldout-course {
+    /* Can add specific styles */
 }

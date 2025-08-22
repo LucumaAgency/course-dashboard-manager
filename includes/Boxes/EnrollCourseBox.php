@@ -15,7 +15,7 @@ class EnrollCourseBox extends AbstractBox {
     }
     
     protected function get_box_classes() {
-        return parent::get_box_classes() . ' enroll-course selected';
+        return parent::get_box_classes() . ' enroll-course';
     }
     
     public function render() {
@@ -34,15 +34,15 @@ class EnrollCourseBox extends AbstractBox {
                     var $box = $(element);
                     if ($box.hasClass("selected")) {
                         $box.removeClass("selected");
-                        $box.find(".circlecontainer").show();
-                        $box.find(".circle-container").hide();
-                    } else {
-                        $box.siblings(".box").removeClass("selected");
-                        $box.siblings(".box").find(".circlecontainer").show();
-                        $box.siblings(".box").find(".circle-container").hide();
-                        $box.addClass("selected");
                         $box.find(".circlecontainer").hide();
                         $box.find(".circle-container").show();
+                    } else {
+                        $box.siblings(".box").removeClass("selected");
+                        $box.siblings(".box").find(".circlecontainer").hide();
+                        $box.siblings(".box").find(".circle-container").show();
+                        $box.addClass("selected");
+                        $box.find(".circlecontainer").show();
+                        $box.find(".circle-container").hide();
                     }
                 };
             }
@@ -147,8 +147,8 @@ class EnrollCourseBox extends AbstractBox {
                     <?php echo $this->render_selection_indicator(); ?>
                     <div>
                         <h3>Enroll in the Live Course</h3>
-                        <div class="box-price"><?php echo $this->format_price($display_price); ?></div>
-                        <p class="description">Join weekly live sessions with feedback and expert mentorship.</p>
+                        <p><?php echo $this->format_price($display_price); ?> USD</p>
+                        <p class="description">Join weekly live sessions with feedback and expert mentorship. Pay Once.</p>
                     </div>
                 </div>
                 
@@ -182,17 +182,17 @@ class EnrollCourseBox extends AbstractBox {
     protected function render_selection_indicator() {
         ob_start();
         ?>
-        <div class="circlecontainer" style="display: flex;">
+        <div class="circlecontainer" style="display: none;">
             <div class="outer-circle">
                 <div class="middle-circle">
                     <div class="inner-circle"></div>
                 </div>
             </div>
         </div>
-        <div class="circle-container" style="display: none;">
+        <div class="circle-container">
             <div class="circle"></div>
         </div>
         <?php
-        return $script . ob_get_clean();
+        return ob_get_clean();
     }
 }

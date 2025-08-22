@@ -53,19 +53,19 @@ class CountdownBox extends AbstractBox {
         
         ob_start();
         ?>
-        <div class="time-unit" data-unit="days">
+        <div class="time-unit">
             <span class="time-value"><?php echo esc_html(sprintf('%02d', $days)); ?></span>
             <span class="time-label">days</span>
         </div>
-        <div class="time-unit" data-unit="hours">
+        <div class="time-unit">
             <span class="time-value"><?php echo esc_html(sprintf('%02d', $hours)); ?></span>
             <span class="time-label">hrs</span>
         </div>
-        <div class="time-unit" data-unit="minutes">
+        <div class="time-unit">
             <span class="time-value"><?php echo esc_html(sprintf('%02d', $minutes)); ?></span>
             <span class="time-label">min</span>
         </div>
-        <div class="time-unit" data-unit="seconds">
+        <div class="time-unit">
             <span class="time-value"><?php echo esc_html(sprintf('%02d', $seconds)); ?></span>
             <span class="time-label">sec</span>
         </div>
