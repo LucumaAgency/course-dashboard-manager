@@ -12,6 +12,7 @@ use CourseBoxManager\Boxes\WaitlistBox;
 use CourseBoxManager\Boxes\CountdownBox;
 use CourseBoxManager\Boxes\BuyCourseBox;
 use CourseBoxManager\Boxes\EnrollCourseBox;
+use CourseBoxManager\Boxes\EnrollBuyBox;
 
 class BoxFactory {
     
@@ -28,6 +29,7 @@ class BoxFactory {
             SoldOutBox::class,
             CountdownBox::class,
             WaitlistBox::class,
+            EnrollBuyBox::class,  // Check this before individual boxes
             BuyCourseBox::class,
             EnrollCourseBox::class
         ];

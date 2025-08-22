@@ -200,6 +200,7 @@ class PopupBoxRenderer {
             'coming_soon' => 'CourseBoxManager\Boxes\CountdownBox',
             'buy_course' => 'CourseBoxManager\Boxes\BuyCourseBox',
             'enroll_course' => 'CourseBoxManager\Boxes\EnrollCourseBox',
+            'enroll_buy' => 'CourseBoxManager\Boxes\EnrollBuyBox',
             'contact' => 'CourseBoxManager\Boxes\ContactBox'
         ];
         
@@ -226,6 +227,7 @@ class PopupBoxRenderer {
         $titles = [
             'buy_course' => 'Buy Course',
             'enroll_course' => 'Enroll',
+            'enroll_buy' => 'Enroll + Buy',
             'sold_out' => 'Sold Out',
             'coming_soon' => 'Coming Soon',
             'contact' => 'Contact'
