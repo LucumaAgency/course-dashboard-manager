@@ -1,8 +1,8 @@
 <?php
 /**
- * Enroll + Buy Course Box Class
+ * Buy Course + Enroll Course Box Class
  * 
- * Displays both buy and enroll options for courses
+ * Displays both buy and enroll options with separate products
  * Shows buy box above enroll box on desktop, tabs on mobile
  */
 
@@ -12,17 +12,42 @@ class EnrollBuyBox extends AbstractBox {
     
     private $buyBox;
     private $enrollBox;
+    private $buy_product_id;
+    private $enroll_product_id;
+    private $buy_price;
+    private $enroll_dates;
     
     public function __construct($course_id) {
         parent::__construct($course_id);
         
-        // Create instances of both boxes
+        // Get the separate product IDs for buy and enroll
+        $this->buy_product_id = get_post_meta($this->course_id, 'buy_product_id', true);
+        $this->enroll_product_id = get_post_meta($this->course_id, 'enroll_product_id', true);
+        
+        // If we don't have separate products, fall back to linked_product_id
+        if (!$this->buy_product_id && !$this->enroll_product_id) {
+            $this->buy_product_id = $this->course_product_id;
+            $this->enroll_product_id = $this->course_product_id;
+        }
+        
+        // Get separate prices if available
+        $this->buy_price = get_post_meta($this->course_id, 'buy_price', true) ?: $this->course_price;
+        
+        // Get enroll dates
+        $this->enroll_dates = cbm_get_field('enroll_dates', $this->course_id) ?: $this->available_dates_full;
+        
+        // Create instances of both boxes with custom configurations
         $this->buyBox = new BuyCourseBox($course_id);
         $this->enrollBox = new EnrollCourseBox($course_id);
         
-        // Override their box_state to make them display
+        // Override their properties to use separate products
         $this->buyBox->box_state = 'buy-course';
+        $this->buyBox->course_product_id = $this->buy_product_id;
+        $this->buyBox->course_price = $this->buy_price;
+        
         $this->enrollBox->box_state = 'enroll-course';
+        $this->enrollBox->course_product_id = $this->enroll_product_id;
+        $this->enrollBox->available_dates_full = $this->enroll_dates ?: $this->available_dates_full;
     }
     
     public function should_display() {

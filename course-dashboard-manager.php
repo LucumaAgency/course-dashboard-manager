@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.5.1
+ * Version: 1.5.2
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -421,7 +421,7 @@ function course_box_tables_page() {
                         <select id="group-box-state" style="margin-left: 10px; padding: 5px; min-width: 150px;">
                             <option value="enroll-course" <?php selected($default_box_state, 'enroll-course'); ?>>Enroll Course</option>
                             <option value="buy-course" <?php selected($default_box_state, 'buy-course'); ?>>Buy Course</option>
-                            <option value="enroll-buy" <?php selected($default_box_state, 'enroll-buy'); ?>>Enroll + Buy Course</option>
+                            <option value="enroll-buy" <?php selected($default_box_state, 'enroll-buy'); ?>>Buy Course + Enroll Course</option>
                             <option value="countdown" <?php selected($default_box_state, 'countdown'); ?>>Countdown Box</option>
                             <option value="waitlist" <?php selected($default_box_state, 'waitlist'); ?>>Waitlist</option>
                             <option value="soldout" <?php selected($default_box_state, 'soldout'); ?>>Sold Out</option>
@@ -1447,13 +1447,13 @@ function course_box_manager_page() {
                             <select class="box-state-select" data-course-id="<?php echo esc_attr($course_id); ?>">
                                 <option value="enroll-course" <?php echo $box_state === 'enroll-course' ? 'selected' : ''; ?>>Enroll in the Live Course</option>
                                 <option value="buy-course" <?php echo $box_state === 'buy-course' ? 'selected' : ''; ?>>Buy This Course</option>
-                                <option value="enroll-buy" <?php echo $box_state === 'enroll-buy' ? 'selected' : ''; ?>>Enroll + Buy Course</option>
+                                <option value="enroll-buy" <?php echo $box_state === 'enroll-buy' ? 'selected' : ''; ?>>Buy Course + Enroll Course</option>
                                 <option value="waitlist" <?php echo $box_state === 'waitlist' ? 'selected' : ''; ?>>Waitlist</option>
                                 <option value="soldout" <?php echo $box_state === 'soldout' ? 'selected' : ''; ?>>Sold Out</option>
                             </select>
                         </td>
                     </tr>
-                    <tr>
+                    <tr id="standard-product-row">
                         <th><label>Associated Product</label></th>
                         <td>
                             <select id="linked-product" data-course-id="<?php echo esc_attr($course_id); ?>">
@@ -1477,6 +1477,64 @@ function course_box_manager_page() {
                             <p style="font-size: 12px; color: #666; margin-top: 5px;">Select the WooCommerce product associated with this course</p>
                         </td>
                     </tr>
+                    
+                    <!-- Additional fields for Buy Course + Enroll Course state -->
+                    <tr id="buy-product-row" style="display: none;">
+                        <th><label>Buy Course Product</label></th>
+                        <td>
+                            <select id="buy-product" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                <option value="0">None</option>
+                                <?php
+                                $buy_product_id = get_post_meta($course_id, 'buy_product_id', true);
+                                if (function_exists('wc_get_products')) {
+                                    $products = wc_get_products(['limit' => -1, 'orderby' => 'title', 'order' => 'ASC', 'status' => 'publish']);
+                                    if (!empty($products)) {
+                                        foreach ($products as $product) {
+                                            $selected = ($buy_product_id == $product->get_id()) ? ' selected' : '';
+                                            echo '<option value="' . esc_attr($product->get_id()) . '"' . $selected . '>' . 
+                                                 esc_html($product->get_name()) . ' (#' . $product->get_id() . ')' . '</option>';
+                                        }
+                                    }
+                                }
+                                ?>
+                            </select>
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Product for the Buy Course box</p>
+                        </td>
+                    </tr>
+                    
+                    <tr id="enroll-product-row" style="display: none;">
+                        <th><label>Enroll Course Product</label></th>
+                        <td>
+                            <select id="enroll-product" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                <option value="0">None</option>
+                                <?php
+                                $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
+                                if (function_exists('wc_get_products')) {
+                                    $products = wc_get_products(['limit' => -1, 'orderby' => 'title', 'order' => 'ASC', 'status' => 'publish']);
+                                    if (!empty($products)) {
+                                        foreach ($products as $product) {
+                                            $selected = ($enroll_product_id == $product->get_id()) ? ' selected' : '';
+                                            echo '<option value="' . esc_attr($product->get_id()) . '"' . $selected . '>' . 
+                                                 esc_html($product->get_name()) . ' (#' . $product->get_id() . ')' . '</option>';
+                                        }
+                                    }
+                                }
+                                ?>
+                            </select>
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Product for the Enroll Course box</p>
+                        </td>
+                    </tr>
+                    
+                    <tr id="buy-price-row" style="display: none;">
+                        <th><label>Buy Course Price</label></th>
+                        <td>
+                            <input type="text" id="buy-price" data-course-id="<?php echo esc_attr($course_id); ?>" 
+                                   value="<?php echo esc_attr(get_post_meta($course_id, 'buy_price', true) ?: ''); ?>" 
+                                   placeholder="e.g., 749.99" />
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">Price for the Buy Course option</p>
+                        </td>
+                    </tr>
+                    
                     <tr>
                         <th><label>Dates & Seats Management</label></th>
                         <td>
@@ -1838,6 +1896,39 @@ function course_box_manager_page() {
 
         <script>
             document.addEventListener('DOMContentLoaded', function() {
+                // Handle box state changes to show/hide additional fields
+                const boxStateSelect = document.querySelector('.box-state-select');
+                const standardProductRow = document.getElementById('standard-product-row');
+                const buyProductRow = document.getElementById('buy-product-row');
+                const enrollProductRow = document.getElementById('enroll-product-row');
+                const buyPriceRow = document.getElementById('buy-price-row');
+                
+                function toggleProductFields() {
+                    const selectedState = boxStateSelect ? boxStateSelect.value : '';
+                    
+                    if (selectedState === 'enroll-buy') {
+                        // Hide standard product row, show buy and enroll rows
+                        if (standardProductRow) standardProductRow.style.display = 'none';
+                        if (buyProductRow) buyProductRow.style.display = 'table-row';
+                        if (enrollProductRow) enrollProductRow.style.display = 'table-row';
+                        if (buyPriceRow) buyPriceRow.style.display = 'table-row';
+                    } else {
+                        // Show standard product row, hide buy and enroll rows
+                        if (standardProductRow) standardProductRow.style.display = 'table-row';
+                        if (buyProductRow) buyProductRow.style.display = 'none';
+                        if (enrollProductRow) enrollProductRow.style.display = 'none';
+                        if (buyPriceRow) buyPriceRow.style.display = 'none';
+                    }
+                }
+                
+                // Initial toggle
+                toggleProductFields();
+                
+                // Listen for changes
+                if (boxStateSelect) {
+                    boxStateSelect.addEventListener('change', toggleProductFields);
+                }
+                
                 const addCourseModal = document.getElementById('add-course-modal');
                 const addCourseGroupModal = document.getElementById('add-course-group-modal');
                 const closeButtons = document.getElementsByClassName('modal-close');
@@ -1950,10 +2041,28 @@ function course_box_manager_page() {
                         });
                         const sellingPageId = document.querySelector(`#selling-page[data-course-id="${courseId}"]`).value;
                         
+                        // Get additional fields for enroll-buy state
+                        let additionalParams = '';
+                        if (boxState === 'enroll-buy') {
+                            const buyProductEl = document.querySelector(`#buy-product[data-course-id="${courseId}"]`);
+                            const enrollProductEl = document.querySelector(`#enroll-product[data-course-id="${courseId}"]`);
+                            const buyPriceEl = document.querySelector(`#buy-price[data-course-id="${courseId}"]`);
+                            
+                            if (buyProductEl) {
+                                additionalParams += '&buy_product_id=' + buyProductEl.value;
+                            }
+                            if (enrollProductEl) {
+                                additionalParams += '&enroll_product_id=' + enrollProductEl.value;
+                            }
+                            if (buyPriceEl) {
+                                additionalParams += '&buy_price=' + encodeURIComponent(buyPriceEl.value);
+                            }
+                        }
+                        
                         fetch(ajaxurl + '?action=save_course_settings', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                            body: 'course_id=' + courseId + '&group_id=' + groupId + '&box_state=' + boxState + '&instructors=' + encodeURIComponent(JSON.stringify(instructors)) + '&stock=' + stock + '&dates=' + encodeURIComponent(JSON.stringify(dates)) + '&selling_page_id=' + sellingPageId + '&linked_product_id=' + linkedProductId + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                            body: 'course_id=' + courseId + '&group_id=' + groupId + '&box_state=' + boxState + '&instructors=' + encodeURIComponent(JSON.stringify(instructors)) + '&stock=' + stock + '&dates=' + encodeURIComponent(JSON.stringify(dates)) + '&selling_page_id=' + sellingPageId + '&linked_product_id=' + linkedProductId + additionalParams + '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                         })
                         .then(response => response.json())
                         .then(data => {
@@ -2582,6 +2691,11 @@ function save_course_settings() {
     $dates = json_decode(stripslashes($_POST['dates']), true);
     $selling_page_id = intval($_POST['selling_page_id']);
     $linked_product_id = intval($_POST['linked_product_id']);
+    
+    // Additional fields for enroll-buy state
+    $buy_product_id = isset($_POST['buy_product_id']) ? intval($_POST['buy_product_id']) : 0;
+    $enroll_product_id = isset($_POST['enroll_product_id']) ? intval($_POST['enroll_product_id']) : 0;
+    $buy_price = isset($_POST['buy_price']) ? sanitize_text_field($_POST['buy_price']) : '';
 
     // Update course group
     if ($group_id) {
@@ -2640,6 +2754,18 @@ function save_course_settings() {
     
     // Update linked product
     update_post_meta($course_id, 'linked_product_id', $linked_product_id);
+    
+    // Save additional fields for enroll-buy state
+    if ($box_state === 'enroll-buy') {
+        update_post_meta($course_id, 'buy_product_id', $buy_product_id);
+        update_post_meta($course_id, 'enroll_product_id', $enroll_product_id);
+        update_post_meta($course_id, 'buy_price', $buy_price);
+    } else {
+        // Clean up if not using enroll-buy state
+        delete_post_meta($course_id, 'buy_product_id');
+        delete_post_meta($course_id, 'enroll_product_id');
+        delete_post_meta($course_id, 'buy_price');
+    }
     
     // Update stock on the product
     if ($linked_product_id && $stock !== '') {
