@@ -18,7 +18,8 @@ class BoxRenderer {
         error_log('[BoxRenderer] Rendering for group: ' . $group_id . ', post: ' . $post_id);
         
         // Add the selectBox script at the beginning of any box output
-        $script = '<script type="text/javascript">
+        $script = '<!-- CBM BoxRenderer START --><script type="text/javascript">
+            console.log("[CBM] BoxRenderer script executing");
             if (typeof window.selectBox === "undefined") {
                 console.log("[CBM] Defining selectBox in render_boxes_for_group");
                 window.selectBox = function(element, boxType, courseId) {
@@ -49,7 +50,7 @@ class BoxRenderer {
                     }
                 };
             }
-        </script>';
+        </script><!-- CBM BoxRenderer END -->';
         
         // If we have a specific post_id and it's a course, render its box
         if ($post_id && get_post_type($post_id) === 'course') {
@@ -118,7 +119,7 @@ class BoxRenderer {
                     }
                 };
             }
-        </script>';
+        </script><!-- CBM BoxRenderer END -->';
         
         try {
             $box = BoxFactory::create($course_id);

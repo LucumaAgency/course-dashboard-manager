@@ -19,6 +19,35 @@ class EnrollCourseBox extends AbstractBox {
     }
     
     public function render() {
+        // Ensure selectBox function is defined
+        $script = '<script type="text/javascript">
+            console.log("[CBM] EnrollCourseBox render() called");
+            if (typeof window.selectBox === "undefined") {
+                console.log("[CBM] Defining selectBox in EnrollCourseBox");
+                window.selectBox = function(element, boxType, courseId) {
+                    console.log("[CBM] selectBox called from EnrollCourseBox", boxType, courseId);
+                    if (typeof jQuery === "undefined") {
+                        setTimeout(function() { window.selectBox(element, boxType, courseId); }, 100);
+                        return;
+                    }
+                    var $ = jQuery;
+                    var $box = $(element);
+                    if ($box.hasClass("selected")) {
+                        $box.removeClass("selected");
+                        $box.find(".circlecontainer").show();
+                        $box.find(".circle-container").hide();
+                    } else {
+                        $box.siblings(".box").removeClass("selected");
+                        $box.siblings(".box").find(".circlecontainer").show();
+                        $box.siblings(".box").find(".circle-container").hide();
+                        $box.addClass("selected");
+                        $box.find(".circlecontainer").hide();
+                        $box.find(".circle-container").show();
+                    }
+                };
+            }
+        </script>';
+        
         // Get actual price and stock status from WooCommerce product if available
         $display_price = $this->enroll_price;
         $product_in_stock = !$this->is_out_of_stock; // Use the property that might be set by parent
@@ -130,7 +159,7 @@ class EnrollCourseBox extends AbstractBox {
                 <?php echo $button_html; ?>
             </div>
             <?php
-            return ob_get_clean();
+            return $script . ob_get_clean();
         } else {
             // Use custom text layout
             ob_start();
@@ -146,7 +175,7 @@ class EnrollCourseBox extends AbstractBox {
                 </div>
             </div>
             <?php
-            return ob_get_clean();
+            return $script . ob_get_clean();
         }
     }
     
@@ -164,6 +193,6 @@ class EnrollCourseBox extends AbstractBox {
             <div class="circle"></div>
         </div>
         <?php
-        return ob_get_clean();
+        return $script . ob_get_clean();
     }
 }
