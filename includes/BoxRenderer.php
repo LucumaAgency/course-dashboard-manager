@@ -17,9 +17,44 @@ class BoxRenderer {
     public static function render_boxes_for_group($group_id, $post_id = 0) {
         error_log('[BoxRenderer] Rendering for group: ' . $group_id . ', post: ' . $post_id);
         
+        // Add the selectBox script at the beginning of any box output
+        $script = '<script type="text/javascript">
+            if (typeof window.selectBox === "undefined") {
+                console.log("[CBM] Defining selectBox in render_boxes_for_group");
+                window.selectBox = function(element, boxType, courseId) {
+                    console.log("[CBM] selectBox called from group render", boxType, courseId);
+                    
+                    if (typeof jQuery === "undefined") {
+                        setTimeout(function() {
+                            window.selectBox(element, boxType, courseId);
+                        }, 100);
+                        return;
+                    }
+                    
+                    var $ = jQuery;
+                    var $box = $(element);
+                    
+                    if ($box.hasClass("selected")) {
+                        $box.removeClass("selected");
+                        $box.find(".circlecontainer").show();
+                        $box.find(".circle-container").hide();
+                    } else {
+                        $box.siblings(".box").removeClass("selected");
+                        $box.siblings(".box").find(".circlecontainer").show();
+                        $box.siblings(".box").find(".circle-container").hide();
+                        
+                        $box.addClass("selected");
+                        $box.find(".circlecontainer").hide();
+                        $box.find(".circle-container").show();
+                    }
+                };
+            }
+        </script>';
+        
         // If we have a specific post_id and it's a course, render its box
         if ($post_id && get_post_type($post_id) === 'course') {
-            return self::render_box_for_course($post_id);
+            // Note: render_box_for_course already includes the script, but we add it here too for safety
+            return $script . self::render_box_for_course($post_id);
         }
         
         // Otherwise, try to find courses in the group
@@ -38,11 +73,11 @@ class BoxRenderer {
             
             if (!empty($courses)) {
                 // For now, render the first course's box
-                return self::render_box_for_course($courses[0]->ID);
+                return $script . self::render_box_for_course($courses[0]->ID);
             }
         }
         
-        return '<div class="course-box-error">No course found for this page.</div>';
+        return $script . '<div class="course-box-error">No course found for this page.</div>';
     }
     
     /**
@@ -51,11 +86,45 @@ class BoxRenderer {
     public static function render_box_for_course($course_id) {
         error_log('[BoxRenderer] Rendering box for course: ' . $course_id);
         
+        // Add inline script to ensure selectBox is available
+        $script = '<script type="text/javascript">
+            if (typeof window.selectBox === "undefined") {
+                console.log("[CBM] Defining selectBox in BoxRenderer");
+                window.selectBox = function(element, boxType, courseId) {
+                    console.log("[CBM] selectBox called", boxType, courseId);
+                    
+                    if (typeof jQuery === "undefined") {
+                        setTimeout(function() {
+                            window.selectBox(element, boxType, courseId);
+                        }, 100);
+                        return;
+                    }
+                    
+                    var $ = jQuery;
+                    var $box = $(element);
+                    
+                    if ($box.hasClass("selected")) {
+                        $box.removeClass("selected");
+                        $box.find(".circlecontainer").show();
+                        $box.find(".circle-container").hide();
+                    } else {
+                        $box.siblings(".box").removeClass("selected");
+                        $box.siblings(".box").find(".circlecontainer").show();
+                        $box.siblings(".box").find(".circle-container").hide();
+                        
+                        $box.addClass("selected");
+                        $box.find(".circlecontainer").hide();
+                        $box.find(".circle-container").show();
+                    }
+                };
+            }
+        </script>';
+        
         try {
             $box = BoxFactory::create($course_id);
             
             if ($box) {
-                $output = $box->render();
+                $output = $script . $box->render();
                 error_log('[BoxRenderer] Box rendered successfully, length: ' . strlen($output));
                 return $output;
             } else {
