@@ -67,7 +67,7 @@
 
 .price-container .regular-price {
     font-size: 30px;
-    font-weight: bold;
+    font-weight: normal;
     color: #fff;
     margin: 5px 0 5px 10px;
 }
@@ -81,7 +81,7 @@
 
 .price-container .sale-price {
     font-size: 30px;
-    font-weight: bold;
+    font-weight: normal;
     color: #fff;
     margin: 5px 0 5px 10px;
 }
