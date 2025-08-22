@@ -264,7 +264,7 @@
             url: window.cbm_ajax.ajax_url || '/wp-admin/admin-ajax.php',
             type: 'POST',
             data: {
-                action: 'cbm_get_popup_boxes_simple',  // Updated action name
+                action: 'cbm_get_popup_boxes',  // Correct action name
                 course_id: courseId,
                 nonce: window.cbm_ajax.nonce || ''
             },
