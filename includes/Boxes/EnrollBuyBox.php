@@ -32,16 +32,9 @@ class EnrollBuyBox extends AbstractBox {
         error_log('[EnrollBuyBox] Enroll Product ID: ' . $this->enroll_product_id);
         
         // If we don't have separate products, fall back to linked_product_id
-        if (!$this->buy_product_id || !$this->enroll_product_id) {
-            // Make sure we have the linked product ID
-            if (!$this->course_product_id) {
-                $this->course_product_id = get_post_meta($this->course_id, 'linked_product_id', true);
-                error_log('[EnrollBuyBox] Using linked_product_id: ' . $this->course_product_id);
-            }
-            $this->buy_product_id = $this->buy_product_id ?: $this->course_product_id;
-            $this->enroll_product_id = $this->enroll_product_id ?: $this->course_product_id;
-            error_log('[EnrollBuyBox] Final Buy Product ID: ' . $this->buy_product_id);
-            error_log('[EnrollBuyBox] Final Enroll Product ID: ' . $this->enroll_product_id);
+        if (!$this->buy_product_id && !$this->enroll_product_id) {
+            $this->buy_product_id = $this->course_product_id;
+            $this->enroll_product_id = $this->course_product_id;
         }
         
         // Get prices from the actual WooCommerce products
