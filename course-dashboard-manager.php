@@ -4203,6 +4203,46 @@ function course_box_manager_shortcode() {
         'is_funnelkit_active' => defined('FKCART_VERSION') || class_exists('FKCart')
     ));
     
+    // Add inline script for immediate availability of selectBox function
+    wp_add_inline_script('course-box-frontend', '
+        // Define selectBox immediately for onclick handlers
+        if (typeof window.selectBox === "undefined") {
+            console.log("[CBM] Defining selectBox inline...");
+            window.selectBox = function(element, boxType, courseId) {
+                console.log("[CBM] selectBox called (inline)", boxType, courseId);
+                
+                // If jQuery not ready, wait and retry
+                if (typeof jQuery === "undefined") {
+                    console.log("[CBM] jQuery not ready, waiting...");
+                    setTimeout(function() {
+                        window.selectBox(element, boxType, courseId);
+                    }, 100);
+                    return;
+                }
+                
+                var $ = jQuery;
+                var $box = $(element);
+                
+                // Toggle selection
+                if ($box.hasClass("selected")) {
+                    $box.removeClass("selected");
+                    $box.find(".circlecontainer").show();
+                    $box.find(".circle-container").hide();
+                } else {
+                    // Deselect siblings
+                    $box.siblings(".box").removeClass("selected");
+                    $box.siblings(".box").find(".circlecontainer").show();
+                    $box.siblings(".box").find(".circle-container").hide();
+                    
+                    // Select this box
+                    $box.addClass("selected");
+                    $box.find(".circlecontainer").hide();
+                    $box.find(".circle-container").show();
+                }
+            };
+        }
+    ', 'before');
+    
     error_log('[CBM Shortcode Debug] Starting shortcode render for post_id: ' . $post_id);
     error_log('[CBM Shortcode Debug] Post type: ' . get_post_type($post_id));
     
@@ -4227,7 +4267,51 @@ function course_box_manager_shortcode() {
     }
     
     try {
-        $output = CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id, $post_id);
+        // Add inline script to define selectBox immediately before boxes render
+        $inline_script = '<script type="text/javascript">
+            console.log("[CBM] Defining selectBox function inline before boxes...");
+            if (typeof window.selectBox === "undefined") {
+                window.selectBox = function(element, boxType, courseId) {
+                    console.log("[CBM] selectBox called", boxType, courseId);
+                    
+                    // If jQuery not ready, wait and retry
+                    if (typeof jQuery === "undefined") {
+                        console.log("[CBM] jQuery not ready, retrying in 100ms...");
+                        setTimeout(function() {
+                            window.selectBox(element, boxType, courseId);
+                        }, 100);
+                        return;
+                    }
+                    
+                    var $ = jQuery;
+                    var $box = $(element);
+                    
+                    // Toggle selection
+                    if ($box.hasClass("selected")) {
+                        console.log("[CBM] Deselecting box");
+                        $box.removeClass("selected");
+                        $box.find(".circlecontainer").show();
+                        $box.find(".circle-container").hide();
+                    } else {
+                        console.log("[CBM] Selecting box");
+                        // Deselect siblings
+                        $box.siblings(".box").removeClass("selected");
+                        $box.siblings(".box").find(".circlecontainer").show();
+                        $box.siblings(".box").find(".circle-container").hide();
+                        
+                        // Select this box
+                        $box.addClass("selected");
+                        $box.find(".circlecontainer").hide();
+                        $box.find(".circle-container").show();
+                    }
+                };
+                console.log("[CBM] selectBox function defined successfully");
+            } else {
+                console.log("[CBM] selectBox already defined");
+            }
+        </script>';
+        
+        $output = $inline_script . CourseBoxManager\BoxRenderer::render_boxes_for_group($group_id, $post_id);
         error_log('[CBM Shortcode Debug] Output length: ' . strlen($output));
         
         // Add debug info for admins
