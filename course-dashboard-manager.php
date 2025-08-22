@@ -3392,7 +3392,7 @@ add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart');
 
 function cbm_ajax_add_to_cart() {
     // Verify nonce
-    if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'woocommerce_add_to_cart')) {
+    if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'woocommerce-add-to-cart')) {
         wp_send_json_error('Invalid security token');
         return;
     }
