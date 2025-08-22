@@ -90,13 +90,21 @@ window.selectBox = function(element, boxType, courseId) {
         const originalText = $button.find('.button-text').text();
         $button.find('.button-text').text('Adding...');
         
-        // Check if cbm_ajax is available
+        // Check if cbm_ajax is available (should always be available now)
         if (typeof cbm_ajax === 'undefined' || !cbm_ajax.ajax_url) {
-            console.error('[CBM] AJAX configuration not available');
-            alert('Error: AJAX configuration not found. Please refresh the page.');
-            $button.removeClass('loading');
-            $button.find('.button-text').text(originalText);
-            return;
+            console.error('[CBM] AJAX configuration not available - this should not happen');
+            console.log('[CBM] window.cbm_ajax:', window.cbm_ajax);
+            
+            // Try to use window.cbm_ajax as fallback
+            if (window.cbm_ajax && window.cbm_ajax.ajax_url) {
+                console.log('[CBM] Using window.cbm_ajax as fallback');
+                cbm_ajax = window.cbm_ajax;
+            } else {
+                alert('Error: AJAX configuration not found. Please refresh the page.');
+                $button.removeClass('loading');
+                $button.find('.button-text').text(originalText);
+                return;
+            }
         }
         
         console.log('[CBM] Using AJAX URL:', cbm_ajax.ajax_url);

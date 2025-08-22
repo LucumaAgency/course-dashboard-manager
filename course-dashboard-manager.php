@@ -4183,6 +4183,36 @@ function cbm_get_course_boxes() {
     wp_send_json_success(['html' => $html, 'course_id' => $course_id]);
 }
 
+// Enqueue global scripts and styles
+add_action('wp_enqueue_scripts', 'cbm_enqueue_global_assets', 5); // Priority 5 to load early
+function cbm_enqueue_global_assets() {
+    if (!is_admin()) {
+        // Register and enqueue a global configuration script
+        wp_register_script(
+            'cbm-global-config',
+            false, // No file, just inline
+            array(),
+            CBM_VERSION,
+            false // Load in header, not footer
+        );
+        
+        wp_enqueue_script('cbm-global-config');
+        
+        // Add inline script with global configuration
+        wp_add_inline_script('cbm-global-config', '
+            // Initialize CBM global configuration
+            window.cbm_ajax = {
+                ajax_url: "' . admin_url('admin-ajax.php') . '",
+                url: "' . admin_url('admin-ajax.php') . '",
+                nonce: "' . wp_create_nonce('woocommerce-add-to-cart') . '",
+                cart_url: "' . (function_exists('wc_get_cart_url') ? wc_get_cart_url() : '') . '",
+                is_funnelkit_active: ' . (defined('FKCART_VERSION') || class_exists('FKCart') ? 'true' : 'false') . '
+            };
+            console.log("[CBM] Global cbm_ajax initialized early:", window.cbm_ajax);
+        ');
+    }
+}
+
 // Enqueue popup scripts and styles
 add_action('wp_enqueue_scripts', 'cbm_enqueue_popup_assets');
 function cbm_enqueue_popup_assets() {
@@ -4190,7 +4220,7 @@ function cbm_enqueue_popup_assets() {
     wp_register_script(
         'cbm-popup-auto',
         CBM_PLUGIN_URL . 'assets/js/cbm-popup-auto.js',
-        array('jquery'),
+        array('jquery', 'cbm-global-config'), // Add dependency on global config
         '1.0.0',
         true
     );
@@ -4207,20 +4237,6 @@ function cbm_enqueue_popup_assets() {
     if (!is_admin()) {
         wp_enqueue_script('cbm-popup-auto');
         wp_enqueue_style('cbm-popup');
-        
-        // Add inline script to ensure cbm_ajax is always available
-        wp_add_inline_script('cbm-popup-auto', '
-            if (typeof window.cbm_ajax === "undefined") {
-                window.cbm_ajax = {
-                    ajax_url: "' . admin_url('admin-ajax.php') . '",
-                    url: "' . admin_url('admin-ajax.php') . '",
-                    nonce: "' . wp_create_nonce('woocommerce-add-to-cart') . '",
-                    cart_url: "' . (function_exists('wc_get_cart_url') ? wc_get_cart_url() : '') . '",
-                    is_funnelkit_active: ' . (defined('FKCART_VERSION') || class_exists('FKCart') ? 'true' : 'false') . '
-                };
-                console.log("[CBM] Global cbm_ajax initialized");
-            }
-        ', 'before');
     }
 }
 
@@ -4240,7 +4256,7 @@ function course_box_manager_shortcode() {
     wp_enqueue_script(
         'course-box-frontend',
         CBM_PLUGIN_URL . 'assets/js/frontend.js',
-        array('jquery'),
+        array('jquery', 'cbm-global-config'),
         CBM_VERSION,
         true
     );
