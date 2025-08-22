@@ -20,9 +20,15 @@ class EnrollBuyBox extends AbstractBox {
     public function __construct($course_id) {
         parent::__construct($course_id);
         
+        // Debug log
+        error_log('[EnrollBuyBox] Initializing for course ' . $course_id);
+        
         // Get the separate product IDs for buy and enroll
         $this->buy_product_id = get_post_meta($this->course_id, 'buy_product_id', true);
         $this->enroll_product_id = get_post_meta($this->course_id, 'enroll_product_id', true);
+        
+        error_log('[EnrollBuyBox] Buy Product ID: ' . $this->buy_product_id);
+        error_log('[EnrollBuyBox] Enroll Product ID: ' . $this->enroll_product_id);
         
         // If we don't have separate products, fall back to linked_product_id
         if (!$this->buy_product_id && !$this->enroll_product_id) {
@@ -30,24 +36,45 @@ class EnrollBuyBox extends AbstractBox {
             $this->enroll_product_id = $this->course_product_id;
         }
         
-        // Get separate prices if available
-        $this->buy_price = get_post_meta($this->course_id, 'buy_price', true) ?: $this->course_price;
+        // Get prices from the actual WooCommerce products
+        $this->buy_price = $this->course_price; // Default
+        if ($this->buy_product_id && function_exists('wc_get_product')) {
+            $buy_product = wc_get_product($this->buy_product_id);
+            if ($buy_product) {
+                $this->buy_price = $buy_product->get_price();
+                error_log('[EnrollBuyBox] Buy Price from product: ' . $this->buy_price);
+            }
+        }
         
-        // Get enroll dates
-        $this->enroll_dates = cbm_get_field('enroll_dates', $this->course_id) ?: $this->available_dates_full;
+        // Get enroll price from product
+        $this->enroll_price = $this->enroll_price; // Default
+        if ($this->enroll_product_id && function_exists('wc_get_product')) {
+            $enroll_product = wc_get_product($this->enroll_product_id);
+            if ($enroll_product) {
+                $this->enroll_price = $enroll_product->get_price();
+                error_log('[EnrollBuyBox] Enroll Price from product: ' . $this->enroll_price);
+            }
+        }
+        
+        // Get enroll dates - these are stored as course_dates
+        $this->enroll_dates = cbm_get_field('course_dates', $this->course_id) ?: $this->available_dates_full;
+        error_log('[EnrollBuyBox] Enroll Dates: ' . print_r($this->enroll_dates, true));
         
         // Create instances of both boxes with custom configurations
         $this->buyBox = new BuyCourseBox($course_id);
         $this->enrollBox = new EnrollCourseBox($course_id);
         
-        // Override their properties to use separate products
+        // Override their properties to use separate products and prices
         $this->buyBox->box_state = 'buy-course';
         $this->buyBox->course_product_id = $this->buy_product_id;
         $this->buyBox->course_price = $this->buy_price;
         
         $this->enrollBox->box_state = 'enroll-course';
         $this->enrollBox->course_product_id = $this->enroll_product_id;
+        $this->enrollBox->enroll_price = $this->enroll_price;
+        $this->enrollBox->course_price = $this->enroll_price; // EnrollBox uses course_price for display
         $this->enrollBox->available_dates_full = $this->enroll_dates ?: $this->available_dates_full;
+        $this->enrollBox->available_dates = array_column($this->enroll_dates ?: $this->available_dates_full, 'date');
     }
     
     public function should_display() {
