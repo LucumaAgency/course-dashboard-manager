@@ -57,6 +57,11 @@ spl_autoload_register(function ($class) {
 // Initialize the seats remaining functionality
 add_action('init', function() {
     new CourseBoxManager\SeatsRemaining();
+    
+    // Initialize enrollment sync for STM LMS integration
+    if (class_exists('WooCommerce')) {
+        new CourseBoxManager\EnrollmentSync();
+    }
 });
 
 // Register course_group taxonomy
@@ -1629,10 +1634,11 @@ function course_box_manager_page() {
             <table class="wp-list-table widefat fixed striped" style="margin-top: 20px;">
                 <thead>
                     <tr>
-                        <th style="width: 25%;">Course</th>
-                        <th style="width: 20%;">Instructors</th>
-                        <th style="width: 15%;">Box State</th>
-                        <th style="width: 25%;">Dates (Stock)</th>
+                        <th style="width: 20%;">Course</th>
+                        <th style="width: 15%;">Instructors</th>
+                        <th style="width: 15%;">STM Course</th>
+                        <th style="width: 12%;">Box State</th>
+                        <th style="width: 23%;">Dates (Stock)</th>
                         <th style="width: 15%;">Actions</th>
                     </tr>
                 </thead>
@@ -1682,6 +1688,22 @@ function course_box_manager_page() {
                         <tr data-course-id="<?php echo esc_attr($course_id); ?>">
                             <td><a href="?page=course-box-manager&course_id=<?php echo esc_attr($course_id); ?>&group_id=<?php echo esc_attr($group_id); ?>"><?php echo esc_html($title); ?></a></td>
                             <td><?php echo esc_html(implode(', ', $instructor_names)); ?></td>
+                            <td>
+                                <?php
+                                // Get linked STM Course
+                                $stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
+                                if ($stm_course_id) {
+                                    $stm_course = get_post($stm_course_id);
+                                    if ($stm_course) {
+                                        echo '<a href="' . get_edit_post_link($stm_course_id) . '" target="_blank">' . esc_html($stm_course->post_title) . '</a>';
+                                    } else {
+                                        echo '<span style="color: #999;">Invalid Course</span>';
+                                    }
+                                } else {
+                                    echo '<span style="color: #999;">Not linked</span>';
+                                }
+                                ?>
+                            </td>
                             <td><?php echo esc_html(ucfirst(str_replace('-', ' ', $box_state))); ?></td>
                             <td>
                                 <?php if (!empty($dates_with_info)) : ?>
@@ -1872,6 +1894,36 @@ function course_box_manager_page() {
                                    value="<?php echo esc_attr(get_post_meta($course_id, 'buy_price', true) ?: ''); ?>" 
                                    placeholder="e.g., 749.99" />
                             <p style="font-size: 12px; color: #666; margin-top: 5px;">Price for the Buy Course option</p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th><label>STM LMS Course</label></th>
+                        <td>
+                            <select id="stm-course" data-course-id="<?php echo esc_attr($course_id); ?>">
+                                <option value="0">None</option>
+                                <?php
+                                $related_stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
+                                
+                                // Get all STM Courses
+                                $stm_courses = get_posts([
+                                    'post_type' => 'stm-courses',
+                                    'posts_per_page' => -1,
+                                    'orderby' => 'title',
+                                    'order' => 'ASC',
+                                    'post_status' => 'publish'
+                                ]);
+                                
+                                if (!empty($stm_courses)) {
+                                    foreach ($stm_courses as $stm_course) {
+                                        $selected = ($related_stm_course_id == $stm_course->ID) ? ' selected' : '';
+                                        echo '<option value="' . esc_attr($stm_course->ID) . '"' . $selected . '>' . 
+                                             esc_html($stm_course->post_title) . ' (#' . $stm_course->ID . ')' . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">MasterStudy LMS course to grant access when any product is purchased</p>
                         </td>
                     </tr>
                     
@@ -2397,6 +2449,12 @@ function course_box_manager_page() {
                             if (buyPriceEl) {
                                 additionalParams += '&buy_price=' + encodeURIComponent(buyPriceEl.value);
                             }
+                        }
+                        
+                        // Get STM Course ID
+                        const stmCourseEl = document.querySelector(`#stm-course[data-course-id="${courseId}"]`);
+                        if (stmCourseEl) {
+                            additionalParams += '&related_stm_course_id=' + stmCourseEl.value;
                         }
                         
                         fetch(ajaxurl + '?action=save_course_settings', {
@@ -3263,6 +3321,9 @@ function save_course_settings() {
     $buy_product_id = isset($_POST['buy_product_id']) ? intval($_POST['buy_product_id']) : 0;
     $enroll_product_id = isset($_POST['enroll_product_id']) ? intval($_POST['enroll_product_id']) : 0;
     $buy_price = isset($_POST['buy_price']) ? sanitize_text_field($_POST['buy_price']) : '';
+    
+    // STM Course ID for enrollment sync
+    $related_stm_course_id = isset($_POST['related_stm_course_id']) ? intval($_POST['related_stm_course_id']) : 0;
 
     // Update course group
     if ($group_id) {
@@ -3332,6 +3393,35 @@ function save_course_settings() {
         delete_post_meta($course_id, 'buy_product_id');
         delete_post_meta($course_id, 'enroll_product_id');
         delete_post_meta($course_id, 'buy_price');
+    }
+    
+    // Save STM Course relationship
+    if ($related_stm_course_id > 0) {
+        update_post_meta($course_id, 'related_stm_course_id', $related_stm_course_id);
+        
+        // Also update the relationship on all associated WooCommerce products
+        // This ensures the enrollment sync will work properly
+        if ($linked_product_id) {
+            update_post_meta($linked_product_id, 'related_stm_course_id', $related_stm_course_id);
+        }
+        if ($buy_product_id) {
+            update_post_meta($buy_product_id, 'related_stm_course_id', $related_stm_course_id);
+        }
+        if ($enroll_product_id) {
+            update_post_meta($enroll_product_id, 'related_stm_course_id', $related_stm_course_id);
+        }
+    } else {
+        delete_post_meta($course_id, 'related_stm_course_id');
+        // Clean up product relationships
+        if ($linked_product_id) {
+            delete_post_meta($linked_product_id, 'related_stm_course_id');
+        }
+        if ($buy_product_id) {
+            delete_post_meta($buy_product_id, 'related_stm_course_id');
+        }
+        if ($enroll_product_id) {
+            delete_post_meta($enroll_product_id, 'related_stm_course_id');
+        }
     }
     
     // Update stock on the product
