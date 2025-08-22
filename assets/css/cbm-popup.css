@@ -38,6 +38,11 @@
     box-sizing: border-box;
 }
 
+/* ID selector for more specificity */
+#cbm-popup-container {
+    background: #0e0d0f;
+}
+
 /* Close button */
 .cbm-popup-close {
     position: absolute;
@@ -129,6 +134,8 @@
 .cbm-tab-btn.active {
     color: #F22EBE;
     font-weight: 600;
+    border-bottom-color: transparent;
+    background: transparent;
 }
 
 .cbm-tab-btn.active::after {
@@ -138,7 +145,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: #F22EBE;
+    background: transparent;
 }
 
 .cbm-tabs-content {
