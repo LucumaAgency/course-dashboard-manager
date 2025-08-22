@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.6.4
+ * Version: 1.6.5
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.6.4');
+define('CBM_VERSION', '1.6.5');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -3450,14 +3450,19 @@ function cbm_ajax_add_to_cart() {
             woocommerce_mini_cart();
             $mini_cart = ob_get_clean();
             
+            // Check if FunnelKit Cart is active
+            $use_funnelkit = defined('FKCART_VERSION') || class_exists('FKCart') || class_exists('FunnelKitCart');
+            
             $data = array(
+                'success' => true,
                 'fragments' => apply_filters('woocommerce_add_to_cart_fragments', array(
                     'div.widget_shopping_cart_content' => '<div class="widget_shopping_cart_content">' . $mini_cart . '</div>',
                     '.cart-contents-count' => '<span class="cart-contents-count">' . WC()->cart->get_cart_contents_count() . '</span>'
                 )),
                 'cart_hash' => WC()->cart->get_cart_hash(),
                 'cart_item_key' => $cart_item_key,
-                'product_name' => $product->get_name()
+                'product_name' => $product->get_name(),
+                'use_funnelkit' => $use_funnelkit
             );
             
             // Add FunnelKit specific data if available
@@ -4174,13 +4179,29 @@ function course_box_manager_shortcode() {
     global $post;
     $post_id = $post ? $post->ID : 0;
     
-    // Enqueue frontend styles
+    // Enqueue frontend styles and scripts
     wp_enqueue_style(
         'course-box-frontend',
         CBM_PLUGIN_URL . 'assets/css/frontend.css',
         array(),
         CBM_VERSION
     );
+    
+    wp_enqueue_script(
+        'course-box-frontend',
+        CBM_PLUGIN_URL . 'assets/js/frontend.js',
+        array('jquery'),
+        CBM_VERSION,
+        true
+    );
+    
+    // Localize script with AJAX data
+    wp_localize_script('course-box-frontend', 'cbm_ajax', array(
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('woocommerce-add-to-cart'),
+        'cart_url' => function_exists('wc_get_cart_url') ? wc_get_cart_url() : '',
+        'is_funnelkit_active' => defined('FKCART_VERSION') || class_exists('FKCart')
+    ));
     
     error_log('[CBM Shortcode Debug] Starting shortcode render for post_id: ' . $post_id);
     error_log('[CBM Shortcode Debug] Post type: ' . get_post_type($post_id));

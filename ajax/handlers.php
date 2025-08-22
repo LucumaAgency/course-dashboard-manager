@@ -73,5 +73,50 @@ function cbm_ajax_add_to_cart() {
     }
 }
 
-// Note: The actual AJAX handler functions will be moved here from the main file
-// This is just the structure setup
+/**
+ * Create new course group
+ */
+function create_new_course_group() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    $group_name = sanitize_text_field($_POST['group_name']);
+    $term = wp_insert_term($group_name, 'course_group');
+    if (!is_wp_error($term)) {
+        wp_send_json_success();
+    } else {
+        wp_send_json_error($term->get_error_message());
+    }
+}
+
+/**
+ * Delete course group
+ */
+function delete_course_group() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    $group_id = intval($_POST['group_id']);
+    
+    // Remove the term from all courses first
+    $courses = get_posts([
+        'post_type' => 'course',
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'tax_query' => [
+            [
+                'taxonomy' => 'course_group',
+                'field' => 'term_id',
+                'terms' => $group_id,
+            ],
+        ],
+    ]);
+    
+    foreach ($courses as $course_id) {
+        wp_remove_object_terms($course_id, $group_id, 'course_group');
+    }
+    
+    // Delete the term
+    $result = wp_delete_term($group_id, 'course_group');
+    if (!is_wp_error($result)) {
+        wp_send_json_success();
+    } else {
+        wp_send_json_error($result->get_error_message());
+    }
+}
