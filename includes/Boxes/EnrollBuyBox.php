@@ -56,7 +56,8 @@ class EnrollBuyBox extends AbstractBox {
     }
     
     protected function get_box_classes() {
-        return parent::get_box_classes() . ' enroll-buy-combo';
+        // Don't include parent classes to avoid 'box' class that triggers selectBox behavior
+        return 'enroll-buy-combo';
     }
     
     public function render() {
@@ -73,29 +74,49 @@ class EnrollBuyBox extends AbstractBox {
                 </div>
                 <div class="cbm-tabs-content">
                     <div class="cbm-tab-pane active" data-tab="buy">
-                        <?php echo $this->buyBox->render(); ?>
+                        <div class="box-wrapper-no-select">
+                            <?php echo $this->buyBox->render(); ?>
+                        </div>
                     </div>
                     <div class="cbm-tab-pane" data-tab="enroll">
-                        <?php echo $this->enrollBox->render(); ?>
+                        <div class="box-wrapper-no-select">
+                            <?php echo $this->enrollBox->render(); ?>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <!-- Desktop: Buy box above Enroll box -->
             <div class="boxes-container desktop-layout desktop-only">
-                <div class="buy-box-wrapper">
+                <div class="buy-box-wrapper box-wrapper-no-select">
                     <?php echo $this->buyBox->render(); ?>
                 </div>
-                <div class="enroll-box-wrapper" style="margin-top: 20px;">
+                <div class="enroll-box-wrapper box-wrapper-no-select" style="margin-top: 20px;">
                     <?php echo $this->enrollBox->render(); ?>
                 </div>
             </div>
             
             <script>
-            // Tab switching logic
+            // Tab switching logic and prevent selectBox behavior
             (function() {
                 const container = document.querySelector('.enroll-buy-combo[data-course-id="<?php echo esc_js($this->course_id); ?>"]');
                 if (container) {
+                    // Prevent selectBox function from affecting these boxes
+                    const boxes = container.querySelectorAll('.box');
+                    boxes.forEach(box => {
+                        // Remove onclick if it exists
+                        box.onclick = null;
+                        // Ensure boxes are always "selected" to show buttons
+                        box.classList.add('selected');
+                        box.classList.remove('no-button');
+                        
+                        // Stop click propagation
+                        box.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                        }, true);
+                    });
+                    
+                    // Tab switching for mobile
                     const tabButtons = container.querySelectorAll('.cbm-tab-btn');
                     const tabPanes = container.querySelectorAll('.cbm-tab-pane');
                     
@@ -124,6 +145,25 @@ class EnrollBuyBox extends AbstractBox {
         </div>
         
         <style>
+        /* Override no-button behavior for enroll-buy combo */
+        .enroll-buy-combo .box .add-to-cart-button {
+            display: flex !important;
+        }
+        
+        .enroll-buy-combo .box.no-button .add-to-cart-button {
+            display: flex !important;
+        }
+        
+        /* Ensure boxes in combo don't respond to selectBox */
+        .enroll-buy-combo .box {
+            cursor: default;
+        }
+        
+        .enroll-buy-combo .box .circlecontainer,
+        .enroll-buy-combo .box .circle-container {
+            display: none !important;
+        }
+        
         /* Mobile only elements */
         .enroll-buy-combo .mobile-only {
             display: none;
