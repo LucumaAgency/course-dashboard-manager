@@ -1694,13 +1694,19 @@ function course_box_manager_page() {
                                 $stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
                                 if ($stm_course_id) {
                                     $stm_course = get_post($stm_course_id);
-                                    if ($stm_course) {
-                                        echo '<a href="' . get_edit_post_link($stm_course_id) . '" target="_blank">' . esc_html($stm_course->post_title) . '</a>';
+                                    if ($stm_course && $stm_course->post_type === 'stm-courses') {
+                                        echo '<a href="' . get_edit_post_link($stm_course_id) . '" target="_blank" style="color: #0073aa; text-decoration: none;">' . 
+                                             esc_html($stm_course->post_title) . 
+                                             '</a> <span style="color: #666; font-size: 11px;">(#' . $stm_course_id . ')</span>';
                                     } else {
-                                        echo '<span style="color: #999;">Invalid Course</span>';
+                                        echo '<span style="color: #d54e21;">Invalid Course ID</span>';
                                     }
                                 } else {
-                                    echo '<span style="color: #999;">Not linked</span>';
+                                    if (post_type_exists('stm-courses')) {
+                                        echo '<span style="color: #f0ad4e; font-style: italic;">⚠ Not linked</span>';
+                                    } else {
+                                        echo '<span style="color: #999; font-size: 11px;">STM LMS not active</span>';
+                                    }
                                 }
                                 ?>
                             </td>
@@ -1905,21 +1911,28 @@ function course_box_manager_page() {
                                 <?php
                                 $related_stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
                                 
-                                // Get all STM Courses
-                                $stm_courses = get_posts([
-                                    'post_type' => 'stm-courses',
-                                    'posts_per_page' => -1,
-                                    'orderby' => 'title',
-                                    'order' => 'ASC',
-                                    'post_status' => 'publish'
-                                ]);
-                                
-                                if (!empty($stm_courses)) {
-                                    foreach ($stm_courses as $stm_course) {
-                                        $selected = ($related_stm_course_id == $stm_course->ID) ? ' selected' : '';
-                                        echo '<option value="' . esc_attr($stm_course->ID) . '"' . $selected . '>' . 
-                                             esc_html($stm_course->post_title) . ' (#' . $stm_course->ID . ')' . '</option>';
+                                // Check if STM LMS is active
+                                if (post_type_exists('stm-courses')) {
+                                    // Get all STM Courses
+                                    $stm_courses = get_posts([
+                                        'post_type' => 'stm-courses',
+                                        'posts_per_page' => -1,
+                                        'orderby' => 'title',
+                                        'order' => 'ASC',
+                                        'post_status' => 'publish'
+                                    ]);
+                                    
+                                    if (!empty($stm_courses)) {
+                                        foreach ($stm_courses as $stm_course) {
+                                            $selected = ($related_stm_course_id == $stm_course->ID) ? ' selected' : '';
+                                            echo '<option value="' . esc_attr($stm_course->ID) . '"' . $selected . '>' . 
+                                                 esc_html($stm_course->post_title) . ' (#' . $stm_course->ID . ')' . '</option>';
+                                        }
+                                    } else {
+                                        echo '<option disabled>No STM Courses found</option>';
                                     }
+                                } else {
+                                    echo '<option disabled>MasterStudy LMS not active or installed</option>';
                                 }
                                 ?>
                             </select>
