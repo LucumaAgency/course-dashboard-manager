@@ -4139,11 +4139,16 @@ function cbm_get_popup_boxes_simple() {
     echo CourseBoxManager\BoxRenderer::render_box_for_course($course_id);
     $html = ob_get_clean();
     
-    // Remove duplicate boxes from EnrollBuyBox by extracting only the first occurrence
+    // Remove duplicate boxes from EnrollBuyBox by extracting only the actual box elements
     if (strpos($html, 'enroll-buy-combo') !== false) {
-        // Extract only the desktop layout boxes (not the mobile tabs)
-        if (preg_match('/<div class="boxes-container desktop-layout[^>]*>(.*?)<\/div>\s*<\/div>/s', $html, $matches)) {
-            $html = $matches[1];
+        // Extract all box divs directly
+        preg_match_all('/<div class="box\s+[^"]*"[^>]*>(?:(?!<div class="box).)*?<\/button>\s*<\/div>/s', $html, $matches);
+        
+        if (!empty($matches[0]) && count($matches[0]) >= 2) {
+            // We should have at least 2 boxes (buy and enroll)
+            // Take only the first 2 unique boxes
+            $boxes = array_slice($matches[0], 0, 2);
+            $html = implode("\n", $boxes);
         }
     }
     
