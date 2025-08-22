@@ -307,7 +307,7 @@
             if (classes.includes('enroll-course') || classes.includes('enroll_course')) {
                 boxTypes.push('Enroll in Live Course');
             } else if (classes.includes('buy-course') || classes.includes('buy_course')) {
-                boxTypes.push('Buy Self-Paced Course');
+                boxTypes.push('Buy Course');
             } else if (classes.includes('waitlist')) {
                 boxTypes.push('Join Waitlist');
             } else if (classes.includes('soldout') || classes.includes('sold-out')) {
