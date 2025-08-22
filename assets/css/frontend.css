@@ -1,0 +1,331 @@
+/* Course Box Manager - Frontend Styles */
+
+/* Box Container */
+.course-boxes-container {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+/* Base Box Styles */
+.box {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background: #fff;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+    min-width: 280px;
+    max-width: 400px;
+}
+
+.box:hover {
+    border-color: #0073aa;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.box.selected {
+    border-color: #0073aa;
+    background: #f0f8ff;
+}
+
+/* Box States */
+.box.enroll-course {
+    border-color: #4CAF50;
+}
+
+.box.buy-course {
+    border-color: #2196F3;
+}
+
+.box.countdown-course {
+    border-color: #FF9800;
+}
+
+.box.waitlist-course {
+    border-color: #9C27B0;
+}
+
+.box.soldout-course {
+    border-color: #F44336;
+    background: #ffebee;
+}
+
+/* Selection Indicators */
+.circlecontainer, .circle-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+.outer-circle {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #0073aa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.middle-circle {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #0073aa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.inner-circle {
+    width: 8px;
+    height: 8px;
+    background: #0073aa;
+    border-radius: 50%;
+}
+
+.circle {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-radius: 50%;
+}
+
+/* Headers and Content */
+.box h3 {
+    margin: 0 0 10px 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
+
+.box-price {
+    font-size: 32px;
+    font-weight: bold;
+    color: #0073aa;
+    margin: 10px 0;
+}
+
+.box .description {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 15px 0;
+}
+
+/* Divider */
+.box hr.divider {
+    border: none;
+    border-top: 1px solid #e0e0e0;
+    margin: 20px 0;
+}
+
+/* Date Selection */
+.start-dates {
+    margin: 15px 0;
+}
+
+.choose-label {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.date-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.date-btn {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.date-btn:hover {
+    border-color: #0073aa;
+    background: #f0f8ff;
+}
+
+.date-btn.selected {
+    background: #0073aa;
+    color: #fff;
+    border-color: #0073aa;
+}
+
+.date-btn.sold-out {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
+
+/* Buttons */
+.add-to-cart-button {
+    width: 100%;
+    padding: 12px 20px;
+    background: #0073aa;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.add-to-cart-button:hover {
+    background: #005a87;
+}
+
+.add-to-cart-button.sold-out {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.add-to-cart-button.loading {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.button-text {
+    display: inline-block;
+}
+
+/* Countdown Styles */
+.countdown-timer {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 8px;
+}
+
+.countdown-unit {
+    text-align: center;
+}
+
+.countdown-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+    display: block;
+}
+
+.countdown-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    margin-top: 5px;
+}
+
+/* State-specific styles */
+.statebox {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.soldout-header {
+    background: #F44336;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+/* Terms text */
+.terms {
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+    margin-top: 15px;
+}
+
+/* No button state */
+.box.no-button .add-to-cart-button {
+    display: none;
+}
+
+/* Enroll-Buy Combo Styles */
+.enroll-buy-combo {
+    width: 100%;
+}
+
+.enroll-buy-combo .box {
+    cursor: default;
+    max-width: 100%;
+}
+
+/* Mobile Tabs for Enroll-Buy */
+.cbm-tabs-wrapper {
+    width: 100%;
+}
+
+.cbm-tabs-header {
+    display: flex;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.cbm-tab-btn {
+    flex: 1;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.cbm-tab-btn.active {
+    border-bottom-color: #333;
+    font-weight: bold;
+}
+
+.cbm-tab-pane {
+    display: none;
+}
+
+.cbm-tab-pane.active {
+    display: block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .course-boxes-container {
+        flex-direction: column;
+    }
+    
+    .box {
+        max-width: 100%;
+    }
+    
+    .date-options {
+        flex-direction: column;
+    }
+    
+    .date-btn {
+        width: 100%;
+    }
+}
