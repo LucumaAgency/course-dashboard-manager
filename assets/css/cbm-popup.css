@@ -22,7 +22,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: #0E0D0F;
+    background: #0E0D0F !important;
     border-radius: 10px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     width: 90%;
@@ -40,7 +40,7 @@
 
 /* ID selector for more specificity */
 #cbm-popup-container {
-    background: #0e0d0f;
+    background: #0e0d0f !important;
 }
 
 /* Close button */
@@ -134,8 +134,8 @@
 .cbm-tab-btn.active {
     color: #F22EBE;
     font-weight: 600;
-    border-bottom-color: transparent;
-    background: transparent;
+    border-bottom-color: transparent !important;
+    background: transparent !important;
 }
 
 .cbm-tab-btn.active::after {
@@ -145,7 +145,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    background: transparent;
+    background: transparent !important;
 }
 
 .cbm-tabs-content {
