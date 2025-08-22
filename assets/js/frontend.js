@@ -3,9 +3,23 @@
  * Handles add to cart, date selection, and box interactions
  */
 
-// Global selectBox function for onclick handlers
+// Define selectBox immediately when script loads
+console.log('[CBM] Defining selectBox function...');
+
 window.selectBox = function(element, boxType, courseId) {
-    const $box = jQuery(element);
+    console.log('[CBM] selectBox called', boxType, courseId);
+    
+    // Wait for jQuery if not loaded yet
+    if (typeof jQuery === 'undefined') {
+        console.error('[CBM] jQuery not loaded, waiting...');
+        setTimeout(function() {
+            window.selectBox(element, boxType, courseId);
+        }, 100);
+        return;
+    }
+    
+    const $ = jQuery;
+    const $box = $(element);
     
     // Toggle selection
     if ($box.hasClass('selected')) {
@@ -25,8 +39,11 @@ window.selectBox = function(element, boxType, courseId) {
     }
 };
 
+// jQuery-dependent code
 (function($) {
     'use strict';
+
+    console.log('[CBM] Frontend jQuery code initializing...');
 
     // Date selection handler
     $(document).on('click', '.date-btn:not(.sold-out)', function() {
