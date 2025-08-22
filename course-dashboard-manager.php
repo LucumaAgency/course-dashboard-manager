@@ -1918,27 +1918,25 @@ function course_box_manager_page() {
                         </td>
                     </tr>
                     
-                    <tr>
-                        <th><label>STM LMS Course</label></th>
+                    <tr id="stm-course-row" style="display: table-row !important; visibility: visible !important; background-color: #f0f8ff;">
+                        <th><label style="color: #0073aa; font-weight: bold;">STM LMS Course</label></th>
                         <td>
-                            <select id="stm-course" data-course-id="<?php echo esc_attr($course_id); ?>">
+                            <?php
+                            // Debug: Log that we're rendering the STM course field
+                            error_log('[CBM STM Field] Rendering STM Course selector for course ID: ' . $course_id);
+                            ?>
+                            <select id="stm-course" data-course-id="<?php echo esc_attr($course_id); ?>" style="width: 100%; max-width: 400px;">
                                 <option value="0">None</option>
                                 <?php
                                 $related_stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
                                 
-                                // Try different MasterStudy post type names
-                                $possible_post_types = ['stm-courses', 'stm_lms_courses', 'stm-course', 'stm_course'];
-                                $stm_post_type = '';
+                                // Force use stm-courses since we know that's the correct post type
+                                $stm_post_type = 'stm-courses';
+                                error_log('[CBM STM Field] Using post type: ' . $stm_post_type);
+                                error_log('[CBM STM Field] Post type exists check: ' . (post_type_exists($stm_post_type) ? 'YES' : 'NO'));
                                 
-                                foreach ($possible_post_types as $type) {
-                                    if (post_type_exists($type)) {
-                                        $stm_post_type = $type;
-                                        error_log('[CBM] Found STM post type: ' . $type);
-                                        break;
-                                    }
-                                }
-                                
-                                if ($stm_post_type) {
+                                // Always try to get courses, even if post_type_exists returns false
+                                if (true) {
                                     // Get all STM Courses
                                     $stm_courses = get_posts([
                                         'post_type' => $stm_post_type,
@@ -1948,9 +1946,15 @@ function course_box_manager_page() {
                                         'post_status' => 'publish'
                                     ]);
                                     
-                                    error_log('[CBM] Found ' . count($stm_courses) . ' STM courses of type: ' . $stm_post_type);
+                                    error_log('[CBM STM Field] Query returned ' . count($stm_courses) . ' STM courses');
+                                    
+                                    // Log each course found
+                                    foreach ($stm_courses as $course) {
+                                        error_log('[CBM STM Field] Found course: ID=' . $course->ID . ', Title=' . $course->post_title . ', Type=' . $course->post_type);
+                                    }
                                     
                                     if (!empty($stm_courses)) {
+                                        echo '<option disabled style="background: #f0f0f0;">--- Found ' . count($stm_courses) . ' STM Courses ---</option>';
                                         foreach ($stm_courses as $stm_course) {
                                             $selected = ($related_stm_course_id == $stm_course->ID) ? ' selected' : '';
                                             echo '<option value="' . esc_attr($stm_course->ID) . '"' . $selected . '>' . 
@@ -1976,6 +1980,9 @@ function course_box_manager_page() {
                                 ?>
                             </select>
                             <p style="font-size: 12px; color: #666; margin-top: 5px;">MasterStudy LMS course to grant access when any product is purchased</p>
+                            <p style="font-size: 11px; color: #0073aa; margin-top: 5px; padding: 5px; background: #e7f3ff; border-radius: 3px;">
+                                ℹ️ This field should show STM courses. Check browser console and WordPress logs for debugging info.
+                            </p>
                         </td>
                     </tr>
                     
