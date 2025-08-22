@@ -4134,10 +4134,64 @@ function cbm_get_popup_boxes_simple() {
         return;
     }
     
-    // Use BoxRenderer to get the same boxes as the main page
-    ob_start();
-    echo CourseBoxManager\BoxRenderer::render_box_for_course($course_id);
-    $html = ob_get_clean();
+    // Get the box using BoxFactory
+    $box = CourseBoxManager\BoxFactory::create($course_id);
+    
+    if (!$box) {
+        wp_send_json_success(['html' => '<div class="no-boxes">No boxes configured for this course.</div>']);
+        return;
+    }
+    
+    // Check if this is an EnrollBuyBox - if so, render boxes separately for popup
+    if ($box instanceof CourseBoxManager\Boxes\EnrollBuyBox) {
+        error_log('[CBM Simple Popup] EnrollBuyBox detected, rendering boxes separately');
+        
+        // Get the individual boxes
+        $buyBox = new CourseBoxManager\Boxes\BuyCourseBox($course_id);
+        $enrollBox = new CourseBoxManager\Boxes\EnrollCourseBox($course_id);
+        
+        // Get product IDs and prices
+        $buy_product_id = get_post_meta($course_id, 'buy_product_id', true);
+        $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
+        
+        // If no separate products, use the main product
+        if (!$buy_product_id || !$enroll_product_id) {
+            $linked_product_id = get_post_meta($course_id, 'linked_product_id', true);
+            $buy_product_id = $buy_product_id ?: $linked_product_id;
+            $enroll_product_id = $enroll_product_id ?: $linked_product_id;
+        }
+        
+        // Configure the buy box
+        $buyBox->course_product_id = $buy_product_id;
+        if ($buy_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($buy_product_id);
+            if ($product) {
+                $buyBox->course_price = $product->get_price();
+            }
+        }
+        
+        // Configure the enroll box
+        $enrollBox->course_product_id = $enroll_product_id;
+        if ($enroll_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($enroll_product_id);
+            if ($product) {
+                $enrollBox->course_price = $product->get_price();
+                $enrollBox->is_out_of_stock = !$product->is_in_stock();
+            }
+        }
+        
+        // Render both boxes
+        ob_start();
+        echo $buyBox->render();
+        echo $enrollBox->render();
+        $html = ob_get_clean();
+        
+    } else {
+        // For other box types, render normally
+        ob_start();
+        echo $box->render();
+        $html = ob_get_clean();
+    }
     
     if (empty($html)) {
         $html = '<div class="no-boxes">No boxes configured for this course.</div>';
