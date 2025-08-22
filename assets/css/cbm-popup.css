@@ -25,11 +25,14 @@
     background: white;
     border-radius: 10px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    max-width: 90%;
+    width: 90%;
+    max-width: 1200px; /* Maximum width for large screens */
+    min-width: 320px;  /* Minimum width for small screens */
     max-height: 90vh;
     overflow-y: auto;
     z-index: 99999;
     animation: slideIn 0.3s ease;
+    padding: 40px;
 }
 
 /* Close button */
@@ -168,15 +171,33 @@
 
 /* Desktop view */
 .cbm-popup-container.desktop-view {
+    width: 90%;
+    max-width: 1200px;
+    padding: 40px;
+}
+
+.cbm-popup-container.desktop-view .course-boxes-container {
     display: flex;
-    flex-wrap: wrap;
     gap: 20px;
-    padding: 30px;
+    width: 100%;
 }
 
 .cbm-popup-container.desktop-view .box {
     flex: 1;
-    min-width: 250px;
+    min-width: 350px;
+    max-width: 500px;
+}
+
+/* Mobile view */
+.cbm-popup-container.mobile-view {
+    width: 95%;
+    max-width: 600px;
+    padding: 30px;
+}
+
+.cbm-popup-container.mobile-view .box {
+    width: 100%;
+    max-width: 100%;
 }
 
 /* Mobile Responsive */
@@ -309,6 +330,50 @@ body.cbm-popup-open {
     background: #F22EBE;
     color: white;
     border-color: #F22EBE;
+}
+
+/* Box styles within popup */
+.cbm-popup-container .box {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    background: #fff;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 0;
+}
+
+.cbm-popup-container .box:hover {
+    border-color: #0073aa;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.cbm-popup-container .box.selected {
+    border-color: #0073aa;
+    background: #f0f8ff;
+}
+
+/* Date buttons in popup */
+.cbm-popup-container .date-btn {
+    padding: 8px 16px;
+    margin: 5px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.cbm-popup-container .date-btn:hover {
+    border-color: #0073aa;
+    background: #f0f8ff;
+}
+
+.cbm-popup-container .date-btn.selected {
+    background: #0073aa;
+    color: #fff;
+    border-color: #0073aa;
 }
 
 /* Ensure trigger button is visible */
