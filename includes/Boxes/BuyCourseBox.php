@@ -9,6 +9,9 @@ namespace CourseBoxManager\Boxes;
 
 class BuyCourseBox extends AbstractBox {
     
+    public $buy_regular_price;
+    public $buy_sale_price;
+    
     public function should_display() {
         // Display when box_state is buy-course, regardless of stock
         return $this->box_state === 'buy-course';
@@ -50,11 +53,20 @@ class BuyCourseBox extends AbstractBox {
         
         // Get actual price from WooCommerce product if available
         $display_price = $this->course_price;
+        $regular_price = $this->buy_regular_price;
+        $sale_price = $this->buy_sale_price;
         
         if ($this->course_product_id && function_exists('wc_get_product')) {
             $product = wc_get_product($this->course_product_id);
             if ($product) {
                 $display_price = $product->get_price();
+                // Only get prices if not already set by parent
+                if ($regular_price === null) {
+                    $regular_price = $product->get_regular_price();
+                }
+                if ($sale_price === null) {
+                    $sale_price = $product->get_sale_price();
+                }
                 error_log('[BuyCourseBox] Using WooCommerce price: ' . $display_price . ' for product ID: ' . $this->course_product_id);
             }
         }
@@ -81,7 +93,14 @@ class BuyCourseBox extends AbstractBox {
                     <?php echo $this->render_selection_indicator(); ?>
                     <div>
                         <h3>Buy This Course</h3>
-                        <p><?php echo $this->format_price($display_price); ?> USD</p>
+                        <div class="price-container">
+                            <?php if ($sale_price && $regular_price && $sale_price < $regular_price) : ?>
+                                <p class="regular-price strikethrough"><?php echo $this->format_price($regular_price); ?> USD</p>
+                                <p class="sale-price"><?php echo $this->format_price($sale_price); ?> USD</p>
+                            <?php else : ?>
+                                <p class="regular-price"><?php echo $this->format_price($display_price); ?> USD</p>
+                            <?php endif; ?>
+                        </div>
                         <p class="description">Pay once. Get instant access to the full course.</p>
                     </div>
                 </div>

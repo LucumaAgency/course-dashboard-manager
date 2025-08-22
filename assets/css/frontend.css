@@ -60,6 +60,32 @@
     margin: 10px 0;
 }
 
+/* Price Container */
+.price-container {
+    margin: 10px 0;
+}
+
+.price-container .regular-price {
+    font-size: 30px;
+    font-weight: bold;
+    color: #fff;
+    margin: 5px 0 5px 10px;
+}
+
+.price-container .regular-price.strikethrough {
+    font-size: 18px;
+    text-decoration: line-through;
+    opacity: 0.7;
+    font-weight: normal;
+}
+
+.price-container .sale-price {
+    font-size: 30px;
+    font-weight: bold;
+    color: #fff;
+    margin: 5px 0 5px 10px;
+}
+
 .statebox {
     display: flex;
 }

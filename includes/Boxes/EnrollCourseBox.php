@@ -9,6 +9,9 @@ namespace CourseBoxManager\Boxes;
 
 class EnrollCourseBox extends AbstractBox {
     
+    public $enroll_regular_price;
+    public $enroll_sale_price;
+    
     public function should_display() {
         // Display when box_state is enroll-course, regardless of stock or countdown
         return $this->box_state === 'enroll-course';
@@ -50,6 +53,8 @@ class EnrollCourseBox extends AbstractBox {
         
         // Get actual price and stock status from WooCommerce product if available
         $display_price = $this->enroll_price;
+        $regular_price = $this->enroll_regular_price;
+        $sale_price = $this->enroll_sale_price;
         $product_in_stock = !$this->is_out_of_stock; // Use the property that might be set by parent
         $product = null;
         
@@ -57,6 +62,13 @@ class EnrollCourseBox extends AbstractBox {
             $product = wc_get_product($this->course_product_id);
             if ($product) {
                 $display_price = $product->get_price();
+                // Only get prices if not already set by parent
+                if ($regular_price === null) {
+                    $regular_price = $product->get_regular_price();
+                }
+                if ($sale_price === null) {
+                    $sale_price = $product->get_sale_price();
+                }
                 // Only check product stock if not already marked as out of stock
                 if (!$this->is_out_of_stock) {
                     $product_in_stock = $product->is_in_stock();
@@ -147,7 +159,14 @@ class EnrollCourseBox extends AbstractBox {
                     <?php echo $this->render_selection_indicator(); ?>
                     <div>
                         <h3>Enroll in the Live Course</h3>
-                        <p><?php echo $this->format_price($display_price); ?> USD</p>
+                        <div class="price-container">
+                            <?php if ($sale_price && $regular_price && $sale_price < $regular_price) : ?>
+                                <p class="regular-price strikethrough"><?php echo $this->format_price($regular_price); ?> USD</p>
+                                <p class="sale-price"><?php echo $this->format_price($sale_price); ?> USD</p>
+                            <?php else : ?>
+                                <p class="regular-price"><?php echo $this->format_price($display_price); ?> USD</p>
+                            <?php endif; ?>
+                        </div>
                         <p class="description">Join weekly live sessions with feedback and expert mentorship. Pay Once.</p>
                     </div>
                 </div>
