@@ -386,6 +386,18 @@
                     $firstBox.removeClass('no-button');
                     $firstBox.find('.circlecontainer').show();
                     $firstBox.find('.circle-container').hide();
+                    
+                    // Check if buy box needs button
+                    if ($firstBox.hasClass('buy-course') && $firstBox.find('.add-to-cart-button').length === 0) {
+                        const productId = $firstBox.data('product-id') || $firstBox.attr('data-course-id');
+                        const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
+                                         '<span class="button-text">Buy Course</span>' +
+                                         '<span class="loader" style="display: none;"></span>' +
+                                         '</button>';
+                        $firstBox.append(buttonHtml);
+                        console.log('[CBM Popup] Added missing Buy button');
+                    }
+                    
                     console.log('[CBM Popup] Auto-selected first box');
                 }
             }, 100);
@@ -429,6 +441,31 @@
                 
                 // Ensure the button is visible
                 $box.removeClass('no-button');
+                
+                // Make sure the add-to-cart button exists, if not add it
+                if ($box.find('.add-to-cart-button').length === 0) {
+                    // Check if this is an enroll box that needs a button
+                    if ($box.hasClass('enroll-course')) {
+                        // Try to get product ID from various sources
+                        let productId = $box.find('.date-btn').first().data('product-id') || 
+                                      $box.data('product-id') || 
+                                      $box.attr('data-product-id') ||
+                                      $box.attr('data-course-id');
+                        
+                        // For enroll, check if there's a specific enroll product ID
+                        const enrollProductInput = $box.find('input[name="enroll_product_id"]');
+                        if (enrollProductInput.length > 0) {
+                            productId = enrollProductInput.val();
+                        }
+                        
+                        const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
+                                         '<span class="button-text">Enroll Now</span>' +
+                                         '<span class="loader" style="display: none;"></span>' +
+                                         '</button>';
+                        $box.append(buttonHtml);
+                        console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);
+                    }
+                }
                 
                 // Update radio button indicators
                 $box.find('.circlecontainer').show();
