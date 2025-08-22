@@ -4200,19 +4200,27 @@ function cbm_enqueue_popup_assets() {
         'cbm-popup',
         CBM_PLUGIN_URL . 'assets/css/cbm-popup.css',
         array(),
-        '1.0.0'
+        CBM_VERSION
     );
-    
-    // Localize script with AJAX data
-    wp_localize_script('cbm-popup-auto', 'cbm_ajax', array(
-        'url' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('cbm_popup_nonce')
-    ));
     
     // Always enqueue on frontend (will only activate if trigger class is found)
     if (!is_admin()) {
         wp_enqueue_script('cbm-popup-auto');
         wp_enqueue_style('cbm-popup');
+        
+        // Add inline script to ensure cbm_ajax is always available
+        wp_add_inline_script('cbm-popup-auto', '
+            if (typeof window.cbm_ajax === "undefined") {
+                window.cbm_ajax = {
+                    ajax_url: "' . admin_url('admin-ajax.php') . '",
+                    url: "' . admin_url('admin-ajax.php') . '",
+                    nonce: "' . wp_create_nonce('woocommerce-add-to-cart') . '",
+                    cart_url: "' . (function_exists('wc_get_cart_url') ? wc_get_cart_url() : '') . '",
+                    is_funnelkit_active: ' . (defined('FKCART_VERSION') || class_exists('FKCart') ? 'true' : 'false') . '
+                };
+                console.log("[CBM] Global cbm_ajax initialized");
+            }
+        ', 'before');
     }
 }
 

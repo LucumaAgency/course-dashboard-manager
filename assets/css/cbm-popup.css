@@ -28,11 +28,14 @@
     width: 90%;
     max-width: 1200px; /* Maximum width for large screens */
     min-width: 320px;  /* Minimum width for small screens */
+    height: auto;
     max-height: 90vh;
     overflow-y: auto;
+    overflow-x: hidden;
     z-index: 99999;
     animation: slideIn 0.3s ease;
     padding: 40px;
+    box-sizing: border-box;
 }
 
 /* Close button */
@@ -341,6 +344,13 @@ body.cbm-popup-open {
     position: relative;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin-bottom: 20px;
+    min-height: 400px; /* Ensure minimum height for content */
+    display: flex;
+    flex-direction: column;
+}
+
+.cbm-popup-container .box:last-child {
     margin-bottom: 0;
 }
 
