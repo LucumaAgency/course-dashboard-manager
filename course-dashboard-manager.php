@@ -642,9 +642,15 @@ function course_box_tables_page() {
                     // Always show table container
                     tableContainer.style.display = 'block';
                     
-                    // Show/hide add button based on state (only for enroll-course)
-                    if (boxState === 'enroll-course') {
+                    // Show/hide add button based on state (for enroll-course and enroll-buy)
+                    if (boxState === 'enroll-course' || boxState === 'enroll-buy') {
                         addButton.style.display = 'inline-block';
+                        // Update button text based on state
+                        if (boxState === 'enroll-buy') {
+                            addButton.textContent = '+ Add New Enroll Date';
+                        } else {
+                            addButton.textContent = '+ Add Course/Date';
+                        }
                     } else {
                         addButton.style.display = 'none';
                     }
@@ -753,39 +759,6 @@ function course_box_tables_page() {
                         const firstDate = firstCourse.dates && firstCourse.dates.length > 0 ? 
                                          {date: firstCourse.dates[0], index: 0} : null;
                         addTableRow(firstCourse, firstDate, boxState);
-                    }
-                    
-                    // Add "Add New Date" button for enroll-buy state (only for enroll dates)
-                    if (boxState === 'enroll-buy') {
-                        const addButtonRow = document.createElement('tr');
-                        addButtonRow.innerHTML = `
-                            <td colspan="10" style="text-align: center; padding: 10px;">
-                                <button class="button button-primary" id="add-enroll-date">+ Add New Enroll Date</button>
-                            </td>
-                        `;
-                        document.getElementById('table-body').appendChild(addButtonRow);
-                        
-                        // Add event listener for the button
-                        document.getElementById('add-enroll-date').addEventListener('click', function() {
-                            const firstCourse = coursesData[0] || {id: 0, product_id: '', stock: 20};
-                            const newDateInfo = {type: 'enroll', date: {date: '', stock: 20, button_text: 'Enroll Now'}, index: 'new'};
-                            
-                            // Add the new row before the button row
-                            const tableBody = document.getElementById('table-body');
-                            const buttonRow = this.closest('tr');
-                            const newRow = document.createElement('tr');
-                            newRow.className = 'course-row editable-row';
-                            newRow.dataset.courseId = firstCourse.id;
-                            
-                            // Create the row using the existing addTableRow logic
-                            const tempDiv = document.createElement('div');
-                            addTableRow(firstCourse, newDateInfo, boxState);
-                            
-                            // Move the newly created row before the button row
-                            const allRows = tableBody.querySelectorAll('tr');
-                            const lastDataRow = allRows[allRows.length - 2]; // -2 because -1 is the button row
-                            tableBody.insertBefore(lastDataRow, buttonRow);
-                        });
                     }
                 }
                 
@@ -1134,7 +1107,16 @@ function course_box_tables_page() {
                         // If we have courses, add a new date row for the first course
                         const firstCourse = coursesData[0];
                         console.log('[CBM Debug] Adding new row with course:', firstCourse);
-                        addTableRow(firstCourse, null, currentBoxState);
+                        
+                        // Handle differently based on box state
+                        if (currentBoxState === 'enroll-buy') {
+                            // For enroll-buy, add a new enroll row
+                            const newDateInfo = {type: 'enroll', date: {date: '', stock: 20, button_text: 'Enroll Now'}, index: 'new'};
+                            addTableRow(firstCourse, newDateInfo, currentBoxState);
+                        } else {
+                            // For other states, add normally
+                            addTableRow(firstCourse, null, currentBoxState);
+                        }
                     });
                 } else {
                     console.error('[CBM Debug] Add new row button not found!');
