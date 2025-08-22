@@ -309,12 +309,23 @@ body.cbm-popup-open {
 .cbm-popup-container .box {
     margin: 0;
     box-shadow: none;
-    border: 1px solid #e0e0e0;
+    border: 2px solid #9B9FAA7A;
 }
 
 .cbm-popup-container .box.selected {
-    border-color: #F22EBE;
-    box-shadow: 0 0 10px rgba(242, 46, 190, 0.2);
+    background: linear-gradient(180deg, rgba(242, 46, 190, 0.2), rgba(170, 0, 212, 0.2)) !important;
+    border: none;
+    padding: 16px 12px;
+}
+
+/* Ensure buttons are visible in popup when box is selected */
+.cbm-popup-container .box.selected .add-to-cart-button {
+    display: flex !important;
+}
+
+.cbm-popup-container .box:not(.selected) .add-to-cart-button {
+    display: flex !important;
+    background-color: #cc3071;
 }
 
 /* Date buttons in popup */

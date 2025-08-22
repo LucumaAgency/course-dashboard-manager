@@ -377,9 +377,25 @@
             // After creating tabs, re-bind tab switching events
             setTimeout(function() {
                 bindTabEvents();
+                
+                // Auto-select the first box
+                const $firstPane = $('#cbm-popup-content').find('.cbm-tab-pane.active');
+                const $firstBox = $firstPane.find('.box');
+                if ($firstBox.length > 0) {
+                    $firstBox.addClass('selected');
+                    $firstBox.removeClass('no-button');
+                    $firstBox.find('.circlecontainer').show();
+                    $firstBox.find('.circle-container').hide();
+                    console.log('[CBM Popup] Auto-selected first box');
+                }
             }, 100);
         } else if ($boxes.length === 1) {
             console.log('[CBM Popup] Single box detected, no tabs needed');
+            // Auto-select single box
+            $boxes.addClass('selected');
+            $boxes.removeClass('no-button');
+            $boxes.find('.circlecontainer').show();
+            $boxes.find('.circle-container').hide();
         } else {
             console.log('[CBM Popup] No boxes found in content');
         }
@@ -402,7 +418,24 @@
             
             // Show corresponding content
             $('#cbm-popup-content').find('.cbm-tab-pane').removeClass('active');
-            $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="' + tabIndex + '"]').addClass('active');
+            const $activePane = $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="' + tabIndex + '"]');
+            $activePane.addClass('active');
+            
+            // Auto-select the box in the active tab
+            const $box = $activePane.find('.box');
+            if ($box.length > 0) {
+                // Add selected class to show the box as selected
+                $box.addClass('selected');
+                
+                // Ensure the button is visible
+                $box.removeClass('no-button');
+                
+                // Update radio button indicators
+                $box.find('.circlecontainer').show();
+                $box.find('.circle-container').hide();
+                
+                console.log('[CBM Popup] Auto-selected box in tab:', tabIndex);
+            }
             
             console.log('[CBM Popup] Switched to tab:', tabIndex);
         });
