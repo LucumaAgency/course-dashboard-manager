@@ -4105,9 +4105,47 @@ function apply_group_settings() {
     wp_send_json_success(['message' => 'Settings applied to all courses']);
 }
 
-// AJAX Handler for popup boxes
+// AJAX Handler for popup boxes (old)
 add_action('wp_ajax_cbm_get_course_boxes', 'cbm_get_course_boxes');
 add_action('wp_ajax_nopriv_cbm_get_course_boxes', 'cbm_get_course_boxes');
+
+// AJAX Handler for simple popup boxes
+add_action('wp_ajax_cbm_get_popup_boxes', 'cbm_get_popup_boxes_simple');
+add_action('wp_ajax_nopriv_cbm_get_popup_boxes', 'cbm_get_popup_boxes_simple');
+
+function cbm_get_popup_boxes_simple() {
+    $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+    
+    error_log('[CBM Simple Popup] Request for course: ' . $course_id);
+    
+    if (!$course_id) {
+        // Try to get from referer
+        $referer = wp_get_referer();
+        if ($referer) {
+            $post_id = url_to_postid($referer);
+            if ($post_id && get_post_type($post_id) === 'course') {
+                $course_id = $post_id;
+            }
+        }
+    }
+    
+    if (!$course_id) {
+        wp_send_json_error('No course ID provided');
+        return;
+    }
+    
+    // Use BoxRenderer to get the same boxes as the main page
+    ob_start();
+    echo CourseBoxManager\BoxRenderer::render_box_for_course($course_id);
+    $html = ob_get_clean();
+    
+    if (empty($html)) {
+        $html = '<div class="no-boxes">No boxes configured for this course.</div>';
+    }
+    
+    wp_send_json_success(['html' => $html]);
+}
+
 function cbm_get_course_boxes() {
     // Verify nonce (make it optional for debugging)
     if (isset($_POST['nonce']) && !empty($_POST['nonce'])) {
@@ -4216,11 +4254,20 @@ function cbm_enqueue_global_assets() {
 // Enqueue popup scripts and styles
 add_action('wp_enqueue_scripts', 'cbm_enqueue_popup_assets');
 function cbm_enqueue_popup_assets() {
-    // Register the popup script
+    // Register the simple popup script (new)
+    wp_register_script(
+        'cbm-popup-simple',
+        CBM_PLUGIN_URL . 'assets/js/cbm-popup-simple.js',
+        array('jquery'),
+        CBM_VERSION,
+        true
+    );
+    
+    // Register the old popup script (keeping for compatibility)
     wp_register_script(
         'cbm-popup-auto',
         CBM_PLUGIN_URL . 'assets/js/cbm-popup-auto.js',
-        array('jquery', 'cbm-global-config'), // Add dependency on global config
+        array('jquery', 'cbm-global-config'),
         '1.0.0',
         true
     );
@@ -4233,9 +4280,11 @@ function cbm_enqueue_popup_assets() {
         CBM_VERSION
     );
     
-    // Always enqueue on frontend (will only activate if trigger class is found)
+    // Always enqueue on frontend
     if (!is_admin()) {
-        wp_enqueue_script('cbm-popup-auto');
+        // Use the simple popup by default
+        wp_enqueue_script('cbm-popup-simple');
+        // wp_enqueue_script('cbm-popup-auto'); // Commented out - using simple version
         wp_enqueue_style('cbm-popup');
     }
 }
