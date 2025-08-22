@@ -164,6 +164,61 @@
                         min-width: 350px;
                     }
                     
+                    /* Tabs styles */
+                    .cbm-tabs {
+                        width: 100%;
+                    }
+                    
+                    .cbm-tabs-header {
+                        display: flex;
+                        border-bottom: 2px solid #e0e0e0;
+                        margin-bottom: 20px;
+                    }
+                    
+                    .cbm-tab-btn {
+                        flex: 1;
+                        padding: 12px 20px;
+                        background: transparent;
+                        border: none;
+                        font-size: 16px;
+                        font-weight: 500;
+                        color: #666;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        position: relative;
+                        border-bottom: 3px solid transparent;
+                    }
+                    
+                    .cbm-tab-btn:hover {
+                        color: #333;
+                        background: #f5f5f5;
+                    }
+                    
+                    .cbm-tab-btn.active {
+                        color: #0073aa;
+                        font-weight: 600;
+                        border-bottom-color: #0073aa;
+                        background: #f9f9f9;
+                    }
+                    
+                    .cbm-tabs-content {
+                        padding: 10px 0;
+                    }
+                    
+                    .cbm-tab-pane {
+                        display: none;
+                        animation: fadeIn 0.3s ease;
+                    }
+                    
+                    .cbm-tab-pane.active {
+                        display: block;
+                    }
+                    
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                    
                     /* Mobile styles */
                     @media (max-width: 768px) {
                         #cbm-popup-container {
@@ -179,6 +234,11 @@
                         #cbm-popup-content .box {
                             width: 100%;
                             min-width: unset;
+                        }
+                        
+                        .cbm-tab-btn {
+                            font-size: 14px;
+                            padding: 10px 15px;
                         }
                     }
                 </style>
@@ -204,7 +264,7 @@
             url: window.cbm_ajax.ajax_url || '/wp-admin/admin-ajax.php',
             type: 'POST',
             data: {
-                action: 'cbm_get_popup_boxes',
+                action: 'cbm_get_popup_boxes_simple',  // Updated action name
                 course_id: courseId,
                 nonce: window.cbm_ajax.nonce || ''
             },
@@ -212,25 +272,149 @@
                 console.log('[CBM Popup] Response received:', response);
                 
                 if (response.success && response.data) {
-                    callback(response.data.html || response.data);
+                    const html = response.data.html || response.data;
+                    console.log('[CBM Popup] HTML content length:', html.length);
+                    callback(html);
+                } else if (response && typeof response === 'string') {
+                    // Direct HTML response
+                    console.log('[CBM Popup] Direct HTML response');
+                    callback(response);
                 } else {
                     callback('<div class="error">Error loading boxes. Please try again.</div>');
                 }
             },
             error: function(xhr, status, error) {
                 console.error('[CBM Popup] AJAX error:', error);
+                console.error('[CBM Popup] Response text:', xhr.responseText);
                 callback('<div class="error">Error loading boxes. Please try again.</div>');
             }
         });
     }
     
+    function createTabs($boxes) {
+        console.log('[CBM Popup] Creating tabs for', $boxes.length, 'boxes');
+        
+        // Detect box types from classes and content
+        const boxTypes = [];
+        $boxes.each(function() {
+            const $box = $(this);
+            const classes = $box.attr('class') || '';
+            const content = $box.html() || '';
+            
+            console.log('[CBM Popup] Box classes:', classes);
+            
+            // Check by class names
+            if (classes.includes('enroll-course') || classes.includes('enroll_course')) {
+                boxTypes.push('Enroll in Live Course');
+            } else if (classes.includes('buy-course') || classes.includes('buy_course')) {
+                boxTypes.push('Buy Self-Paced Course');
+            } else if (classes.includes('waitlist')) {
+                boxTypes.push('Join Waitlist');
+            } else if (classes.includes('soldout') || classes.includes('sold-out')) {
+                boxTypes.push('Sold Out');
+            } 
+            // Check by content
+            else if (content.includes('Enroll') || content.includes('enroll')) {
+                boxTypes.push('Enroll in Course');
+            } else if (content.includes('Buy') || content.includes('buy')) {
+                boxTypes.push('Buy Course');
+            } else {
+                // Default naming
+                boxTypes.push('Option ' + (boxTypes.length + 1));
+            }
+        });
+        
+        console.log('[CBM Popup] Box types detected:', boxTypes);
+        
+        // Create tab structure
+        let tabsHtml = '<div class="cbm-tabs">';
+        tabsHtml += '<div class="cbm-tabs-header">';
+        
+        // Create tab buttons
+        boxTypes.forEach((type, index) => {
+            const activeClass = index === 0 ? 'active' : '';
+            tabsHtml += `<button class="cbm-tab-btn ${activeClass}" data-tab="${index}" type="button">${type}</button>`;
+        });
+        
+        tabsHtml += '</div>'; // Close tabs-header
+        tabsHtml += '<div class="cbm-tabs-content">';
+        
+        // Wrap each box in a tab pane
+        $boxes.each(function(index) {
+            const activeClass = index === 0 ? 'active' : '';
+            const $box = $(this);
+            
+            tabsHtml += `<div class="cbm-tab-pane ${activeClass}" data-tab="${index}">`;
+            tabsHtml += $box.prop('outerHTML');
+            tabsHtml += '</div>';
+        });
+        
+        tabsHtml += '</div>'; // Close tabs-content
+        tabsHtml += '</div>'; // Close tabs
+        
+        // Replace content with tabbed version
+        $('#cbm-popup-content').html(tabsHtml);
+        
+        console.log('[CBM Popup] Tabs HTML created and inserted');
+    }
+    
     function initializeBoxScripts() {
         console.log('[CBM Popup] Initializing box scripts');
+        
+        // Check if we have raw HTML with multiple boxes
+        const $content = $('#cbm-popup-content');
+        const htmlContent = $content.html();
+        
+        // Look for multiple boxes in the content
+        const $boxes = $content.find('.box');
+        console.log('[CBM Popup] Found boxes:', $boxes.length);
+        
+        // If we have multiple boxes, create tabs
+        if ($boxes.length > 1) {
+            console.log('[CBM Popup] Multiple boxes detected, creating tabs');
+            createTabs($boxes);
+            
+            // After creating tabs, re-bind tab switching events
+            setTimeout(function() {
+                bindTabEvents();
+            }, 100);
+        } else if ($boxes.length === 1) {
+            console.log('[CBM Popup] Single box detected, no tabs needed');
+        } else {
+            console.log('[CBM Popup] No boxes found in content');
+        }
+        
+        // Initialize other box scripts
+        initializeBoxInteractions();
+    }
+    
+    function bindTabEvents() {
+        console.log('[CBM Popup] Binding tab events');
+        $('#cbm-popup-content').find('.cbm-tab-btn').off('click').on('click', function() {
+            const $btn = $(this);
+            const tabIndex = $btn.data('tab');
+            
+            console.log('[CBM Popup] Tab clicked:', tabIndex);
+            
+            // Update active states
+            $btn.siblings().removeClass('active');
+            $btn.addClass('active');
+            
+            // Show corresponding content
+            $('#cbm-popup-content').find('.cbm-tab-pane').removeClass('active');
+            $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="' + tabIndex + '"]').addClass('active');
+            
+            console.log('[CBM Popup] Switched to tab:', tabIndex);
+        });
+    }
+    
+    function initializeBoxInteractions() {
+        console.log('[CBM Popup] Initializing box interactions');
         
         // Re-initialize date selection
         $('#cbm-popup-content').find('.date-btn:not(.sold-out)').off('click').on('click', function() {
             const $btn = $(this);
-            const $container = $btn.closest('.box');
+            const $container = $btn.closest('.box, .cbm-tab-pane');
             
             $btn.siblings().removeClass('selected');
             $btn.addClass('selected');
@@ -241,6 +425,7 @@
             }
             
             $container.data('selected-date', $btn.data('date'));
+            console.log('[CBM Popup] Date selected:', $btn.data('date'));
         });
         
         // Re-initialize add to cart
@@ -248,9 +433,11 @@
             e.preventDefault();
             
             const $button = $(this);
-            const $box = $button.closest('.box');
+            const $box = $button.closest('.box, .cbm-tab-pane');
             const productId = $button.data('product-id');
             const selectedDate = $box.data('selected-date') || $box.find('.date-btn.selected').data('date') || '';
+            
+            console.log('[CBM Popup] Add to cart clicked - Product ID:', productId, 'Date:', selectedDate);
             
             if (!productId) {
                 console.error('[CBM Popup] No product ID');
@@ -267,7 +454,7 @@
         });
         
         // Auto-select first date if only one
-        $('#cbm-popup-content').find('.box').each(function() {
+        $('#cbm-popup-content').find('.box, .cbm-tab-pane').each(function() {
             const $dates = $(this).find('.date-btn:not(.sold-out)');
             if ($dates.length === 1) {
                 $dates.first().click();
