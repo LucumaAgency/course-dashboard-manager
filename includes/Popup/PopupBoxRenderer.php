@@ -2,7 +2,7 @@
 
 namespace CourseBoxManager\Popup;
 
-use CourseBoxManager\BoxFactory;
+use CourseBoxManager\Boxes\BoxFactory;
 use CourseBoxManager\BoxRenderer;
 
 class PopupBoxRenderer {
@@ -14,28 +14,20 @@ class PopupBoxRenderer {
      * Render boxes based on context and device
      */
     public function render($course_id, $context = 'popup') {
-        $enabled_boxes = $this->getEnabledBoxes($course_id);
+        error_log('[PopupBoxRenderer] Rendering popup for course: ' . $course_id);
         
-        if (empty($enabled_boxes)) {
+        // Simply use BoxRenderer to get the boxes
+        $box_html = BoxRenderer::render_box_for_course($course_id);
+        
+        if (empty($box_html)) {
             return '<div class="cbm-no-boxes">No boxes available for this course.</div>';
         }
         
+        // Wrap in popup container
         $is_mobile = $this->isMobile();
-        $box_count = count($enabled_boxes);
+        $container_class = $is_mobile ? 'cbm-popup-container mobile-view' : 'cbm-popup-container desktop-view';
         
-        // Auto-detect and render based on box count and device
-        if ($is_mobile && $context === 'popup') {
-            if ($box_count === 1) {
-                return $this->renderSingleBox($enabled_boxes[0], $course_id);
-            } elseif ($box_count === 2) {
-                return $this->renderTabbed($enabled_boxes, $course_id);
-            } else {
-                return $this->renderStacked($enabled_boxes, $course_id);
-            }
-        }
-        
-        // Desktop or inline - render normally
-        return $this->renderNormal($enabled_boxes, $course_id);
+        return '<div class="' . $container_class . '">' . $box_html . '</div>';
     }
     
     /**
@@ -58,28 +50,50 @@ class PopupBoxRenderer {
     private function detectDefaultBoxes($course_id) {
         $boxes = [];
         
-        // Get course meta
-        $soldout = get_post_meta($course_id, 'soldout', true);
-        $coming_soon = get_post_meta($course_id, 'coming-soon', true);
+        // Get the actual box state
         $box_state = get_post_meta($course_id, 'box_state', true);
         
-        // Determine which boxes to show
-        if ($box_state === 'sold_out' || $soldout === 'yes') {
-            $boxes[] = 'sold_out';
-        } elseif ($box_state === 'coming_soon' || $coming_soon === 'yes') {
-            $boxes[] = 'coming_soon';
-        } else {
-            // Check for buy/enroll conditions
-            $has_price = get_post_meta($course_id, '_price', true);
-            $has_dates = get_post_meta($course_id, 'course_dates', true);
-            
-            if ($has_price && $has_price > 0) {
-                $boxes[] = 'buy_course';
-            }
-            if ($has_dates) {
+        error_log('[PopupBoxRenderer] Course ' . $course_id . ' has box_state: ' . $box_state);
+        
+        // Use the actual box state to determine what to show
+        switch($box_state) {
+            case 'enroll-buy':
                 $boxes[] = 'enroll_course';
-            }
+                $boxes[] = 'buy_course';
+                break;
+            case 'enroll-course':
+                $boxes[] = 'enroll_course';
+                break;
+            case 'buy-course':
+                $boxes[] = 'buy_course';
+                break;
+            case 'soldout':
+            case 'soldout-course':
+                $boxes[] = 'sold_out';
+                break;
+            case 'countdown':
+            case 'countdown-course':
+                $boxes[] = 'countdown';
+                break;
+            case 'waitlist':
+            case 'waitlist-course':
+                $boxes[] = 'waitlist';
+                break;
+            default:
+                // Fallback - try to detect from available data
+                $has_dates = get_post_meta($course_id, 'course_dates', true);
+                $has_product = get_post_meta($course_id, 'linked_product_id', true);
+                
+                if ($has_dates) {
+                    $boxes[] = 'enroll_course';
+                }
+                if ($has_product) {
+                    $boxes[] = 'buy_course';
+                }
+                break;
         }
+        
+        error_log('[PopupBoxRenderer] Detected boxes: ' . json_encode($boxes));
         
         return $boxes;
     }
