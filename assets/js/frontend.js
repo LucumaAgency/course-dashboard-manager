@@ -90,13 +90,24 @@ window.selectBox = function(element, boxType, courseId) {
         const originalText = $button.find('.button-text').text();
         $button.find('.button-text').text('Adding...');
         
+        // Check if cbm_ajax is available
+        if (typeof cbm_ajax === 'undefined' || !cbm_ajax.ajax_url) {
+            console.error('[CBM] AJAX configuration not available');
+            alert('Error: AJAX configuration not found. Please refresh the page.');
+            $button.removeClass('loading');
+            $button.find('.button-text').text(originalText);
+            return;
+        }
+        
+        console.log('[CBM] Using AJAX URL:', cbm_ajax.ajax_url);
+        
         // Prepare data
         const data = {
             action: 'woocommerce_add_to_cart',
             product_id: productId,
             quantity: quantity,
             variation_id: 0,
-            security: cbm_ajax.nonce
+            security: cbm_ajax.nonce || ''
         };
         
         // Add selected date if available
@@ -112,6 +123,7 @@ window.selectBox = function(element, boxType, courseId) {
             type: 'POST',
             url: cbm_ajax.ajax_url,
             data: data,
+            dataType: 'json',
             success: function(response) {
                 console.log('Cart response:', response);
                 
@@ -161,8 +173,18 @@ window.selectBox = function(element, boxType, courseId) {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('AJAX error:', error);
-                alert('Error adding to cart. Please try again.');
+                console.error('[CBM] AJAX error:', error);
+                console.error('[CBM] Response status:', xhr.status);
+                console.error('[CBM] Response text:', xhr.responseText ? xhr.responseText.substring(0, 500) : 'empty');
+                
+                // Check if response is HTML instead of JSON
+                if (xhr.responseText && xhr.responseText.indexOf('<!DOCTYPE') !== -1) {
+                    console.error('[CBM] Received HTML instead of JSON - AJAX endpoint not found');
+                    alert('Error: Server configuration issue. The cart functionality is not available.');
+                } else {
+                    alert('Error adding to cart. Please try again.');
+                }
+                
                 $button.removeClass('loading');
                 $button.find('.button-text').text(originalText);
             }

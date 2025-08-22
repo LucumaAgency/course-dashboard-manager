@@ -23,8 +23,9 @@ add_action('wp_ajax_delete_course', __NAMESPACE__ . '\\delete_course');
 add_action('wp_ajax_delete_table_row', __NAMESPACE__ . '\\delete_table_row');
 
 // Cart AJAX handlers
-add_action('wp_ajax_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
-add_action('wp_ajax_nopriv_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
+// Commented out - using the handler in main file instead to avoid conflicts
+// add_action('wp_ajax_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
+// add_action('wp_ajax_nopriv_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
 
 /**
  * Add to cart AJAX handler
