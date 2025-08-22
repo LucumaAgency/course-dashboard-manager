@@ -4134,40 +4134,71 @@ function cbm_get_popup_boxes_simple() {
         return;
     }
     
-    // Use BoxRenderer to get the same boxes as the main page
-    ob_start();
-    echo CourseBoxManager\BoxRenderer::render_box_for_course($course_id);
-    $html = ob_get_clean();
+    // Get the box using BoxFactory to check if it's EnrollBuyBox
+    $box = CourseBoxManager\BoxFactory::get_box($course_id);
     
-    // Remove duplicate boxes from EnrollBuyBox by extracting only desktop layout boxes
-    if (strpos($html, 'enroll-buy-combo') !== false) {
-        error_log('[CBM Popup] EnrollBuyBox detected, processing duplicates');
+    if (!$box) {
+        wp_send_json_success(['html' => '<div class="no-boxes">No boxes configured for this course.</div>']);
+        return;
+    }
+    
+    // Check if this is an EnrollBuyBox - if so, render individual boxes with correct configuration
+    if ($box instanceof CourseBoxManager\Boxes\EnrollBuyBox) {
+        error_log('[CBM Simple Popup] EnrollBuyBox detected, rendering individual boxes');
         
-        // Count initial boxes
-        preg_match_all('/<div class="box\s+[^"]*"/s', $html, $all_boxes);
-        error_log('[CBM Popup] Total boxes found: ' . count($all_boxes[0]));
+        // Create new instances with proper configuration like EnrollBuyBox does
+        $buyBox = new CourseBoxManager\Boxes\BuyCourseBox($course_id);
+        $enrollBox = new CourseBoxManager\Boxes\EnrollCourseBox($course_id);
         
-        // Extract each box type once
-        $buy_box = '';
-        $enroll_box = '';
+        // Get the separate product IDs
+        $buy_product_id = get_post_meta($course_id, 'buy_product_id', true);
+        $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
         
-        // Get the first buy-course box
-        if (preg_match('/<div class="box buy-course"[^>]*>.*?<\/button>\s*<\/div>/s', $html, $buy_match)) {
-            $buy_box = $buy_match[0];
-            error_log('[CBM Popup] Buy box extracted');
+        // If no separate products, use linked_product_id
+        if (!$buy_product_id || !$enroll_product_id) {
+            $linked_product_id = get_post_meta($course_id, 'linked_product_id', true);
+            $buy_product_id = $buy_product_id ?: $linked_product_id;
+            $enroll_product_id = $enroll_product_id ?: $linked_product_id;
         }
         
-        // Get the first enroll-course box
-        if (preg_match('/<div class="box enroll-course[^"]*"[^>]*>.*?<\/button>\s*<\/div>/s', $html, $enroll_match)) {
-            $enroll_box = $enroll_match[0];
-            error_log('[CBM Popup] Enroll box extracted');
+        // Configure buy box with correct product and price
+        $buyBox->course_product_id = $buy_product_id;
+        if ($buy_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($buy_product_id);
+            if ($product) {
+                $buyBox->course_price = $product->get_price();
+            }
         }
         
-        // Combine the two boxes
-        if ($buy_box && $enroll_box) {
-            $html = $buy_box . "\n" . $enroll_box;
-            error_log('[CBM Popup] Combined 2 boxes for output');
+        // Configure enroll box with correct product and price
+        $enrollBox->course_product_id = $enroll_product_id;
+        if ($enroll_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($enroll_product_id);
+            if ($product) {
+                $enrollBox->course_price = $product->get_price();
+                $enrollBox->enroll_price = $product->get_price();
+                $enrollBox->is_out_of_stock = !$product->is_in_stock();
+            }
         }
+        
+        // Get enroll dates
+        $enroll_dates = get_field('course_dates', $course_id);
+        if ($enroll_dates) {
+            $enrollBox->available_dates_full = $enroll_dates;
+            $enrollBox->available_dates = array_column($enroll_dates, 'date');
+        }
+        
+        // Render both boxes
+        ob_start();
+        echo $buyBox->render();
+        echo $enrollBox->render();
+        $html = ob_get_clean();
+        
+    } else {
+        // For other box types, render normally
+        ob_start();
+        echo $box->render();
+        $html = ob_get_clean();
     }
     
     if (empty($html)) {
