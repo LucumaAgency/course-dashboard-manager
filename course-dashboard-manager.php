@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.5.5
+ * Version: 1.6.0
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.5.5');
+define('CBM_VERSION', '1.6.0');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -743,22 +743,24 @@ function course_box_tables_page() {
                     let headerHTML = '<tr>';
                     if (boxState === 'enroll-course') {
                         headerHTML += '<th style="width: 10%;">Date</th>';
-                        headerHTML += '<th style="width: 15%;">Associated Product</th>';
-                        headerHTML += '<th style="width: 8%;">Regular Price</th>';
-                        headerHTML += '<th style="width: 8%;">Sale Price</th>';
-                        headerHTML += '<th style="width: 8%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 7%;">Sold</th>';
-                        headerHTML += '<th style="width: 8%;">Available</th>';
-                        headerHTML += '<th style="width: 15%;">Button Text</th>';
-                        headerHTML += '<th style="width: 21%;">Actions</th>';
+                        headerHTML += '<th style="width: 12%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 12%;">STM Course</th>';
+                        headerHTML += '<th style="width: 7%;">Regular Price</th>';
+                        headerHTML += '<th style="width: 7%;">Sale Price</th>';
+                        headerHTML += '<th style="width: 7%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 6%;">Sold</th>';
+                        headerHTML += '<th style="width: 7%;">Available</th>';
+                        headerHTML += '<th style="width: 12%;">Button Text</th>';
+                        headerHTML += '<th style="width: 20%;">Actions</th>';
                     } else if (boxState === 'buy-course') {
-                        headerHTML += '<th style="width: 20%;">Associated Product</th>';
-                        headerHTML += '<th style="width: 12%;">Regular Price</th>';
-                        headerHTML += '<th style="width: 12%;">Sale Price</th>';
-                        headerHTML += '<th style="width: 12%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 12%;">Available</th>';
-                        headerHTML += '<th style="width: 17%;">Button Text</th>';
-                        headerHTML += '<th style="width: 15%;">Actions</th>';
+                        headerHTML += '<th style="width: 18%;">Associated Product</th>';
+                        headerHTML += '<th style="width: 15%;">STM Course</th>';
+                        headerHTML += '<th style="width: 10%;">Regular Price</th>';
+                        headerHTML += '<th style="width: 10%;">Sale Price</th>';
+                        headerHTML += '<th style="width: 10%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 10%;">Available</th>';
+                        headerHTML += '<th style="width: 15%;">Button Text</th>';
+                        headerHTML += '<th style="width: 12%;">Actions</th>';
                     } else if (boxState === 'countdown') {
                         headerHTML += '<th style="width: 8%;">Date</th>';
                         headerHTML += '<th style="width: 13%;">Associated Product</th>';
@@ -790,13 +792,14 @@ function course_box_tables_page() {
                         // For enroll-buy, we'll have separate headers for each table
                         // Enroll table header (similar to enroll-course)
                         headerHTML += '<th style="width: 10%;">Date</th>';
-                        headerHTML += '<th style="width: 15%;">Product</th>';
-                        headerHTML += '<th style="width: 8%;">Regular Price</th>';
-                        headerHTML += '<th style="width: 8%;">Sale Price</th>';
-                        headerHTML += '<th style="width: 8%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 7%;">Sold</th>';
-                        headerHTML += '<th style="width: 8%;">Available</th>';
-                        headerHTML += '<th style="width: 15%;">Button Text</th>';
+                        headerHTML += '<th style="width: 12%;">Product</th>';
+                        headerHTML += '<th style="width: 12%;">STM Course</th>';
+                        headerHTML += '<th style="width: 7%;">Regular Price</th>';
+                        headerHTML += '<th style="width: 7%;">Sale Price</th>';
+                        headerHTML += '<th style="width: 7%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 6%;">Sold</th>';
+                        headerHTML += '<th style="width: 7%;">Available</th>';
+                        headerHTML += '<th style="width: 12%;">Button Text</th>';
                         headerHTML += '<th style="width: 21%;">Actions</th>';
                     }
                     headerHTML += '</tr>';
@@ -940,7 +943,7 @@ function course_box_tables_page() {
                         const enrollProductId = course.enroll_product_id || course.product_id;
                         console.log('[CBM Debug] Enroll product ID for row:', enrollProductId);
                         rowHTML += `<td>${buildProductSelect(enrollProductId, 'enroll-product-select')}</td>`;
-                        
+                        rowHTML += `<td>${buildSTMCourseSelect(course.related_stm_course_id || '', course.id)}</td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(enrollProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(enrollProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         
@@ -977,11 +980,12 @@ function course_box_tables_page() {
                     
                     // Build header for buy table
                     let headerHTML = '<tr>';
-                    headerHTML += '<th style="width: 20%;">Product</th>';
-                    headerHTML += '<th style="width: 15%;">Regular Price</th>';
-                    headerHTML += '<th style="width: 15%;">Sale Price</th>';
+                    headerHTML += '<th style="width: 18%;">Product</th>';
+                    headerHTML += '<th style="width: 18%;">STM Course</th>';
+                    headerHTML += '<th style="width: 12%;">Regular Price</th>';
+                    headerHTML += '<th style="width: 12%;">Sale Price</th>';
                     headerHTML += '<th style="width: 15%;">Button Text</th>';
-                    headerHTML += '<th style="width: 35%;">Actions</th>';
+                    headerHTML += '<th style="width: 25%;">Actions</th>';
                     headerHTML += '</tr>';
                     buyTableHeader.innerHTML = headerHTML;
                     
@@ -1005,6 +1009,7 @@ function course_box_tables_page() {
                     
                     let rowHTML = '';
                     rowHTML += `<td>${buildProductSelect(buyProductId, 'buy-product-select')}</td>`;
+                    rowHTML += `<td>${buildSTMCourseSelect(firstCourse.related_stm_course_id || '', firstCourse.id)}</td>`;
                     rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(buyProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                     rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(buyProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                     rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Buy Course" style="width: 100%; padding: 3px;"></td>`;
@@ -1069,6 +1074,41 @@ function course_box_tables_page() {
                         const productName = allProducts[id].name || allProducts[id]; // Support both old and new format
                         html += `<option value="${id}" ${selectedId == id ? 'selected' : ''}>${productName}</option>`;
                     }
+                    html += '</select>';
+                    return html;
+                }
+                
+                // Build STM Course select dropdown
+                function buildSTMCourseSelect(selectedId, courseId) {
+                    let html = `<select class="inline-edit-stm-course" data-course-id="${courseId}" style="width: 100%; padding: 3px;">`;
+                    html += '<option value="">None</option>';
+                    
+                    // Get STM courses from PHP
+                    <?php
+                    $stm_courses = get_posts([
+                        'post_type' => 'stm-courses',
+                        'posts_per_page' => -1,
+                        'orderby' => 'title',
+                        'order' => 'ASC',
+                        'post_status' => 'publish'
+                    ]);
+                    
+                    $stm_courses_js = [];
+                    foreach ($stm_courses as $stm_course) {
+                        $stm_courses_js[] = [
+                            'id' => $stm_course->ID,
+                            'title' => $stm_course->post_title
+                        ];
+                    }
+                    ?>
+                    
+                    const stmCourses = <?php echo json_encode($stm_courses_js); ?>;
+                    
+                    stmCourses.forEach(course => {
+                        const selected = selectedId == course.id ? 'selected' : '';
+                        html += `<option value="${course.id}" ${selected}>${course.title} (#${course.id})</option>`;
+                    });
+                    
                     html += '</select>';
                     return html;
                 }
@@ -1154,6 +1194,7 @@ function course_box_tables_page() {
                         box_state: boxState,
                         instructor_id: instructorId,
                         product_id: row.querySelector('.inline-edit-product')?.value || '',
+                        related_stm_course_id: row.querySelector('.inline-edit-stm-course')?.value || '',
                         regular_price: row.querySelector('.inline-edit-regular-price')?.value || '',
                         sale_price: row.querySelector('.inline-edit-sale-price')?.value || '',
                         stock: row.querySelector('.inline-edit-stock')?.value || 0,
@@ -3705,6 +3746,7 @@ function save_table_row_data() {
     $button_text = sanitize_text_field($_POST['button_text']);
     $box_state = sanitize_text_field($_POST['box_state']);
     $launch_date = isset($_POST['launch_date']) ? sanitize_text_field($_POST['launch_date']) : '';
+    $related_stm_course_id = isset($_POST['related_stm_course_id']) ? intval($_POST['related_stm_course_id']) : 0;
     
     // Date is optional for buy-course state
     $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
@@ -3767,6 +3809,14 @@ function save_table_row_data() {
     
     // Update box state
     update_post_meta($course_id, 'box_state', $box_state);
+    
+    // Update STM Course association
+    if ($related_stm_course_id) {
+        update_post_meta($course_id, 'related_stm_course_id', $related_stm_course_id);
+        error_log('[CBM Debug] Updated STM course ID ' . $related_stm_course_id . ' for course ' . $course_id);
+    } else {
+        delete_post_meta($course_id, 'related_stm_course_id');
+    }
     
     // Update instructor
     if ($instructor_id) {
