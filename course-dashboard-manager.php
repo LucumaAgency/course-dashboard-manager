@@ -528,6 +528,9 @@ function course_box_tables_page() {
                                 'id' => $course_id,
                                 'title' => $course->post_title,
                                 'product_id' => $product_id,
+                                'buy_product_id' => get_post_meta($course_id, 'buy_product_id', true),
+                                'enroll_product_id' => get_post_meta($course_id, 'enroll_product_id', true),
+                                'buy_price' => get_post_meta($course_id, 'buy_price', true),
                                 'launch_date' => $launch_date,
                                 'dates' => $dates ?: [],
                                 'stock' => $stock ?: 0
@@ -882,9 +885,11 @@ function course_box_tables_page() {
                     } else if (boxState === 'enroll-buy') {
                         // For enroll-buy state, this handles enroll rows only
                         // Similar to enroll-course but for the enroll table
-                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="Date/Text" style="width: 100%; padding: 3px;"></td>`;
+                        const dateValue = dateInfo && dateInfo.date ? (typeof dateInfo.date === 'object' ? dateInfo.date.date : dateInfo.date) : '';
+                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateValue}" placeholder="Date/Text" style="width: 100%; padding: 3px;"></td>`;
                         
                         const enrollProductId = course.enroll_product_id || course.product_id;
+                        console.log('[CBM Debug] Enroll product ID for row:', enrollProductId);
                         rowHTML += `<td>${buildProductSelect(enrollProductId, 'enroll-product-select')}</td>`;
                         
                         rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(enrollProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
@@ -939,12 +944,15 @@ function course_box_tables_page() {
                         buy_price: ''
                     };
                     
+                    console.log('[CBM Debug] Buy table course data:', firstCourse);
+                    
                     // Create buy row
                     const row = document.createElement('tr');
                     row.className = 'course-row editable-row buy-row';
                     row.dataset.courseId = firstCourse.id;
                     
                     const buyProductId = firstCourse.buy_product_id || firstCourse.product_id;
+                    console.log('[CBM Debug] Buy product ID for table:', buyProductId);
                     
                     let rowHTML = '';
                     rowHTML += `<td>${buildProductSelect(buyProductId, 'buy-product-select')}</td>`;
@@ -3020,11 +3028,12 @@ function save_group_settings() {
     $box_state = sanitize_text_field($_POST['box_state']);
     $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
     
-    // If no course_id provided, get the first course in the group
-    if (!$course_id && $group_id) {
+    // Get all courses in the group
+    $courses_to_update = [];
+    if ($group_id) {
         $courses = get_posts([
             'post_type' => 'course',
-            'posts_per_page' => 1,
+            'posts_per_page' => -1,
             'tax_query' => [
                 [
                     'taxonomy' => 'course_group',
@@ -3036,17 +3045,28 @@ function save_group_settings() {
         ]);
         
         if (!empty($courses)) {
-            $course_id = $courses[0];
+            $courses_to_update = $courses;
         }
     }
     
-    if (!$course_id) {
-        wp_send_json_error('No course found in group');
+    // If we have a specific course_id, use that, otherwise use all courses in group
+    if ($course_id && !in_array($course_id, $courses_to_update)) {
+        $courses_to_update[] = $course_id;
+    }
+    
+    if (empty($courses_to_update)) {
+        wp_send_json_error('No courses found in group');
         return;
     }
     
-    // Update box state
-    update_post_meta($course_id, 'box_state', $box_state);
+    // Update all courses in the group
+    foreach ($courses_to_update as $course_id) {
+        // Update box state
+        update_post_meta($course_id, 'box_state', $box_state);
+    }
+    
+    // Use the first course for saving the main configuration
+    $course_id = $courses_to_update[0];
     
     if ($box_state === 'enroll-buy') {
         // Save buy product configuration
