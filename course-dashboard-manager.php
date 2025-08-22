@@ -4135,7 +4135,7 @@ function cbm_get_popup_boxes_simple() {
     }
     
     // Get the box using BoxFactory
-    $box = CourseBoxManager\BoxFactory::create($course_id);
+    $box = CourseBoxManager\BoxFactory::get_box($course_id);
     
     if (!$box) {
         wp_send_json_success(['html' => '<div class="no-boxes">No boxes configured for this course.</div>']);
