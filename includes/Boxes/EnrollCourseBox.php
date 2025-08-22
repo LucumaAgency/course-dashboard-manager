@@ -19,14 +19,20 @@ class EnrollCourseBox extends AbstractBox {
     }
     
     public function render() {
-        // Get actual price from WooCommerce product if available
+        // Get actual price and stock status from WooCommerce product if available
         $display_price = $this->enroll_price;
+        $product_in_stock = !$this->is_out_of_stock; // Use the property that might be set by parent
+        $product = null;
         
         if ($this->course_product_id && function_exists('wc_get_product')) {
             $product = wc_get_product($this->course_product_id);
             if ($product) {
                 $display_price = $product->get_price();
-                error_log('[EnrollCourseBox] Using WooCommerce price: ' . $display_price . ' for product ID: ' . $this->course_product_id);
+                // Only check product stock if not already marked as out of stock
+                if (!$this->is_out_of_stock) {
+                    $product_in_stock = $product->is_in_stock();
+                }
+                error_log('[EnrollCourseBox] Product ID: ' . $this->course_product_id . ', Price: ' . $display_price . ', WC Stock: ' . ($product_in_stock ? 'in stock' : 'out of stock') . ', is_out_of_stock property: ' . ($this->is_out_of_stock ? 'true' : 'false'));
             }
         }
         
@@ -76,13 +82,21 @@ class EnrollCourseBox extends AbstractBox {
         
         // Determine button state and text
         $button_html = '';
-        if ($all_sold_out) {
-            // All dates are sold out
+        if (!$product_in_stock) {
+            // WooCommerce product is out of stock
+            $button_html = '<button class="add-to-cart-button sold-out" disabled>
+                <span class="button-text">Out of Stock</span>
+            </button>';
+            error_log('[EnrollCourseBox] Button disabled - WooCommerce product out of stock');
+        } elseif ($all_sold_out) {
+            // All dates are sold out based on seats calculation
             $button_html = '<button class="add-to-cart-button sold-out" disabled>
                 <span class="button-text">Sold Out</span>
             </button>';
+            error_log('[EnrollCourseBox] Button disabled - All seats sold out');
         } else {
             $button_html = $this->render_add_to_cart_button($default_button_text);
+            error_log('[EnrollCourseBox] Button enabled - Product in stock and seats available');
         }
         
         // Get custom text or use default

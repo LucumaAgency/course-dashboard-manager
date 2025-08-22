@@ -15,6 +15,15 @@ class SoldOutBox extends AbstractBox {
             return true;
         }
         
+        // Check WooCommerce product stock for enroll-course state
+        if ($this->box_state === 'enroll-course' && $this->course_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($this->course_product_id);
+            if ($product && !$product->is_in_stock()) {
+                error_log('[SoldOutBox] WooCommerce product out of stock for course ' . $this->course_id . ', displaying sold out box');
+                return true;
+            }
+        }
+        
         // Check if all dates are sold out (for enroll-course state)
         if ($this->box_state === 'enroll-course' && !empty($this->available_dates_full)) {
             $all_sold_out = true;
@@ -36,7 +45,7 @@ class SoldOutBox extends AbstractBox {
             }
             
             if ($all_sold_out) {
-                error_log('[SoldOutBox] All dates sold out for course ' . $this->course_id . ', displaying sold out box');
+                error_log('[SoldOutBox] All seats sold out for course ' . $this->course_id . ', displaying sold out box');
                 return true;
             }
         }
