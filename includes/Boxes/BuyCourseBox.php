@@ -19,9 +19,21 @@ class BuyCourseBox extends AbstractBox {
     }
     
     public function render() {
+        // Get actual price from WooCommerce product if available
+        $display_price = $this->course_price;
+        if ($this->course_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($this->course_product_id);
+            if ($product) {
+                $display_price = $product->get_price();
+                error_log('[BuyCourseBox] Using WooCommerce price: ' . $display_price . ' for product ID: ' . $this->course_product_id);
+            }
+        }
+        
+        error_log('[BuyCourseBox] Rendering with price: ' . $display_price . ' and product ID: ' . $this->course_product_id);
+        
         // Get custom text or use default
         $custom_text = $this->process_custom_text('buy', [
-            'price' => $this->format_price($this->course_price),
+            'price' => $this->format_price($display_price),
             'button' => $this->render_add_to_cart_button('Buy Course')
         ]);
         
@@ -36,7 +48,7 @@ class BuyCourseBox extends AbstractBox {
                     <?php echo $this->render_selection_indicator(); ?>
                     <div>
                         <h3>Buy This Course</h3>
-                        <div class="box-price"><?php echo $this->format_price($this->course_price); ?></div>
+                        <div class="box-price"><?php echo $this->format_price($display_price); ?></div>
                         <p class="description">Pay once, own the course forever.</p>
                     </div>
                 </div>

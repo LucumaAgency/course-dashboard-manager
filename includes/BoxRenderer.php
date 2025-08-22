@@ -375,6 +375,7 @@ class BoxRenderer {
                         this.classList.add('loading');
 
                         const addToCart = (productId, startDate = null) => {
+                            console.log('[CBM] Adding to cart - Product ID:', productId, 'Start Date:', startDate);
                             return new Promise((resolve, reject) => {
                                 jQuery.post('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', {
                                     action: 'woocommerce_add_to_cart',
@@ -383,30 +384,54 @@ class BoxRenderer {
                                     start_date: startDate,
                                     security: '<?php echo wp_create_nonce('woocommerce_add_to_cart'); ?>'
                                 }, function(response) {
-                                    if (response && response.fragments && response.cart_hash) {
+                                    console.log('[CBM] Add to cart response:', response);
+                                    if (response && (response.fragments || response.success)) {
                                         resolve(response);
+                                    } else if (response && response.success === false) {
+                                        reject(new Error(response.data || 'Failed to add product to cart.'));
                                     } else {
-                                        reject(new Error('Failed to add product to cart.'));
+                                        reject(new Error('Invalid response from server'));
                                     }
-                                }).fail(function(jqXHR, textStatus) {
-                                    reject(new Error('Error: ' + textStatus));
+                                }).fail(function(jqXHR, textStatus, errorThrown) {
+                                    console.error('[CBM] Add to cart failed:', textStatus, errorThrown);
+                                    reject(new Error('Network error: ' + textStatus));
                                 });
                             });
                         };
 
                         try {
                             const response = await addToCart(productId, isEnrollButton ? selectedDates[courseId] : null);
-                            jQuery(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
+                            
+                            // Update cart fragments
+                            if (response.fragments) {
+                                jQuery.each(response.fragments, function(key, value) {
+                                    jQuery(key).replaceWith(value);
+                                });
+                            }
+                            
+                            // Trigger WooCommerce cart events
+                            jQuery(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, this]);
                             jQuery(document.body).trigger('wc_fragment_refresh');
+                            
+                            // Trigger FunnelKit Cart specific events
+                            jQuery(document).trigger('fkcart_item_added', [productId]);
+                            jQuery(document).trigger('fkcart_refresh');
+                            
+                            // Open FunnelKit Cart with retry logic
                             setTimeout(() => {
-                                jQuery(document.body).trigger('wc_fragment_refresh');
                                 jQuery(document).trigger('fkcart_open_cart');
-                            }, 1000);
+                                // Also try the alternative method
+                                if (typeof window.fkcart_open_cart === 'function') {
+                                    window.fkcart_open_cart();
+                                }
+                            }, 500);
+                            
                             const cartOpened = await openFunnelKitCart();
                             if (!cartOpened && !wasCartOpened && !wasCartManuallyClosed) {
-                                alert('The cart may not have updated. Please check manually.');
+                                console.log('[CBM] FunnelKit Cart did not open automatically');
                             }
                         } catch (error) {
+                            console.error('[CBM] Error adding to cart:', error);
                             alert('Error adding to cart: ' + error.message);
                         } finally {
                             this.classList.remove('loading');

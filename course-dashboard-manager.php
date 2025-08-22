@@ -3020,6 +3020,98 @@ function assign_course_to_group() {
     wp_send_json_success();
 }
 
+// AJAX handler for adding products to cart (compatible with FunnelKit)
+add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart');
+add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart');
+
+function cbm_ajax_add_to_cart() {
+    // Verify nonce
+    if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'woocommerce_add_to_cart')) {
+        wp_send_json_error('Invalid security token');
+        return;
+    }
+    
+    $product_id = intval($_POST['product_id']);
+    $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
+    $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : '';
+    
+    error_log('[CBM Cart] Add to cart request - Product ID: ' . $product_id . ', Quantity: ' . $quantity . ', Start Date: ' . $start_date);
+    
+    if (!$product_id) {
+        wp_send_json_error('Invalid product ID');
+        return;
+    }
+    
+    // Check if product exists
+    $product = wc_get_product($product_id);
+    if (!$product) {
+        error_log('[CBM Cart] Product not found for ID: ' . $product_id);
+        wp_send_json_error('Product not found');
+        return;
+    }
+    
+    error_log('[CBM Cart] Product found: ' . $product->get_name() . ', Price: ' . $product->get_price() . ', In Stock: ' . ($product->is_in_stock() ? 'yes' : 'no'));
+    
+    // Initialize WooCommerce cart if needed
+    if (!WC()->cart) {
+        WC()->cart = new WC_Cart();
+    }
+    
+    // Clear any previous notices
+    wc_clear_notices();
+    
+    // Add custom data if start_date is provided
+    $cart_item_data = array();
+    if (!empty($start_date)) {
+        $cart_item_data['course_start_date'] = $start_date;
+    }
+    
+    // Try to add product to cart
+    $passed_validation = apply_filters('woocommerce_add_to_cart_validation', true, $product_id, $quantity);
+    
+    if ($passed_validation) {
+        $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, 0, array(), $cart_item_data);
+        
+        if ($cart_item_key) {
+            error_log('[CBM Cart] Product added to cart successfully. Cart item key: ' . $cart_item_key);
+            
+            // Trigger FunnelKit Cart hooks if available
+            do_action('fkcart_item_added', $product_id, $quantity);
+            do_action('woocommerce_ajax_added_to_cart', $product_id);
+            
+            // Get cart fragments for updating mini-cart
+            ob_start();
+            woocommerce_mini_cart();
+            $mini_cart = ob_get_clean();
+            
+            $data = array(
+                'fragments' => apply_filters('woocommerce_add_to_cart_fragments', array(
+                    'div.widget_shopping_cart_content' => '<div class="widget_shopping_cart_content">' . $mini_cart . '</div>',
+                    '.cart-contents-count' => '<span class="cart-contents-count">' . WC()->cart->get_cart_contents_count() . '</span>'
+                )),
+                'cart_hash' => WC()->cart->get_cart_hash(),
+                'cart_item_key' => $cart_item_key,
+                'product_name' => $product->get_name()
+            );
+            
+            // Add FunnelKit specific data if available
+            $data = apply_filters('fkcart_add_to_cart_response', $data, $product_id);
+            
+            wp_send_json($data);
+        } else {
+            // Get any error notices
+            $notices = wc_get_notices('error');
+            $error_message = !empty($notices) ? strip_tags($notices[0]['notice']) : 'Failed to add product to cart';
+            
+            error_log('[CBM Cart] Failed to add product to cart. Error: ' . $error_message);
+            wp_send_json_error($error_message);
+        }
+    } else {
+        error_log('[CBM Cart] Cart validation failed for product ID: ' . $product_id);
+        wp_send_json_error('Product validation failed');
+    }
+}
+
 add_action('wp_ajax_save_group_settings', 'save_group_settings');
 function save_group_settings() {
     check_ajax_referer('course_box_nonce', 'nonce');

@@ -41,21 +41,23 @@ class EnrollBuyBox extends AbstractBox {
         if ($this->buy_product_id && function_exists('wc_get_product')) {
             $buy_product = wc_get_product($this->buy_product_id);
             if ($buy_product) {
-                // Get sale price if available, otherwise regular price
-                $sale_price = $buy_product->get_sale_price();
-                $regular_price = $buy_product->get_regular_price();
-                $this->buy_price = $sale_price ? $sale_price : $regular_price;
+                // Use get_price() which returns the active price (sale or regular)
+                $this->buy_price = $buy_product->get_price();
                 
                 // Check product status
                 $is_purchasable = $buy_product->is_purchasable();
                 $is_in_stock = $buy_product->is_in_stock();
                 $stock_status = $buy_product->get_stock_status();
+                $sale_price = $buy_product->get_sale_price();
+                $regular_price = $buy_product->get_regular_price();
                 
-                error_log('[EnrollBuyBox] Buy Product found - Regular: ' . $regular_price . ', Sale: ' . $sale_price . ', Using: ' . $this->buy_price);
+                error_log('[EnrollBuyBox] Buy Product found - Regular: ' . $regular_price . ', Sale: ' . $sale_price . ', Active Price: ' . $this->buy_price);
                 error_log('[EnrollBuyBox] Buy Product status - Purchasable: ' . ($is_purchasable ? 'yes' : 'no') . ', In Stock: ' . ($is_in_stock ? 'yes' : 'no') . ', Stock Status: ' . $stock_status);
             } else {
                 error_log('[EnrollBuyBox] Buy Product NOT found for ID: ' . $this->buy_product_id);
             }
+        } else {
+            error_log('[EnrollBuyBox] No buy_product_id set or WooCommerce not available');
         }
         
         // Get enroll price from product
@@ -63,14 +65,16 @@ class EnrollBuyBox extends AbstractBox {
         if ($this->enroll_product_id && function_exists('wc_get_product')) {
             $enroll_product = wc_get_product($this->enroll_product_id);
             if ($enroll_product) {
-                // Get sale price if available, otherwise regular price
+                // Use get_price() which returns the active price (sale or regular)
+                $this->enroll_price = $enroll_product->get_price();
                 $sale_price = $enroll_product->get_sale_price();
                 $regular_price = $enroll_product->get_regular_price();
-                $this->enroll_price = $sale_price ? $sale_price : $regular_price;
-                error_log('[EnrollBuyBox] Enroll Product found - Regular: ' . $regular_price . ', Sale: ' . $sale_price . ', Using: ' . $this->enroll_price);
+                error_log('[EnrollBuyBox] Enroll Product found - Regular: ' . $regular_price . ', Sale: ' . $sale_price . ', Active Price: ' . $this->enroll_price);
             } else {
                 error_log('[EnrollBuyBox] Enroll Product NOT found for ID: ' . $this->enroll_product_id);
             }
+        } else {
+            error_log('[EnrollBuyBox] No enroll_product_id set or WooCommerce not available');
         }
         
         // Get enroll dates - these are stored as course_dates

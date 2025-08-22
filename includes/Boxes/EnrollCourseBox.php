@@ -19,6 +19,16 @@ class EnrollCourseBox extends AbstractBox {
     }
     
     public function render() {
+        // Get actual price from WooCommerce product if available
+        $display_price = $this->enroll_price;
+        if ($this->course_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($this->course_product_id);
+            if ($product) {
+                $display_price = $product->get_price();
+                error_log('[EnrollCourseBox] Using WooCommerce price: ' . $display_price . ' for product ID: ' . $this->course_product_id);
+            }
+        }
+        
         // Prepare dates HTML and check if all sold out
         $dates_html = '';
         $all_sold_out = true;
@@ -76,7 +86,7 @@ class EnrollCourseBox extends AbstractBox {
         // Get custom text or use default
         $custom_text = $this->process_custom_text('enroll', [
             'dates' => $dates_html,
-            'price' => $this->format_price($this->enroll_price),
+            'price' => $this->format_price($display_price),
             'button' => $button_html
         ]);
         
@@ -92,7 +102,7 @@ class EnrollCourseBox extends AbstractBox {
                     <?php echo $this->render_selection_indicator(); ?>
                     <div>
                         <h3>Enroll in the Live Course</h3>
-                        <div class="box-price"><?php echo $this->format_price($this->enroll_price); ?></div>
+                        <div class="box-price"><?php echo $this->format_price($display_price); ?></div>
                         <p class="description">Join weekly live sessions with feedback and expert mentorship.</p>
                     </div>
                 </div>

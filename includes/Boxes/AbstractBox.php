@@ -131,13 +131,23 @@ abstract class AbstractBox {
      * @return string
      */
     protected function format_price($price) {
-        // Use webinar_price shortcode if it exists
+        // Don't use webinar_price shortcode if we have a specific price
+        if ($price && is_numeric($price)) {
+            // Format the price using WooCommerce if available
+            if (function_exists('wc_price')) {
+                return wc_price($price);
+            }
+            // Fallback to original formatting
+            return sprintf($this->price_format, $price);
+        }
+        
+        // Use webinar_price shortcode only as last resort
         if (shortcode_exists('webinar_price')) {
-            // Return the HTML output from the shortcode without escaping
             return do_shortcode('[webinar_price]');
         }
-        // Fallback to original formatting (this should be escaped when used)
-        return sprintf($this->price_format, $price);
+        
+        // Final fallback
+        return sprintf($this->price_format, $price ?: 0);
     }
     
     /**
