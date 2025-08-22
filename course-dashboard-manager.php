@@ -1694,15 +1694,30 @@ function course_box_manager_page() {
                                 $stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
                                 if ($stm_course_id) {
                                     $stm_course = get_post($stm_course_id);
-                                    if ($stm_course && $stm_course->post_type === 'stm-courses') {
-                                        echo '<a href="' . get_edit_post_link($stm_course_id) . '" target="_blank" style="color: #0073aa; text-decoration: none;">' . 
-                                             esc_html($stm_course->post_title) . 
-                                             '</a> <span style="color: #666; font-size: 11px;">(#' . $stm_course_id . ')</span>';
+                                    if ($stm_course) {
+                                        // Check if it's a valid STM course post type
+                                        $possible_stm_types = ['stm-courses', 'stm_lms_courses', 'stm-course', 'stm_course'];
+                                        if (in_array($stm_course->post_type, $possible_stm_types)) {
+                                            echo '<a href="' . get_edit_post_link($stm_course_id) . '" target="_blank" style="color: #0073aa; text-decoration: none;">' . 
+                                                 esc_html($stm_course->post_title) . 
+                                                 '</a> <span style="color: #666; font-size: 11px;">(#' . $stm_course_id . ')</span>';
+                                        } else {
+                                            echo '<span style="color: #d54e21;">Invalid Course Type</span>';
+                                        }
                                     } else {
-                                        echo '<span style="color: #d54e21;">Invalid Course ID</span>';
+                                        echo '<span style="color: #d54e21;">Course Not Found</span>';
                                     }
                                 } else {
-                                    if (post_type_exists('stm-courses')) {
+                                    // Check if any STM post type exists
+                                    $stm_exists = false;
+                                    foreach (['stm-courses', 'stm_lms_courses', 'stm-course', 'stm_course'] as $type) {
+                                        if (post_type_exists($type)) {
+                                            $stm_exists = true;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if ($stm_exists) {
                                         echo '<span style="color: #f0ad4e; font-style: italic;">⚠ Not linked</span>';
                                     } else {
                                         echo '<span style="color: #999; font-size: 11px;">STM LMS not active</span>';
@@ -1911,16 +1926,29 @@ function course_box_manager_page() {
                                 <?php
                                 $related_stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
                                 
-                                // Check if STM LMS is active
-                                if (post_type_exists('stm-courses')) {
+                                // Try different MasterStudy post type names
+                                $possible_post_types = ['stm-courses', 'stm_lms_courses', 'stm-course', 'stm_course'];
+                                $stm_post_type = '';
+                                
+                                foreach ($possible_post_types as $type) {
+                                    if (post_type_exists($type)) {
+                                        $stm_post_type = $type;
+                                        error_log('[CBM] Found STM post type: ' . $type);
+                                        break;
+                                    }
+                                }
+                                
+                                if ($stm_post_type) {
                                     // Get all STM Courses
                                     $stm_courses = get_posts([
-                                        'post_type' => 'stm-courses',
+                                        'post_type' => $stm_post_type,
                                         'posts_per_page' => -1,
                                         'orderby' => 'title',
                                         'order' => 'ASC',
                                         'post_status' => 'publish'
                                     ]);
+                                    
+                                    error_log('[CBM] Found ' . count($stm_courses) . ' STM courses of type: ' . $stm_post_type);
                                     
                                     if (!empty($stm_courses)) {
                                         foreach ($stm_courses as $stm_course) {
@@ -1929,10 +1957,21 @@ function course_box_manager_page() {
                                                  esc_html($stm_course->post_title) . ' (#' . $stm_course->ID . ')' . '</option>';
                                         }
                                     } else {
-                                        echo '<option disabled>No STM Courses found</option>';
+                                        echo '<option disabled>No STM Courses found (checked post type: ' . $stm_post_type . ')</option>';
                                     }
                                 } else {
-                                    echo '<option disabled>MasterStudy LMS not active or installed</option>';
+                                    // Debug: List all registered post types to find the correct one
+                                    $all_post_types = get_post_types([], 'names');
+                                    $stm_types = array_filter($all_post_types, function($type) {
+                                        return strpos(strtolower($type), 'stm') !== false || strpos(strtolower($type), 'course') !== false;
+                                    });
+                                    
+                                    if (!empty($stm_types)) {
+                                        echo '<option disabled>Debug - Found these post types: ' . implode(', ', $stm_types) . '</option>';
+                                        error_log('[CBM] Available course/STM post types: ' . print_r($stm_types, true));
+                                    } else {
+                                        echo '<option disabled>MasterStudy LMS not active (no STM post types found)</option>';
+                                    }
                                 }
                                 ?>
                             </select>

@@ -64,8 +64,15 @@ class EnrollmentSync {
             
             // Verify course exists and is published
             $course = get_post($stm_course_id);
-            if (!$course || $course->post_type !== 'stm-courses' || $course->post_status !== 'publish') {
+            if (!$course || $course->post_status !== 'publish') {
                 error_log('[CBM Enrollment Sync] Invalid or unpublished STM Course ID: ' . $stm_course_id);
+                continue;
+            }
+            
+            // Check if it's a valid STM course post type
+            $possible_stm_types = ['stm-courses', 'stm_lms_courses', 'stm-course', 'stm_course'];
+            if (!in_array($course->post_type, $possible_stm_types)) {
+                error_log('[CBM Enrollment Sync] Invalid post type for course ID: ' . $stm_course_id . ' (type: ' . $course->post_type . ')');
                 continue;
             }
             
