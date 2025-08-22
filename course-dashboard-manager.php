@@ -454,8 +454,9 @@ function course_box_tables_page() {
                             ?>
                         </select>
                     </div>
-                    <div>
-                        <button id="apply-group-settings" class="button button-primary">Apply to All Courses</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="save-group-settings" class="button button-primary">Save Group Settings</button>
+                        <button id="apply-group-settings" class="button button-secondary">Apply to All Courses</button>
                     </div>
                 </div>
             </div>
@@ -1228,6 +1229,140 @@ function course_box_tables_page() {
                         });
                     }
                 });
+                
+                // Save group settings button (for enroll-buy state)
+                const saveGroupBtn = document.getElementById('save-group-settings');
+                console.log('[CBM Debug] Save group button element:', saveGroupBtn);
+                
+                if (saveGroupBtn) {
+                    saveGroupBtn.addEventListener('click', function() {
+                        console.log('[CBM Debug] Save group settings button clicked!');
+                        
+                        const boxState = document.getElementById('group-box-state').value;
+                        
+                        // Collect data based on current state
+                        let saveData = {
+                            group_id: groupId,
+                            box_state: boxState,
+                            nonce: '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                        };
+                        
+                        if (boxState === 'enroll-buy') {
+                            // Collect buy table data
+                            const buyRow = document.querySelector('#buy-table-body tr');
+                            if (buyRow) {
+                                const buyProductSelect = buyRow.querySelector('.buy-product-select, select');
+                                const buyRegularPrice = buyRow.querySelector('.inline-edit-regular-price');
+                                const buySalePrice = buyRow.querySelector('.inline-edit-sale-price');
+                                const buyButtonText = buyRow.querySelector('.inline-edit-button-text');
+                                
+                                saveData.buy_product_id = buyProductSelect ? buyProductSelect.value : '';
+                                saveData.buy_regular_price = buyRegularPrice ? buyRegularPrice.value : '';
+                                saveData.buy_sale_price = buySalePrice ? buySalePrice.value : '';
+                                saveData.buy_button_text = buyButtonText ? buyButtonText.value : 'Buy Course';
+                            }
+                            
+                            // Collect enroll table data
+                            const enrollRows = document.querySelectorAll('#table-body tr.course-row');
+                            const enrollDates = [];
+                            
+                            enrollRows.forEach(row => {
+                                const dateInput = row.querySelector('.inline-edit-date');
+                                const productSelect = row.querySelector('.enroll-product-select, select');
+                                const stockInput = row.querySelector('.inline-edit-stock');
+                                const buttonText = row.querySelector('.inline-edit-button-text');
+                                
+                                if (dateInput && dateInput.value) {
+                                    enrollDates.push({
+                                        date: dateInput.value,
+                                        product_id: productSelect ? productSelect.value : '',
+                                        stock: stockInput ? stockInput.value : 20,
+                                        button_text: buttonText ? buttonText.value : 'Enroll Now'
+                                    });
+                                }
+                            });
+                            
+                            saveData.enroll_product_id = enrollRows.length > 0 && enrollRows[0].querySelector('.enroll-product-select, select') ? 
+                                                         enrollRows[0].querySelector('.enroll-product-select, select').value : '';
+                            saveData.enroll_dates = JSON.stringify(enrollDates);
+                        } else {
+                            // Collect data for other states
+                            const tableRows = document.querySelectorAll('#table-body tr.course-row');
+                            const dates = [];
+                            
+                            tableRows.forEach(row => {
+                                const dateInput = row.querySelector('.inline-edit-date');
+                                const stockInput = row.querySelector('.inline-edit-stock');
+                                const buttonText = row.querySelector('.inline-edit-button-text');
+                                
+                                if (dateInput && dateInput.value) {
+                                    dates.push({
+                                        date: dateInput.value,
+                                        stock: stockInput ? stockInput.value : 20,
+                                        button_text: buttonText ? buttonText.value : ''
+                                    });
+                                }
+                            });
+                            
+                            if (dates.length > 0) {
+                                saveData.dates = JSON.stringify(dates);
+                            }
+                            
+                            // Get product if visible
+                            const productSelect = document.querySelector('#table-body .inline-edit-product');
+                            if (productSelect) {
+                                saveData.linked_product_id = productSelect.value;
+                            }
+                        }
+                        
+                        // Get first course ID if available
+                        if (coursesData && coursesData.length > 0) {
+                            saveData.course_id = coursesData[0].id;
+                        }
+                        
+                        console.log('[CBM Debug] Save data:', saveData);
+                        
+                        // Create form data string
+                        let formData = Object.keys(saveData).map(key => 
+                            encodeURIComponent(key) + '=' + encodeURIComponent(saveData[key])
+                        ).join('&');
+                        
+                        fetch(ajaxurl + '?action=save_group_settings', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            console.log('[CBM Debug] Save result:', result);
+                            if (result.success) {
+                                // Show success message
+                                const button = document.getElementById('save-group-settings');
+                                const originalText = button.textContent;
+                                button.textContent = '✓ Saved!';
+                                button.style.backgroundColor = '#46b450';
+                                
+                                setTimeout(() => {
+                                    button.textContent = originalText;
+                                    button.style.backgroundColor = '';
+                                }, 2000);
+                                
+                                // Reload if needed
+                                if (result.data && result.data.reload) {
+                                    setTimeout(() => {
+                                        location.reload();
+                                    }, 1000);
+                                }
+                            } else {
+                                alert('Error saving settings: ' + (result.data ? result.data : 'Unknown error'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('[CBM Debug] Save error:', error);
+                            alert('Error saving settings');
+                        });
+                    });
+                }
                 
                 // Apply group settings button
                 const applySettingsBtn = document.getElementById('apply-group-settings');
@@ -2875,6 +3010,129 @@ function assign_course_to_group() {
     }
     
     wp_send_json_success();
+}
+
+add_action('wp_ajax_save_group_settings', 'save_group_settings');
+function save_group_settings() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    
+    $group_id = intval($_POST['group_id']);
+    $box_state = sanitize_text_field($_POST['box_state']);
+    $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+    
+    // If no course_id provided, get the first course in the group
+    if (!$course_id && $group_id) {
+        $courses = get_posts([
+            'post_type' => 'course',
+            'posts_per_page' => 1,
+            'tax_query' => [
+                [
+                    'taxonomy' => 'course_group',
+                    'field' => 'term_id',
+                    'terms' => $group_id,
+                ],
+            ],
+            'fields' => 'ids'
+        ]);
+        
+        if (!empty($courses)) {
+            $course_id = $courses[0];
+        }
+    }
+    
+    if (!$course_id) {
+        wp_send_json_error('No course found in group');
+        return;
+    }
+    
+    // Update box state
+    update_post_meta($course_id, 'box_state', $box_state);
+    
+    if ($box_state === 'enroll-buy') {
+        // Save buy product configuration
+        if (isset($_POST['buy_product_id'])) {
+            update_post_meta($course_id, 'buy_product_id', intval($_POST['buy_product_id']));
+        }
+        
+        if (isset($_POST['buy_button_text'])) {
+            update_post_meta($course_id, 'buy_button_text', sanitize_text_field($_POST['buy_button_text']));
+        }
+        
+        // Update buy product prices if provided
+        if (isset($_POST['buy_product_id']) && $_POST['buy_product_id']) {
+            $buy_product_id = intval($_POST['buy_product_id']);
+            
+            if (isset($_POST['buy_regular_price']) && $_POST['buy_regular_price'] !== '') {
+                update_post_meta($buy_product_id, '_regular_price', sanitize_text_field($_POST['buy_regular_price']));
+            }
+            
+            if (isset($_POST['buy_sale_price']) && $_POST['buy_sale_price'] !== '') {
+                update_post_meta($buy_product_id, '_sale_price', sanitize_text_field($_POST['buy_sale_price']));
+                update_post_meta($buy_product_id, '_price', sanitize_text_field($_POST['buy_sale_price']));
+            } else if (isset($_POST['buy_regular_price'])) {
+                update_post_meta($buy_product_id, '_price', sanitize_text_field($_POST['buy_regular_price']));
+            }
+        }
+        
+        // Save enroll product configuration
+        if (isset($_POST['enroll_product_id'])) {
+            update_post_meta($course_id, 'enroll_product_id', intval($_POST['enroll_product_id']));
+        }
+        
+        // Save enroll dates
+        if (isset($_POST['enroll_dates'])) {
+            $enroll_dates = json_decode(stripslashes($_POST['enroll_dates']), true);
+            if (is_array($enroll_dates)) {
+                // Format dates for storage
+                $formatted_dates = [];
+                foreach ($enroll_dates as $date_info) {
+                    if (!empty($date_info['date'])) {
+                        $formatted_dates[] = [
+                            'date' => sanitize_text_field($date_info['date']),
+                            'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : 20,
+                            'button_text' => isset($date_info['button_text']) ? sanitize_text_field($date_info['button_text']) : 'Enroll Now'
+                        ];
+                    }
+                }
+                
+                // Save using ACF or post meta
+                if (function_exists('update_field')) {
+                    update_field('course_dates', $formatted_dates, $course_id);
+                } else {
+                    update_post_meta($course_id, 'course_dates', $formatted_dates);
+                }
+            }
+        }
+    } else {
+        // Handle other box states
+        if (isset($_POST['linked_product_id'])) {
+            update_post_meta($course_id, 'linked_product_id', intval($_POST['linked_product_id']));
+        }
+        
+        if (isset($_POST['dates'])) {
+            $dates = json_decode(stripslashes($_POST['dates']), true);
+            if (is_array($dates)) {
+                $formatted_dates = [];
+                foreach ($dates as $date_info) {
+                    if (!empty($date_info['date'])) {
+                        $formatted_dates[] = [
+                            'date' => sanitize_text_field($date_info['date']),
+                            'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : 20,
+                            'button_text' => isset($date_info['button_text']) ? sanitize_text_field($date_info['button_text']) : ''
+                        ];
+                    }
+                }
+                
+                if (function_exists('update_field')) {
+                    update_field('course_dates', $formatted_dates, $course_id);
+                } else {
+                    update_post_meta($course_id, 'course_dates', $formatted_dates);
+                }
+            }
+        }
+    }
+    
+    wp_send_json_success(['message' => 'Settings saved successfully']);
 }
 
 add_action('wp_ajax_save_course_settings', 'save_course_settings');
