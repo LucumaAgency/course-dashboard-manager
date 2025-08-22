@@ -696,6 +696,18 @@ function course_box_tables_page() {
                         headerHTML += '<th style="width: 8%;">Available</th>';
                         headerHTML += '<th style="width: 15%;">Button Text</th>';
                         headerHTML += '<th style="width: 21%;">Actions</th>';
+                    } else if (boxState === 'enroll-buy') {
+                        // Two-row format for enroll-buy: one for buy, one for enroll
+                        headerHTML += '<th style="width: 8%;">Type</th>';
+                        headerHTML += '<th style="width: 10%;">Date</th>';
+                        headerHTML += '<th style="width: 15%;">Product</th>';
+                        headerHTML += '<th style="width: 8%;">Regular Price</th>';
+                        headerHTML += '<th style="width: 8%;">Sale Price</th>';
+                        headerHTML += '<th style="width: 8%;">Total Seats</th>';
+                        headerHTML += '<th style="width: 7%;">Sold</th>';
+                        headerHTML += '<th style="width: 8%;">Available</th>';
+                        headerHTML += '<th style="width: 13%;">Button Text</th>';
+                        headerHTML += '<th style="width: 15%;">Actions</th>';
                     }
                     headerHTML += '</tr>';
                     tableHeader.innerHTML = headerHTML;
@@ -712,12 +724,68 @@ function course_box_tables_page() {
                                 addTableRow(course, null, boxState);
                             }
                         });
+                    } else if (boxState === 'enroll-buy') {
+                        // Two rows: one for buy, one for enroll
+                        const firstCourse = coursesData[0] || {
+                            id: 0, 
+                            product_id: '', 
+                            buy_product_id: '',
+                            enroll_product_id: '',
+                            buy_price: '',
+                            stock: 20
+                        };
+                        
+                        // Add Buy Course row
+                        addTableRow(firstCourse, {type: 'buy', date: null}, boxState);
+                        
+                        // Add Enroll Course rows (can have multiple dates)
+                        if (firstCourse.dates && firstCourse.dates.length > 0) {
+                            firstCourse.dates.forEach((dateInfo, index) => {
+                                addTableRow(firstCourse, {type: 'enroll', date: dateInfo, index: index}, boxState);
+                            });
+                        } else {
+                            // Add at least one enroll row
+                            addTableRow(firstCourse, {type: 'enroll', date: null}, boxState);
+                        }
                     } else {
                         // Single row for all other states
                         const firstCourse = coursesData[0] || {id: 0, product_id: '', stock: 20};
                         const firstDate = firstCourse.dates && firstCourse.dates.length > 0 ? 
                                          {date: firstCourse.dates[0], index: 0} : null;
                         addTableRow(firstCourse, firstDate, boxState);
+                    }
+                    
+                    // Add "Add New Date" button for enroll-buy state (only for enroll dates)
+                    if (boxState === 'enroll-buy') {
+                        const addButtonRow = document.createElement('tr');
+                        addButtonRow.innerHTML = `
+                            <td colspan="10" style="text-align: center; padding: 10px;">
+                                <button class="button button-primary" id="add-enroll-date">+ Add New Enroll Date</button>
+                            </td>
+                        `;
+                        document.getElementById('table-body').appendChild(addButtonRow);
+                        
+                        // Add event listener for the button
+                        document.getElementById('add-enroll-date').addEventListener('click', function() {
+                            const firstCourse = coursesData[0] || {id: 0, product_id: '', stock: 20};
+                            const newDateInfo = {type: 'enroll', date: {date: '', stock: 20, button_text: 'Enroll Now'}, index: 'new'};
+                            
+                            // Add the new row before the button row
+                            const tableBody = document.getElementById('table-body');
+                            const buttonRow = this.closest('tr');
+                            const newRow = document.createElement('tr');
+                            newRow.className = 'course-row editable-row';
+                            newRow.dataset.courseId = firstCourse.id;
+                            
+                            // Create the row using the existing addTableRow logic
+                            const tempDiv = document.createElement('div');
+                            addTableRow(firstCourse, newDateInfo, boxState);
+                            
+                            // Move the newly created row before the button row
+                            const allRows = tableBody.querySelectorAll('tr');
+                            const lastDataRow = allRows[allRows.length - 2]; // -2 because -1 is the button row
+                            tableBody.insertBefore(lastDataRow, buttonRow);
+                        });
                     }
                 }
                 
@@ -806,6 +874,61 @@ function course_box_tables_page() {
                         rowHTML += `<td>
                             <button class="button button-small button-primary save-row">Save</button>
                             <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
+                            <span class="save-status" style="margin-left: 5px;"></span>
+                        </td>`;
+                    } else if (boxState === 'enroll-buy') {
+                        // Handle enroll-buy state with type differentiation
+                        const isEnrollRow = dateInfo && dateInfo.type === 'enroll';
+                        const isBuyRow = dateInfo && dateInfo.type === 'buy';
+                        
+                        // Type column
+                        rowHTML += `<td style="font-weight: bold;">${isBuyRow ? 'Buy' : 'Enroll'}</td>`;
+                        
+                        // Date column (only for enroll rows)
+                        if (isEnrollRow) {
+                            rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo.date ? dateInfo.date.date : ''}" placeholder="Date/Text" style="width: 100%; padding: 3px;"></td>`;
+                        } else {
+                            rowHTML += `<td>-</td>`;
+                        }
+                        
+                        // Product column
+                        if (isBuyRow) {
+                            const buyProductId = course.buy_product_id || course.product_id;
+                            rowHTML += `<td>${buildProductSelect(buyProductId, 'buy-product-select')}</td>`;
+                        } else {
+                            const enrollProductId = course.enroll_product_id || course.product_id;
+                            rowHTML += `<td>${buildProductSelect(enrollProductId, 'enroll-product-select')}</td>`;
+                        }
+                        
+                        // Prices
+                        const productId = isBuyRow ? (course.buy_product_id || course.product_id) : (course.enroll_product_id || course.product_id);
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(productId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(productId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        
+                        // Stock, Sold, Available
+                        if (isEnrollRow) {
+                            const enrollStock = dateInfo.date && dateInfo.date.stock ? dateInfo.date.stock : course.stock || 20;
+                            const enrollSold = 0; // Will be calculated server-side
+                            const enrollAvailable = Math.max(0, enrollStock - enrollSold);
+                            rowHTML += `<td><input type="number" class="inline-edit-stock" value="${enrollStock}" min="0" style="width: 100%; padding: 3px;"></td>`;
+                            rowHTML += `<td style="text-align: center;"><span class="sold-count">${enrollSold}</span></td>`;
+                            rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${enrollAvailable <= 5 ? '#d54e21' : (enrollAvailable <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${enrollAvailable}</span></td>`;
+                        } else {
+                            // Buy course doesn't track stock/sold/available
+                            rowHTML += `<td>-</td>`;
+                            rowHTML += `<td>-</td>`;
+                            rowHTML += `<td>-</td>`;
+                        }
+                        
+                        // Button text
+                        const defaultButtonText = isBuyRow ? 'Buy Course' : 'Enroll Now';
+                        const currentButtonText = dateInfo && dateInfo.date && dateInfo.date.button_text ? dateInfo.date.button_text : defaultButtonText;
+                        rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${currentButtonText}" style="width: 100%; padding: 3px;"></td>`;
+                        
+                        // Actions
+                        rowHTML += `<td>
+                            <button class="button button-small button-primary save-row">Save</button>
+                            ${isEnrollRow ? '<button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>' : ''}
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
                     }
