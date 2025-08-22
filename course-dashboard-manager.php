@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.5.4
+ * Version: 1.5.5
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.5.4');
+define('CBM_VERSION', '1.5.5');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -579,6 +579,7 @@ function course_box_tables_page() {
                                 'buy_product_id' => get_post_meta($course_id, 'buy_product_id', true),
                                 'enroll_product_id' => get_post_meta($course_id, 'enroll_product_id', true),
                                 'buy_price' => get_post_meta($course_id, 'buy_price', true),
+                                'related_stm_course_id' => get_post_meta($course_id, 'related_stm_course_id', true),
                                 'launch_date' => $launch_date,
                                 'dates' => $dates ?: [],
                                 'stock' => $stock ?: 0
@@ -1904,6 +1905,59 @@ function course_box_manager_page() {
                         </td>
                     </tr>
                     
+                    <!-- STM LMS Course Selection - Always Visible -->
+                    <tr id="stm-course-row" style="background-color: #f0f8ff;">
+                        <th><label style="color: #0073aa; font-weight: bold;">STM LMS Course</label></th>
+                        <td>
+                            <?php
+                            // Debug: Log that we're rendering the STM course field
+                            error_log('[CBM STM Field] Rendering STM Course selector for course ID: ' . $course_id);
+                            ?>
+                            <select id="stm-course" class="stm-course-select" data-course-id="<?php echo esc_attr($course_id); ?>" style="width: 100%; max-width: 400px;">
+                                <option value="0">None</option>
+                                <?php
+                                $related_stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
+                                
+                                // Force use stm-courses since we know that's the correct post type
+                                $stm_post_type = 'stm-courses';
+                                error_log('[CBM STM Field] Using post type: ' . $stm_post_type);
+                                
+                                // Get all STM Courses
+                                $stm_courses = get_posts([
+                                    'post_type' => $stm_post_type,
+                                    'posts_per_page' => -1,
+                                    'orderby' => 'title',
+                                    'order' => 'ASC',
+                                    'post_status' => 'publish'
+                                ]);
+                                
+                                error_log('[CBM STM Field] Query returned ' . count($stm_courses) . ' STM courses');
+                                
+                                if (!empty($stm_courses)) {
+                                    echo '<option disabled style="background: #f0f0f0;">--- Found ' . count($stm_courses) . ' STM Courses ---</option>';
+                                    foreach ($stm_courses as $stm_course) {
+                                        $selected = ($related_stm_course_id == $stm_course->ID) ? ' selected' : '';
+                                        echo '<option value="' . esc_attr($stm_course->ID) . '"' . $selected . '>' . 
+                                             esc_html($stm_course->post_title) . ' (#' . $stm_course->ID . ')' . '</option>';
+                                    }
+                                } else {
+                                    echo '<option disabled>No STM Courses found (checked post type: ' . $stm_post_type . ')</option>';
+                                }
+                                ?>
+                            </select>
+                            <p style="font-size: 12px; color: #666; margin-top: 5px;">MasterStudy LMS course to grant access when any product is purchased</p>
+                            <p style="font-size: 11px; color: #0073aa; margin-top: 5px; padding: 5px; background: #e7f3ff; border-radius: 3px;">
+                                ℹ️ STM Courses detected: <?php echo count($stm_courses); ?> | Plugin v<?php echo CBM_VERSION; ?>
+                            </p>
+                            <script>
+                            console.log('[CBM] STM Course field rendered for course <?php echo $course_id; ?>');
+                            console.log('[CBM] Plugin version: <?php echo CBM_VERSION; ?>');
+                            console.log('[CBM] STM courses found: <?php echo count($stm_courses); ?>');
+                            console.log('[CBM] Current selection: <?php echo $related_stm_course_id ?: "none"; ?>');
+                            </script>
+                        </td>
+                    </tr>
+                    
                     <!-- Additional fields for Buy Course + Enroll Course state -->
                     <tr id="buy-product-row" style="display: none;">
                         <th><label>Buy Course Product</label></th>
@@ -1961,78 +2015,6 @@ function course_box_manager_page() {
                         </td>
                     </tr>
                     
-                    <tr id="stm-course-row" style="display: table-row !important; visibility: visible !important; background-color: #f0f8ff;">
-                        <th><label style="color: #0073aa; font-weight: bold;">STM LMS Course</label></th>
-                        <td>
-                            <?php
-                            // Debug: Log that we're rendering the STM course field
-                            error_log('[CBM STM Field] Rendering STM Course selector for course ID: ' . $course_id);
-                            ?>
-                            <select id="stm-course" data-course-id="<?php echo esc_attr($course_id); ?>" style="width: 100%; max-width: 400px;">
-                                <option value="0">None</option>
-                                <?php
-                                $related_stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
-                                
-                                // Force use stm-courses since we know that's the correct post type
-                                $stm_post_type = 'stm-courses';
-                                error_log('[CBM STM Field] Using post type: ' . $stm_post_type);
-                                error_log('[CBM STM Field] Post type exists check: ' . (post_type_exists($stm_post_type) ? 'YES' : 'NO'));
-                                
-                                // Always try to get courses, even if post_type_exists returns false
-                                if (true) {
-                                    // Get all STM Courses
-                                    $stm_courses = get_posts([
-                                        'post_type' => $stm_post_type,
-                                        'posts_per_page' => -1,
-                                        'orderby' => 'title',
-                                        'order' => 'ASC',
-                                        'post_status' => 'publish'
-                                    ]);
-                                    
-                                    error_log('[CBM STM Field] Query returned ' . count($stm_courses) . ' STM courses');
-                                    
-                                    // Log each course found
-                                    foreach ($stm_courses as $course) {
-                                        error_log('[CBM STM Field] Found course: ID=' . $course->ID . ', Title=' . $course->post_title . ', Type=' . $course->post_type);
-                                    }
-                                    
-                                    if (!empty($stm_courses)) {
-                                        echo '<option disabled style="background: #f0f0f0;">--- Found ' . count($stm_courses) . ' STM Courses ---</option>';
-                                        foreach ($stm_courses as $stm_course) {
-                                            $selected = ($related_stm_course_id == $stm_course->ID) ? ' selected' : '';
-                                            echo '<option value="' . esc_attr($stm_course->ID) . '"' . $selected . '>' . 
-                                                 esc_html($stm_course->post_title) . ' (#' . $stm_course->ID . ')' . '</option>';
-                                        }
-                                    } else {
-                                        echo '<option disabled>No STM Courses found (checked post type: ' . $stm_post_type . ')</option>';
-                                    }
-                                } else {
-                                    // Debug: List all registered post types to find the correct one
-                                    $all_post_types = get_post_types([], 'names');
-                                    $stm_types = array_filter($all_post_types, function($type) {
-                                        return strpos(strtolower($type), 'stm') !== false || strpos(strtolower($type), 'course') !== false;
-                                    });
-                                    
-                                    if (!empty($stm_types)) {
-                                        echo '<option disabled>Debug - Found these post types: ' . implode(', ', $stm_types) . '</option>';
-                                        error_log('[CBM] Available course/STM post types: ' . print_r($stm_types, true));
-                                    } else {
-                                        echo '<option disabled>MasterStudy LMS not active (no STM post types found)</option>';
-                                    }
-                                }
-                                ?>
-                            </select>
-                            <p style="font-size: 12px; color: #666; margin-top: 5px;">MasterStudy LMS course to grant access when any product is purchased</p>
-                            <p style="font-size: 11px; color: #0073aa; margin-top: 5px; padding: 5px; background: #e7f3ff; border-radius: 3px;">
-                                ℹ️ This field should show STM courses. Check browser console and WordPress logs for debugging info.
-                            </p>
-                            <script>
-                            console.log('[CBM] STM Course field rendered for course <?php echo $course_id; ?>');
-                            console.log('[CBM] Plugin version: <?php echo CBM_VERSION; ?>');
-                            console.log('[CBM] STM selector found:', document.getElementById('stm-course') ? 'YES' : 'NO');
-                            </script>
-                        </td>
-                    </tr>
                     
                     <tr>
                         <th><label>Dates & Seats Management</label></th>
@@ -2426,6 +2408,69 @@ function course_box_manager_page() {
                 // Listen for changes
                 if (boxStateSelect) {
                     boxStateSelect.addEventListener('change', toggleProductFields);
+                }
+                
+                // Handle STM Course selection changes
+                const stmCourseSelect = document.getElementById('stm-course');
+                if (stmCourseSelect) {
+                    console.log('[CBM] STM Course select found, adding change listener');
+                    stmCourseSelect.addEventListener('change', function() {
+                        const courseId = this.getAttribute('data-course-id');
+                        const stmCourseId = this.value;
+                        
+                        console.log('[CBM] STM Course changed:', {courseId, stmCourseId});
+                        
+                        // Save via AJAX
+                        const formData = new FormData();
+                        formData.append('action', 'save_course_settings');
+                        formData.append('course_id', courseId);
+                        formData.append('related_stm_course_id', stmCourseId);
+                        formData.append('nonce', '<?php echo wp_create_nonce('course_box_nonce'); ?>');
+                        
+                        // Get other current values to preserve them
+                        const groupSelect = document.querySelector('.group-select[data-course-id="' + courseId + '"]');
+                        const instructorSelect = document.querySelector('.instructor-select[data-course-id="' + courseId + '"]');
+                        const boxStateSelect = document.querySelector('.box-state-select[data-course-id="' + courseId + '"]');
+                        const linkedProductSelect = document.querySelector('#linked-product[data-course-id="' + courseId + '"]');
+                        
+                        if (groupSelect) formData.append('group_id', groupSelect.value);
+                        if (instructorSelect) {
+                            const selectedInstructors = Array.from(instructorSelect.selectedOptions).map(opt => opt.value);
+                            formData.append('instructors', JSON.stringify(selectedInstructors));
+                        }
+                        if (boxStateSelect) formData.append('box_state', boxStateSelect.value);
+                        if (linkedProductSelect) formData.append('linked_product_id', linkedProductSelect.value);
+                        
+                        // Default values for required fields
+                        formData.append('stock', '0');
+                        formData.append('dates', '[]');
+                        formData.append('selling_page_id', '0');
+                        
+                        fetch(ajaxurl, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Show success feedback
+                                const originalBg = stmCourseSelect.style.backgroundColor;
+                                stmCourseSelect.style.backgroundColor = '#d4edda';
+                                setTimeout(() => {
+                                    stmCourseSelect.style.backgroundColor = originalBg;
+                                }, 1500);
+                                console.log('[CBM] STM Course saved successfully');
+                            } else {
+                                console.error('[CBM] Error saving STM Course:', data);
+                                alert('Error saving STM Course: ' + (data.data || 'Unknown error'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('[CBM] Error saving STM Course:', error);
+                        });
+                    });
+                } else {
+                    console.log('[CBM] STM Course select NOT found');
                 }
                 
                 const addCourseModal = document.getElementById('add-course-modal');
