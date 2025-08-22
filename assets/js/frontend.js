@@ -3,6 +3,28 @@
  * Handles add to cart, date selection, and box interactions
  */
 
+// Global selectBox function for onclick handlers
+window.selectBox = function(element, boxType, courseId) {
+    const $box = jQuery(element);
+    
+    // Toggle selection
+    if ($box.hasClass('selected')) {
+        $box.removeClass('selected');
+        $box.find('.circlecontainer').show();
+        $box.find('.circle-container').hide();
+    } else {
+        // Deselect siblings
+        $box.siblings('.box').removeClass('selected');
+        $box.siblings('.box').find('.circlecontainer').show();
+        $box.siblings('.box').find('.circle-container').hide();
+        
+        // Select this box
+        $box.addClass('selected');
+        $box.find('.circlecontainer').hide();
+        $box.find('.circle-container').show();
+    }
+};
+
 (function($) {
     'use strict';
 
@@ -24,28 +46,6 @@
         // Store selected date
         $container.data('selected-date', $btn.data('date'));
     });
-
-    // Box selection handler (for selectable boxes)
-    window.selectBox = function(element, boxType, courseId) {
-        const $box = $(element);
-        
-        // Toggle selection
-        if ($box.hasClass('selected')) {
-            $box.removeClass('selected');
-            $box.find('.circlecontainer').show();
-            $box.find('.circle-container').hide();
-        } else {
-            // Deselect siblings
-            $box.siblings('.box').removeClass('selected');
-            $box.siblings('.box').find('.circlecontainer').show();
-            $box.siblings('.box').find('.circle-container').hide();
-            
-            // Select this box
-            $box.addClass('selected');
-            $box.find('.circlecontainer').hide();
-            $box.find('.circle-container').show();
-        }
-    };
 
     // Add to cart handler
     $(document).on('click', '.add-to-cart-button:not(.sold-out):not(.loading)', function(e) {
