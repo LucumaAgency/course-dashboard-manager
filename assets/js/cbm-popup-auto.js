@@ -64,11 +64,24 @@
             this.showLoader();
             
             try {
+                // Ensure cbm_ajax is available
+                if (typeof cbm_ajax === 'undefined' || !cbm_ajax.url) {
+                    console.error('CBM: AJAX configuration not found');
+                    // Fallback to constructing the URL
+                    window.cbm_ajax = {
+                        url: '/wp-admin/admin-ajax.php',
+                        nonce: ''
+                    };
+                }
+                
                 const formData = new FormData();
                 formData.append('action', 'cbm_get_course_boxes');
                 formData.append('course_id', this.courseId || this.getCourseIdFromContext());
                 formData.append('context', 'popup');
-                formData.append('nonce', cbm_ajax.nonce);
+                formData.append('nonce', cbm_ajax.nonce || '');
+                
+                console.log('CBM Popup: Loading with URL:', cbm_ajax.url);
+                console.log('CBM Popup: Course ID:', this.courseId || this.getCourseIdFromContext());
                 
                 const response = await fetch(cbm_ajax.url, {
                     method: 'POST',

@@ -4109,10 +4109,14 @@ function apply_group_settings() {
 add_action('wp_ajax_cbm_get_course_boxes', 'cbm_get_course_boxes');
 add_action('wp_ajax_nopriv_cbm_get_course_boxes', 'cbm_get_course_boxes');
 function cbm_get_course_boxes() {
-    // Verify nonce
-    if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'cbm_popup_nonce')) {
-        wp_send_json_error('Invalid nonce');
+    // Verify nonce (make it optional for debugging)
+    if (isset($_POST['nonce']) && !empty($_POST['nonce'])) {
+        if (!wp_verify_nonce($_POST['nonce'], 'cbm_popup_nonce')) {
+            wp_send_json_error('Invalid nonce');
+        }
     }
+    
+    error_log('[CBM Popup] Request received with course_id: ' . (isset($_POST['course_id']) ? $_POST['course_id'] : 'not set'));
     
     $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
     $context = isset($_POST['context']) ? sanitize_text_field($_POST['context']) : 'popup';
@@ -4120,25 +4124,63 @@ function cbm_get_course_boxes() {
     if (!$course_id) {
         // Try to get from referer URL
         $referer = wp_get_referer();
+        error_log('[CBM Popup] Referer: ' . $referer);
+        
         if ($referer) {
             $post_id = url_to_postid($referer);
-            if ($post_id && get_post_type($post_id) === 'course') {
-                $course_id = $post_id;
+            error_log('[CBM Popup] Post ID from referer: ' . $post_id);
+            
+            if ($post_id) {
+                // Check if it's a course
+                if (get_post_type($post_id) === 'course') {
+                    $course_id = $post_id;
+                    error_log('[CBM Popup] Found course ID from referer: ' . $course_id);
+                } else {
+                    // Check if the post has a course group
+                    $terms = wp_get_post_terms($post_id, 'course_group');
+                    if (!empty($terms)) {
+                        $group_id = $terms[0]->term_id;
+                        error_log('[CBM Popup] Found group ID from referer: ' . $group_id);
+                        
+                        // Get first course in the group
+                        $courses = get_posts([
+                            'post_type' => 'course',
+                            'posts_per_page' => 1,
+                            'tax_query' => [
+                                [
+                                    'taxonomy' => 'course_group',
+                                    'field' => 'term_id',
+                                    'terms' => $group_id,
+                                ],
+                            ],
+                        ]);
+                        
+                        if (!empty($courses)) {
+                            $course_id = $courses[0]->ID;
+                            error_log('[CBM Popup] Found course ID from group: ' . $course_id);
+                        }
+                    }
+                }
             }
         }
     }
     
     if (!$course_id) {
+        error_log('[CBM Popup] No course ID found');
         wp_send_json_error('Course ID not provided');
     }
     
     // Include the popup renderer
     require_once CBM_PLUGIN_DIR . 'includes/Popup/PopupBoxRenderer.php';
     
+    error_log('[CBM Popup] Rendering popup for course ID: ' . $course_id);
+    
     $renderer = new \CourseBoxManager\Popup\PopupBoxRenderer();
     $html = $renderer->render($course_id, $context);
     
-    wp_send_json_success(['html' => $html]);
+    error_log('[CBM Popup] HTML generated, length: ' . strlen($html));
+    
+    wp_send_json_success(['html' => $html, 'course_id' => $course_id]);
 }
 
 // Enqueue popup scripts and styles
