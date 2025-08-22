@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.6.0
+ * Version: 1.6.1
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.6.0');
+define('CBM_VERSION', '1.6.1');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -527,6 +527,19 @@ function course_box_tables_page() {
                 <!-- Enroll Course Table -->
                 <div id="enroll-table-container">
                     <h3 id="enroll-table-title" style="display: none;">Enroll Course Configuration</h3>
+                    
+                    <!-- STM Course Selection for Enroll (applies to all dates) -->
+                    <div id="stm-course-selector" style="display: none; margin-bottom: 15px; padding: 10px; background: #f0f8ff; border: 1px solid #0073aa; border-radius: 4px;">
+                        <label style="font-weight: bold; margin-right: 10px;">
+                            STM Course (applies to all dates):
+                        </label>
+                        <select id="global-stm-course" style="min-width: 300px;">
+                            <!-- Will be populated by JavaScript -->
+                        </select>
+                        <button id="save-stm-course" class="button button-secondary" style="margin-left: 10px;">Save STM Course</button>
+                        <span id="stm-save-status" style="margin-left: 10px;"></span>
+                    </div>
+                    
                     <button id="add-new-row" class="button button-primary" style="margin-bottom: 10px;">+ Add Course/Date</button>
                     <table class="wp-list-table widefat fixed striped" id="courses-table" style="margin-top: 10px;">
                         <thead id="table-header">
@@ -706,6 +719,7 @@ function course_box_tables_page() {
                     const tableContainer = document.getElementById('table-container');
                     const buyTableContainer = document.getElementById('buy-table-container');
                     const enrollTableTitle = document.getElementById('enroll-table-title');
+                    const stmCourseSelector = document.getElementById('stm-course-selector');
                     
                     // Clear existing content
                     tableHeader.innerHTML = '';
@@ -713,6 +727,14 @@ function course_box_tables_page() {
                     
                     // Always show table container
                     tableContainer.style.display = 'block';
+                    
+                    // Show/hide STM course selector based on state
+                    if (boxState === 'enroll-course' || boxState === 'enroll-buy') {
+                        stmCourseSelector.style.display = 'block';
+                        populateSTMCourseSelector();
+                    } else {
+                        stmCourseSelector.style.display = 'none';
+                    }
                     
                     // Handle enroll-buy state with two separate tables
                     if (boxState === 'enroll-buy') {
@@ -742,25 +764,24 @@ function course_box_tables_page() {
                     // Build header based on box state
                     let headerHTML = '<tr>';
                     if (boxState === 'enroll-course') {
-                        headerHTML += '<th style="width: 10%;">Date</th>';
-                        headerHTML += '<th style="width: 12%;">Associated Product</th>';
-                        headerHTML += '<th style="width: 12%;">STM Course</th>';
-                        headerHTML += '<th style="width: 7%;">Regular Price</th>';
-                        headerHTML += '<th style="width: 7%;">Sale Price</th>';
-                        headerHTML += '<th style="width: 7%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 6%;">Sold</th>';
-                        headerHTML += '<th style="width: 7%;">Available</th>';
-                        headerHTML += '<th style="width: 12%;">Button Text</th>';
-                        headerHTML += '<th style="width: 20%;">Actions</th>';
+                        headerHTML += '<th style="width: 150px;">Date</th>';
+                        headerHTML += '<th style="width: 220px;">Product</th>';
+                        headerHTML += '<th style="width: 100px;">Reg. Price</th>';
+                        headerHTML += '<th style="width: 100px;">Sale Price</th>';
+                        headerHTML += '<th style="width: 80px;">Seats</th>';
+                        headerHTML += '<th style="width: 60px;">Sold</th>';
+                        headerHTML += '<th style="width: 80px;">Avail.</th>';
+                        headerHTML += '<th style="width: 150px;">Button Text</th>';
+                        headerHTML += '<th style="width: 120px;">Actions</th>';
                     } else if (boxState === 'buy-course') {
-                        headerHTML += '<th style="width: 18%;">Associated Product</th>';
-                        headerHTML += '<th style="width: 15%;">STM Course</th>';
-                        headerHTML += '<th style="width: 10%;">Regular Price</th>';
-                        headerHTML += '<th style="width: 10%;">Sale Price</th>';
-                        headerHTML += '<th style="width: 10%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 10%;">Available</th>';
-                        headerHTML += '<th style="width: 15%;">Button Text</th>';
-                        headerHTML += '<th style="width: 12%;">Actions</th>';
+                        headerHTML += '<th style="width: 200px;">Product</th>';
+                        headerHTML += '<th style="width: 200px;">STM Course</th>';
+                        headerHTML += '<th style="width: 100px;">Regular Price</th>';
+                        headerHTML += '<th style="width: 100px;">Sale Price</th>';
+                        headerHTML += '<th style="width: 80px;">Total Seats</th>';
+                        headerHTML += '<th style="width: 80px;">Available</th>';
+                        headerHTML += '<th style="width: 150px;">Button Text</th>';
+                        headerHTML += '<th style="width: 120px;">Actions</th>';
                     } else if (boxState === 'countdown') {
                         headerHTML += '<th style="width: 8%;">Date</th>';
                         headerHTML += '<th style="width: 13%;">Associated Product</th>';
@@ -791,15 +812,14 @@ function course_box_tables_page() {
                     } else if (boxState === 'enroll-buy') {
                         // For enroll-buy, we'll have separate headers for each table
                         // Enroll table header (similar to enroll-course)
-                        headerHTML += '<th style="width: 10%;">Date</th>';
-                        headerHTML += '<th style="width: 12%;">Product</th>';
-                        headerHTML += '<th style="width: 12%;">STM Course</th>';
-                        headerHTML += '<th style="width: 7%;">Regular Price</th>';
-                        headerHTML += '<th style="width: 7%;">Sale Price</th>';
-                        headerHTML += '<th style="width: 7%;">Total Seats</th>';
-                        headerHTML += '<th style="width: 6%;">Sold</th>';
-                        headerHTML += '<th style="width: 7%;">Available</th>';
-                        headerHTML += '<th style="width: 12%;">Button Text</th>';
+                        headerHTML += '<th style="width: 120px;">Date</th>';
+                        headerHTML += '<th style="width: 180px;">Product</th>';
+                        headerHTML += '<th style="width: 80px;">Reg. Price</th>';
+                        headerHTML += '<th style="width: 80px;">Sale Price</th>';
+                        headerHTML += '<th style="width: 60px;">Seats</th>';
+                        headerHTML += '<th style="width: 50px;">Sold</th>';
+                        headerHTML += '<th style="width: 60px;">Avail.</th>';
+                        headerHTML += '<th style="width: 120px;">Button Text</th>';
                         headerHTML += '<th style="width: 21%;">Actions</th>';
                     }
                     headerHTML += '</tr>';
@@ -943,7 +963,6 @@ function course_box_tables_page() {
                         const enrollProductId = course.enroll_product_id || course.product_id;
                         console.log('[CBM Debug] Enroll product ID for row:', enrollProductId);
                         rowHTML += `<td>${buildProductSelect(enrollProductId, 'enroll-product-select')}</td>`;
-                        rowHTML += `<td>${buildSTMCourseSelect(course.related_stm_course_id || '', course.id)}</td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(enrollProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(enrollProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         
@@ -980,12 +999,12 @@ function course_box_tables_page() {
                     
                     // Build header for buy table
                     let headerHTML = '<tr>';
-                    headerHTML += '<th style="width: 18%;">Product</th>';
-                    headerHTML += '<th style="width: 18%;">STM Course</th>';
-                    headerHTML += '<th style="width: 12%;">Regular Price</th>';
-                    headerHTML += '<th style="width: 12%;">Sale Price</th>';
-                    headerHTML += '<th style="width: 15%;">Button Text</th>';
-                    headerHTML += '<th style="width: 25%;">Actions</th>';
+                    headerHTML += '<th style="width: 200px;">Product</th>';
+                    headerHTML += '<th style="width: 200px;">STM Course</th>';
+                    headerHTML += '<th style="width: 100px;">Regular Price</th>';
+                    headerHTML += '<th style="width: 100px;">Sale Price</th>';
+                    headerHTML += '<th style="width: 150px;">Button Text</th>';
+                    headerHTML += '<th style="width: 120px;">Actions</th>';
                     headerHTML += '</tr>';
                     buyTableHeader.innerHTML = headerHTML;
                     
@@ -1076,6 +1095,45 @@ function course_box_tables_page() {
                     }
                     html += '</select>';
                     return html;
+                }
+                
+                // Populate global STM course selector
+                function populateSTMCourseSelector() {
+                    const globalSelector = document.getElementById('global-stm-course');
+                    if (!globalSelector) return;
+                    
+                    // Get current course's STM ID
+                    const currentSTMId = coursesData && coursesData[0] ? coursesData[0].related_stm_course_id : '';
+                    
+                    // Build options HTML
+                    let html = '<option value="">None</option>';
+                    
+                    <?php
+                    $stm_courses_for_global = get_posts([
+                        'post_type' => 'stm-courses',
+                        'posts_per_page' => -1,
+                        'orderby' => 'title',
+                        'order' => 'ASC',
+                        'post_status' => 'publish'
+                    ]);
+                    
+                    $stm_courses_js_global = [];
+                    foreach ($stm_courses_for_global as $stm_course) {
+                        $stm_courses_js_global[] = [
+                            'id' => $stm_course->ID,
+                            'title' => $stm_course->post_title
+                        ];
+                    }
+                    ?>
+                    
+                    const stmCoursesGlobal = <?php echo json_encode($stm_courses_js_global); ?>;
+                    
+                    stmCoursesGlobal.forEach(course => {
+                        const selected = currentSTMId == course.id ? 'selected' : '';
+                        html += `<option value="${course.id}" ${selected}>${course.title} (#${course.id})</option>`;
+                    });
+                    
+                    globalSelector.innerHTML = html;
                 }
                 
                 // Build STM Course select dropdown
@@ -1458,6 +1516,62 @@ function course_box_tables_page() {
                         .catch(error => {
                             console.error('[CBM Debug] Save error:', error);
                             alert('Error saving settings');
+                        });
+                    });
+                }
+                
+                // Save STM Course button (for enroll states)
+                const saveSTMBtn = document.getElementById('save-stm-course');
+                if (saveSTMBtn) {
+                    saveSTMBtn.addEventListener('click', function() {
+                        const stmCourseId = document.getElementById('global-stm-course').value;
+                        const statusSpan = document.getElementById('stm-save-status');
+                        
+                        if (!coursesData || coursesData.length === 0) {
+                            alert('No course data available');
+                            return;
+                        }
+                        
+                        const courseId = coursesData[0].id;
+                        
+                        statusSpan.textContent = 'Saving...';
+                        statusSpan.style.color = '#f0ad4e';
+                        
+                        // Save STM course for this course
+                        fetch(ajaxurl + '?action=save_course_settings', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: 'course_id=' + courseId + 
+                                  '&related_stm_course_id=' + stmCourseId +
+                                  '&group_id=' + groupId +
+                                  '&box_state=' + currentBoxState +
+                                  '&instructors=' + JSON.stringify([]) +
+                                  '&stock=0&dates=[]&selling_page_id=0&linked_product_id=0' +
+                                  '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                statusSpan.textContent = '✓ Saved';
+                                statusSpan.style.color = '#46b450';
+                                
+                                // Update coursesData
+                                if (coursesData[0]) {
+                                    coursesData[0].related_stm_course_id = stmCourseId;
+                                }
+                                
+                                setTimeout(() => {
+                                    statusSpan.textContent = '';
+                                }, 3000);
+                            } else {
+                                statusSpan.textContent = '✗ Error';
+                                statusSpan.style.color = '#d54e21';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error saving STM course:', error);
+                            statusSpan.textContent = '✗ Error';
+                            statusSpan.style.color = '#d54e21';
                         });
                     });
                 }
