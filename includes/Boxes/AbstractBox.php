@@ -113,6 +113,8 @@ abstract class AbstractBox {
             );
         }
         
+        error_log('[AbstractBox] Rendering add to cart button with product ID: ' . $this->course_product_id . ' and text: ' . $text);
+        
         return sprintf(
             '<button class="add-to-cart-button" data-product-id="%s">
                 <span class="button-text">%s</span>

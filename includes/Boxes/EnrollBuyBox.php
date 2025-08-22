@@ -41,8 +41,20 @@ class EnrollBuyBox extends AbstractBox {
         if ($this->buy_product_id && function_exists('wc_get_product')) {
             $buy_product = wc_get_product($this->buy_product_id);
             if ($buy_product) {
-                $this->buy_price = $buy_product->get_price();
-                error_log('[EnrollBuyBox] Buy Price from product: ' . $this->buy_price);
+                // Get sale price if available, otherwise regular price
+                $sale_price = $buy_product->get_sale_price();
+                $regular_price = $buy_product->get_regular_price();
+                $this->buy_price = $sale_price ? $sale_price : $regular_price;
+                
+                // Check product status
+                $is_purchasable = $buy_product->is_purchasable();
+                $is_in_stock = $buy_product->is_in_stock();
+                $stock_status = $buy_product->get_stock_status();
+                
+                error_log('[EnrollBuyBox] Buy Product found - Regular: ' . $regular_price . ', Sale: ' . $sale_price . ', Using: ' . $this->buy_price);
+                error_log('[EnrollBuyBox] Buy Product status - Purchasable: ' . ($is_purchasable ? 'yes' : 'no') . ', In Stock: ' . ($is_in_stock ? 'yes' : 'no') . ', Stock Status: ' . $stock_status);
+            } else {
+                error_log('[EnrollBuyBox] Buy Product NOT found for ID: ' . $this->buy_product_id);
             }
         }
         
@@ -51,8 +63,13 @@ class EnrollBuyBox extends AbstractBox {
         if ($this->enroll_product_id && function_exists('wc_get_product')) {
             $enroll_product = wc_get_product($this->enroll_product_id);
             if ($enroll_product) {
-                $this->enroll_price = $enroll_product->get_price();
-                error_log('[EnrollBuyBox] Enroll Price from product: ' . $this->enroll_price);
+                // Get sale price if available, otherwise regular price
+                $sale_price = $enroll_product->get_sale_price();
+                $regular_price = $enroll_product->get_regular_price();
+                $this->enroll_price = $sale_price ? $sale_price : $regular_price;
+                error_log('[EnrollBuyBox] Enroll Product found - Regular: ' . $regular_price . ', Sale: ' . $sale_price . ', Using: ' . $this->enroll_price);
+            } else {
+                error_log('[EnrollBuyBox] Enroll Product NOT found for ID: ' . $this->enroll_product_id);
             }
         }
         
@@ -69,12 +86,16 @@ class EnrollBuyBox extends AbstractBox {
         $this->buyBox->course_product_id = $this->buy_product_id;
         $this->buyBox->course_price = $this->buy_price;
         
+        error_log('[EnrollBuyBox] BuyBox configured with product ID: ' . $this->buyBox->course_product_id . ' and price: ' . $this->buyBox->course_price);
+        
         $this->enrollBox->box_state = 'enroll-course';
         $this->enrollBox->course_product_id = $this->enroll_product_id;
         $this->enrollBox->enroll_price = $this->enroll_price;
         $this->enrollBox->course_price = $this->enroll_price; // EnrollBox uses course_price for display
         $this->enrollBox->available_dates_full = $this->enroll_dates ?: $this->available_dates_full;
         $this->enrollBox->available_dates = array_column($this->enroll_dates ?: $this->available_dates_full, 'date');
+        
+        error_log('[EnrollBuyBox] EnrollBox configured with product ID: ' . $this->enrollBox->course_product_id . ' and price: ' . $this->enrollBox->course_price);
     }
     
     public function should_display() {
