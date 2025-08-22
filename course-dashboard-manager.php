@@ -4141,17 +4141,32 @@ function cbm_get_popup_boxes_simple() {
     
     // Remove duplicate boxes from EnrollBuyBox by extracting only desktop layout boxes
     if (strpos($html, 'enroll-buy-combo') !== false) {
-        // First, extract only the desktop layout section
-        if (preg_match('/<div class="boxes-container desktop-layout[^>]*>(.*?)<\/div>\s*<\/div>\s*<script>/s', $html, $desktop_match)) {
-            $desktop_html = $desktop_match[1];
-            
-            // Now extract the actual box divs from the desktop layout
-            preg_match_all('/<div class="box\s+[^"]*"[^>]*>(?:(?!<div class="box).)*?<\/button>\s*<\/div>/s', $desktop_html, $matches);
-            
-            if (!empty($matches[0])) {
-                // We should have exactly 2 boxes (buy and enroll) from desktop layout
-                $html = implode("\n", $matches[0]);
-            }
+        error_log('[CBM Popup] EnrollBuyBox detected, processing duplicates');
+        
+        // Count initial boxes
+        preg_match_all('/<div class="box\s+[^"]*"/s', $html, $all_boxes);
+        error_log('[CBM Popup] Total boxes found: ' . count($all_boxes[0]));
+        
+        // Extract each box type once
+        $buy_box = '';
+        $enroll_box = '';
+        
+        // Get the first buy-course box
+        if (preg_match('/<div class="box buy-course"[^>]*>.*?<\/button>\s*<\/div>/s', $html, $buy_match)) {
+            $buy_box = $buy_match[0];
+            error_log('[CBM Popup] Buy box extracted');
+        }
+        
+        // Get the first enroll-course box
+        if (preg_match('/<div class="box enroll-course[^"]*"[^>]*>.*?<\/button>\s*<\/div>/s', $html, $enroll_match)) {
+            $enroll_box = $enroll_match[0];
+            error_log('[CBM Popup] Enroll box extracted');
+        }
+        
+        // Combine the two boxes
+        if ($buy_box && $enroll_box) {
+            $html = $buy_box . "\n" . $enroll_box;
+            error_log('[CBM Popup] Combined 2 boxes for output');
         }
     }
     
