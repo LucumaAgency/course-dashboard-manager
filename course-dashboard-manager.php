@@ -4139,16 +4139,19 @@ function cbm_get_popup_boxes_simple() {
     echo CourseBoxManager\BoxRenderer::render_box_for_course($course_id);
     $html = ob_get_clean();
     
-    // Remove duplicate boxes from EnrollBuyBox by extracting only the actual box elements
+    // Remove duplicate boxes from EnrollBuyBox by extracting only desktop layout boxes
     if (strpos($html, 'enroll-buy-combo') !== false) {
-        // Extract all box divs directly
-        preg_match_all('/<div class="box\s+[^"]*"[^>]*>(?:(?!<div class="box).)*?<\/button>\s*<\/div>/s', $html, $matches);
-        
-        if (!empty($matches[0]) && count($matches[0]) >= 2) {
-            // We should have at least 2 boxes (buy and enroll)
-            // Take only the first 2 unique boxes
-            $boxes = array_slice($matches[0], 0, 2);
-            $html = implode("\n", $boxes);
+        // First, extract only the desktop layout section
+        if (preg_match('/<div class="boxes-container desktop-layout[^>]*>(.*?)<\/div>\s*<\/div>\s*<script>/s', $html, $desktop_match)) {
+            $desktop_html = $desktop_match[1];
+            
+            // Now extract the actual box divs from the desktop layout
+            preg_match_all('/<div class="box\s+[^"]*"[^>]*>(?:(?!<div class="box).)*?<\/button>\s*<\/div>/s', $desktop_html, $matches);
+            
+            if (!empty($matches[0])) {
+                // We should have exactly 2 boxes (buy and enroll) from desktop layout
+                $html = implode("\n", $matches[0]);
+            }
         }
     }
     
