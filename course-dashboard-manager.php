@@ -4142,57 +4142,44 @@ function cbm_get_popup_boxes_simple() {
         return;
     }
     
-    // Check if this is an EnrollBuyBox - if so, render individual boxes with correct configuration
+    // Check if this is an EnrollBuyBox - if so, use the same rendering approach
     if ($box instanceof CourseBoxManager\Boxes\EnrollBuyBox) {
-        error_log('[CBM Simple Popup] EnrollBuyBox detected, rendering individual boxes');
+        error_log('[CBM Simple Popup] EnrollBuyBox detected, extracting individual boxes');
         
-        // Create new instances with proper configuration like EnrollBuyBox does
-        $buyBox = new CourseBoxManager\Boxes\BuyCourseBox($course_id);
-        $enrollBox = new CourseBoxManager\Boxes\EnrollCourseBox($course_id);
-        
-        // Get the separate product IDs
-        $buy_product_id = get_post_meta($course_id, 'buy_product_id', true);
-        $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
-        
-        // If no separate products, use linked_product_id
-        if (!$buy_product_id || !$enroll_product_id) {
-            $linked_product_id = get_post_meta($course_id, 'linked_product_id', true);
-            $buy_product_id = $buy_product_id ?: $linked_product_id;
-            $enroll_product_id = $enroll_product_id ?: $linked_product_id;
-        }
-        
-        // Configure buy box with correct product and price
-        $buyBox->course_product_id = $buy_product_id;
-        if ($buy_product_id && function_exists('wc_get_product')) {
-            $product = wc_get_product($buy_product_id);
-            if ($product) {
-                $buyBox->course_price = $product->get_price();
-            }
-        }
-        
-        // Configure enroll box with correct product and price
-        $enrollBox->course_product_id = $enroll_product_id;
-        if ($enroll_product_id && function_exists('wc_get_product')) {
-            $product = wc_get_product($enroll_product_id);
-            if ($product) {
-                $enrollBox->course_price = $product->get_price();
-                $enrollBox->enroll_price = $product->get_price();
-                $enrollBox->is_out_of_stock = !$product->is_in_stock();
-            }
-        }
-        
-        // Get enroll dates
-        $enroll_dates = get_field('course_dates', $course_id);
-        if ($enroll_dates) {
-            $enrollBox->available_dates_full = $enroll_dates;
-            $enrollBox->available_dates = array_column($enroll_dates, 'date');
-        }
-        
-        // Render both boxes
+        // Render the EnrollBuyBox normally
         ob_start();
-        echo $buyBox->render();
-        echo $enrollBox->render();
-        $html = ob_get_clean();
+        echo $box->render();
+        $full_html = ob_get_clean();
+        
+        // Extract only the desktop layout boxes (avoiding duplicates)
+        if (strpos($full_html, 'desktop-layout') !== false) {
+            // Extract just the two boxes from desktop layout
+            preg_match_all('/<div class="box\s+(?:buy-course|enroll-course)[^"]*"[^>]*>.*?<\/button>\s*<\/div>/s', $full_html, $matches);
+            
+            if (!empty($matches[0]) && count($matches[0]) >= 2) {
+                // Take the first buy box and first enroll box
+                $buy_box = '';
+                $enroll_box = '';
+                
+                foreach ($matches[0] as $match) {
+                    if (empty($buy_box) && strpos($match, 'buy-course') !== false) {
+                        $buy_box = $match;
+                    } elseif (empty($enroll_box) && strpos($match, 'enroll-course') !== false) {
+                        $enroll_box = $match;
+                    }
+                    
+                    if ($buy_box && $enroll_box) {
+                        break;
+                    }
+                }
+                
+                $html = $buy_box . "\n" . $enroll_box;
+            } else {
+                $html = $full_html; // Fallback to full HTML if extraction fails
+            }
+        } else {
+            $html = $full_html;
+        }
         
     } else {
         // For other box types, render normally
