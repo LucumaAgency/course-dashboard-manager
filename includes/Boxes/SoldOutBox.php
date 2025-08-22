@@ -10,16 +10,33 @@ namespace CourseBoxManager\Boxes;
 class SoldOutBox extends AbstractBox {
     
     public function should_display() {
-        // Display when box_state is soldout OR when the product is actually out of stock
+        // Display when box_state is soldout
         if ($this->box_state === 'soldout') {
             return true;
         }
         
-        // Check actual WooCommerce product stock
-        if ($this->course_product_id && function_exists('wc_get_product')) {
-            $product = wc_get_product($this->course_product_id);
-            if ($product && !$product->is_in_stock()) {
-                error_log('[SoldOutBox] Product ' . $this->course_product_id . ' is out of stock, displaying sold out box');
+        // Check if all dates are sold out (for enroll-course state)
+        if ($this->box_state === 'enroll-course' && !empty($this->available_dates_full)) {
+            $all_sold_out = true;
+            foreach ($this->available_dates_full as $date_info) {
+                $date = isset($date_info['date']) ? $date_info['date'] : '';
+                $stock = isset($date_info['stock']) ? intval($date_info['stock']) : 0;
+                
+                // Calculate available seats
+                $sold = 0;
+                if ($this->course_product_id && function_exists('calculate_seats_sold')) {
+                    $sold = calculate_seats_sold($this->course_product_id, $date);
+                }
+                $available = max(0, $stock - $sold);
+                
+                if ($available > 0) {
+                    $all_sold_out = false;
+                    break;
+                }
+            }
+            
+            if ($all_sold_out) {
+                error_log('[SoldOutBox] All dates sold out for course ' . $this->course_id . ', displaying sold out box');
                 return true;
             }
         }

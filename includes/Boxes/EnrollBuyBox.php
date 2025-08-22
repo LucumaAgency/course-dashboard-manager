@@ -15,8 +15,6 @@ class EnrollBuyBox extends AbstractBox {
     private $buy_product_id;
     private $enroll_product_id;
     private $buy_price;
-    private $buy_in_stock;
-    private $enroll_in_stock;
     private $enroll_dates;
     
     public function __construct($course_id) {
@@ -38,25 +36,19 @@ class EnrollBuyBox extends AbstractBox {
             $this->enroll_product_id = $this->course_product_id;
         }
         
-        // Get prices and stock from the actual WooCommerce products
+        // Get prices from the actual WooCommerce products
         $this->buy_price = $this->course_price; // Default
-        $this->buy_in_stock = true; // Default
         
         if ($this->buy_product_id && function_exists('wc_get_product')) {
             $buy_product = wc_get_product($this->buy_product_id);
             if ($buy_product) {
                 // Use get_price() which returns the active price (sale or regular)
                 $this->buy_price = $buy_product->get_price();
-                $this->buy_in_stock = $buy_product->is_in_stock();
                 
-                // Check product status
-                $is_purchasable = $buy_product->is_purchasable();
-                $stock_status = $buy_product->get_stock_status();
                 $sale_price = $buy_product->get_sale_price();
                 $regular_price = $buy_product->get_regular_price();
                 
                 error_log('[EnrollBuyBox] Buy Product found - Regular: ' . $regular_price . ', Sale: ' . $sale_price . ', Active Price: ' . $this->buy_price);
-                error_log('[EnrollBuyBox] Buy Product status - Purchasable: ' . ($is_purchasable ? 'yes' : 'no') . ', In Stock: ' . ($this->buy_in_stock ? 'yes' : 'no') . ', Stock Status: ' . $stock_status);
             } else {
                 error_log('[EnrollBuyBox] Buy Product NOT found for ID: ' . $this->buy_product_id);
             }
@@ -64,20 +56,17 @@ class EnrollBuyBox extends AbstractBox {
             error_log('[EnrollBuyBox] No buy_product_id set or WooCommerce not available');
         }
         
-        // Get enroll price and stock from product
+        // Get enroll price from product
         $this->enroll_price = $this->enroll_price; // Default
-        $this->enroll_in_stock = true; // Default
         
         if ($this->enroll_product_id && function_exists('wc_get_product')) {
             $enroll_product = wc_get_product($this->enroll_product_id);
             if ($enroll_product) {
                 // Use get_price() which returns the active price (sale or regular)
                 $this->enroll_price = $enroll_product->get_price();
-                $this->enroll_in_stock = $enroll_product->is_in_stock();
                 $sale_price = $enroll_product->get_sale_price();
                 $regular_price = $enroll_product->get_regular_price();
                 error_log('[EnrollBuyBox] Enroll Product found - Regular: ' . $regular_price . ', Sale: ' . $sale_price . ', Active Price: ' . $this->enroll_price);
-                error_log('[EnrollBuyBox] Enroll Product In Stock: ' . ($this->enroll_in_stock ? 'yes' : 'no'));
             } else {
                 error_log('[EnrollBuyBox] Enroll Product NOT found for ID: ' . $this->enroll_product_id);
             }
@@ -93,23 +82,21 @@ class EnrollBuyBox extends AbstractBox {
         $this->buyBox = new BuyCourseBox($course_id);
         $this->enrollBox = new EnrollCourseBox($course_id);
         
-        // Override their properties to use separate products, prices, and stock
+        // Override their properties to use separate products and prices
         $this->buyBox->box_state = 'buy-course';
         $this->buyBox->course_product_id = $this->buy_product_id;
         $this->buyBox->course_price = $this->buy_price;
-        $this->buyBox->is_out_of_stock = !$this->buy_in_stock;
         
-        error_log('[EnrollBuyBox] BuyBox configured with product ID: ' . $this->buyBox->course_product_id . ', price: ' . $this->buyBox->course_price . ', in stock: ' . ($this->buy_in_stock ? 'yes' : 'no'));
+        error_log('[EnrollBuyBox] BuyBox configured with product ID: ' . $this->buyBox->course_product_id . ', price: ' . $this->buyBox->course_price);
         
         $this->enrollBox->box_state = 'enroll-course';
         $this->enrollBox->course_product_id = $this->enroll_product_id;
         $this->enrollBox->enroll_price = $this->enroll_price;
         $this->enrollBox->course_price = $this->enroll_price; // EnrollBox uses course_price for display
-        $this->enrollBox->is_out_of_stock = !$this->enroll_in_stock;
         $this->enrollBox->available_dates_full = $this->enroll_dates ?: $this->available_dates_full;
         $this->enrollBox->available_dates = array_column($this->enroll_dates ?: $this->available_dates_full, 'date');
         
-        error_log('[EnrollBuyBox] EnrollBox configured with product ID: ' . $this->enrollBox->course_product_id . ', price: ' . $this->enrollBox->course_price . ', in stock: ' . ($this->enroll_in_stock ? 'yes' : 'no'));
+        error_log('[EnrollBuyBox] EnrollBox configured with product ID: ' . $this->enrollBox->course_product_id . ', price: ' . $this->enrollBox->course_price);
     }
     
     public function should_display() {
