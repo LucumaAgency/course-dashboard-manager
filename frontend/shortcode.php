@@ -77,3 +77,39 @@ function selectable_boxes_shortcode($atts) {
     
     return course_box_manager_shortcode(array('id' => $atts['course_id']));
 }
+
+/**
+ * Popup trigger shortcode
+ * Usage: [popup_selectable_boxes text="Open Boxes" course_id="123"]
+ */
+add_shortcode('popup_selectable_boxes', __NAMESPACE__ . '\\popup_selectable_boxes_shortcode');
+
+function popup_selectable_boxes_shortcode($atts) {
+    $atts = shortcode_atts(array(
+        'text' => 'Select Options',
+        'course_id' => get_the_ID(),
+        'class' => '',
+        'style' => ''
+    ), $atts);
+    
+    // Enqueue popup scripts and styles
+    wp_enqueue_script('cbm-popup-simple', CBM_PLUGIN_URL . 'assets/js/cbm-popup-simple.js', array('jquery'), CBM_VERSION, true);
+    wp_enqueue_style('cbm-popup', CBM_PLUGIN_URL . 'assets/css/cbm-popup.css', array(), CBM_VERSION);
+    
+    // Localize script with AJAX URL
+    wp_localize_script('cbm-popup-simple', 'cbm_ajax', array(
+        'url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('cbm_popup_nonce')
+    ));
+    
+    // Return button HTML
+    $button_html = sprintf(
+        '<button class="cbm-popup-trigger %s" data-course-id="%s" style="%s">%s</button>',
+        esc_attr($atts['class']),
+        esc_attr($atts['course_id']),
+        esc_attr($atts['style']),
+        esc_html($atts['text'])
+    );
+    
+    return $button_html;
+}
