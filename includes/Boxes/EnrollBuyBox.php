@@ -159,46 +159,53 @@ class EnrollBuyBox extends AbstractBox {
             
             <script>
             // Tab switching logic and box selection behavior
-            document.addEventListener('DOMContentLoaded', function() {
+            function initEnrollBuyCombo() {
                 const container = document.querySelector('.enroll-buy-combo[data-course-id="<?php echo esc_js($this->course_id); ?>"]');
-                if (container) {
-                    // Setup box selection behavior
-                    const boxes = container.querySelectorAll('.box');
+                if (!container) return;
+                
+                // Setup box selection behavior
+                const boxes = container.querySelectorAll('.box');
+                
+                // More specific selectors for both desktop and mobile views
+                const buyBoxDesktop = container.querySelector('.buy-box-wrapper .box');
+                const enrollBoxDesktop = container.querySelector('.enroll-box-wrapper .box');
+                const buyBoxMobile = container.querySelector('[data-tab="buy"] .box');
+                const enrollBoxMobile = container.querySelector('[data-tab="enroll"] .box');
+                
+                // Function to set box state
+                function setBoxState(box, isSelected) {
+                    if (!box) return;
                     
-                    // More specific selectors for both desktop and mobile views
-                    const buyBoxDesktop = container.querySelector('.buy-box-wrapper .box');
-                    const enrollBoxDesktop = container.querySelector('.enroll-box-wrapper .box');
-                    const buyBoxMobile = container.querySelector('[data-tab="buy"] .box');
-                    const enrollBoxMobile = container.querySelector('[data-tab="enroll"] .box');
-                    
-                    // Function to set box state
-                    function setBoxState(box, isSelected) {
-                        if (!box) return;
-                        
-                        if (isSelected) {
-                            // Active state: show filled circle (circle-container)
-                            box.classList.add('selected');
-                            box.classList.remove('no-button');
-                            const circleContainer = box.querySelector('.circlecontainer');
-                            const circle = box.querySelector('.circle-container');
-                            if (circleContainer) circleContainer.style.display = 'none';
-                            if (circle) circle.style.display = 'flex';
-                        } else {
-                            // Inactive state: show empty circle (circlecontainer)
-                            box.classList.remove('selected');
-                            box.classList.remove('no-button');
-                            const circleContainer = box.querySelector('.circlecontainer');
-                            const circle = box.querySelector('.circle-container');
-                            if (circleContainer) circleContainer.style.display = 'flex';
-                            if (circle) circle.style.display = 'none';
-                        }
+                    if (isSelected) {
+                        // Active state: show filled circle (circle-container)
+                        box.classList.add('selected');
+                        box.classList.remove('no-button');
+                        const circleContainer = box.querySelector('.circlecontainer');
+                        const circle = box.querySelector('.circle-container');
+                        if (circleContainer) circleContainer.style.display = 'none';
+                        if (circle) circle.style.display = 'flex';
+                    } else {
+                        // Inactive state: show empty circle (circlecontainer)
+                        box.classList.remove('selected');
+                        box.classList.remove('no-button');
+                        const circleContainer = box.querySelector('.circlecontainer');
+                        const circle = box.querySelector('.circle-container');
+                        if (circleContainer) circleContainer.style.display = 'flex';
+                        if (circle) circle.style.display = 'none';
                     }
-                    
-                    // Set initial state: Buy box selected, Enroll box unselected
+                }
+                
+                // Force initial state: Buy box selected, Enroll box unselected
+                // Apply immediately and after a short delay to ensure it takes effect
+                function applyInitialState() {
                     setBoxState(buyBoxDesktop, true);
                     setBoxState(buyBoxMobile, true);
                     setBoxState(enrollBoxDesktop, false);
                     setBoxState(enrollBoxMobile, false);
+                }
+                
+                applyInitialState();
+                setTimeout(applyInitialState, 100);
                     
                     // Add click handlers for box selection
                     boxes.forEach(box => {
@@ -266,8 +273,16 @@ class EnrollBuyBox extends AbstractBox {
                             });
                         });
                     });
-                }
-            });
+            }
+            
+            // Initialize on DOMContentLoaded and also immediately
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initEnrollBuyCombo);
+            } else {
+                initEnrollBuyCombo();
+            }
+            // Also run after a short delay to catch any dynamic rendering
+            setTimeout(initEnrollBuyCombo, 500);
             </script>
             
         </div>
@@ -282,15 +297,25 @@ class EnrollBuyBox extends AbstractBox {
             display: flex !important;
         }
         
-        /* Box states in enroll-buy combo */
-        .enroll-buy-combo .box.selected {
+        /* Box states in enroll-buy combo - force correct styles */
+        .enroll-buy-combo .box.selected,
+        .enroll-buy-combo .buy-box-wrapper .box.selected,
+        .enroll-buy-combo .enroll-box-wrapper .box.selected,
+        .enroll-buy-combo [data-tab="buy"] .box.selected,
+        .enroll-buy-combo [data-tab="enroll"] .box.selected {
             background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
             border: 2px solid transparent !important;
+            opacity: 1 !important;
         }
         
-        .enroll-buy-combo .box:not(.selected) {
+        .enroll-buy-combo .box:not(.selected),
+        .enroll-buy-combo .buy-box-wrapper .box:not(.selected),
+        .enroll-buy-combo .enroll-box-wrapper .box:not(.selected),
+        .enroll-buy-combo [data-tab="buy"] .box:not(.selected),
+        .enroll-buy-combo [data-tab="enroll"] .box:not(.selected) {
             background: #0E0D0F !important;
             border: 2px solid rgba(155, 159, 170, 0.24) !important;
+            opacity: 1 !important;
         }
         
         /* Correct radio button display based on selection state */
