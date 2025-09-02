@@ -10,6 +10,15 @@
     $(document).ready(function() {
         console.log('[CBM Popup] Initializing simple popup system');
         
+        // Debug: Check if pre-rendered popup exists
+        const prerenderedPopup = $('#cbm-popup-overlay[data-prerendered="true"]');
+        if (prerenderedPopup.length > 0) {
+            console.log('[CBM Popup] ✅ Pre-rendered popup found in DOM');
+            console.log('[CBM Popup] Has tabs:', prerenderedPopup.attr('data-has-tabs'));
+        } else {
+            console.log('[CBM Popup] ⚠️ No pre-rendered popup found - will use AJAX fallback');
+        }
+        
         // Initialize popup triggers
         initializePopupTriggers();
     });
@@ -39,41 +48,83 @@
         });
     }
     
-    function showPopup(courseId) {
-        // Check if pre-rendered popup exists
-        const $existingOverlay = $('#cbm-popup-overlay');
+    // Minimal event binding for pre-rendered content
+    function bindMinimalEvents() {
+        console.log('[CBM Popup] Binding minimal events for pre-rendered content');
         
-        if ($existingOverlay.length > 0) {
-            // Use pre-rendered popup - just show it instantly
-            console.log('[CBM Popup] Using pre-rendered popup');
-            $existingOverlay.show();
+        // Tab switching (if tabs exist)
+        $('.cbm-tab-btn').off('click').on('click', function() {
+            const tabIndex = $(this).data('tab');
             
-            // Re-initialize box scripts for the pre-rendered content
-            initializeBoxScripts();
-        } else {
-            // Fallback: Create popup if not pre-rendered
-            console.log('[CBM Popup] No pre-rendered popup, creating new');
+            // Update active states
+            $('.cbm-tab-btn').removeClass('active');
+            $(this).addClass('active');
             
-            if ($('#cbm-popup-overlay').length === 0) {
-                createPopupStructure();
+            // Switch panes
+            $('.cbm-tab-pane').removeClass('active').hide();
+            $(`.cbm-tab-pane[data-tab="${tabIndex}"]`).addClass('active').show();
+        });
+        
+        // Date selection
+        $('.date-btn:not(.sold-out)').off('click').on('click', function() {
+            $(this).siblings().removeClass('selected');
+            $(this).addClass('selected');
+        });
+        
+        // Add to cart
+        $('.add-to-cart-button').off('click').on('click', function(e) {
+            e.preventDefault();
+            const $button = $(this);
+            const productId = $button.data('product-id');
+            const selectedDate = $button.closest('.box').find('.date-btn.selected').data('date') || '';
+            
+            if (productId) {
+                addToCart($button, productId, selectedDate);
+            }
+        });
+    }
+    
+    function showPopup(courseId) {
+        // Use native DOM for maximum speed
+        const overlay = document.getElementById('cbm-popup-overlay');
+        
+        if (overlay && overlay.getAttribute('data-prerendered') === 'true') {
+            // Pre-rendered popup - show instantly with no jQuery overhead
+            console.time('[CBM Popup] Show time');
+            overlay.style.display = 'block';
+            console.timeEnd('[CBM Popup] Show time');
+            
+            // Only bind minimal events if not already bound
+            if (!overlay.hasAttribute('data-events-bound')) {
+                bindMinimalEvents();
+                overlay.setAttribute('data-events-bound', 'true');
             }
             
-            // Show overlay with loading state
-            const $overlay = $('#cbm-popup-overlay');
-            const $container = $('#cbm-popup-container');
-            const $content = $('#cbm-popup-content');
-            
-            $overlay.fadeIn(100);
-            $content.html('<div class="cbm-loading">Loading...</div>');
-            
-            // Load boxes via AJAX (fallback)
-            loadBoxes(courseId, function(html) {
-                $content.html(html);
-                
-                // Re-initialize any JavaScript for the boxes
-                initializeBoxScripts();
-            });
+            return; // Exit early - no further processing needed
         }
+        
+        // Fallback: Only if pre-rendering failed
+        console.log('[CBM Popup] Pre-rendering not available, using AJAX fallback');
+        
+        if ($('#cbm-popup-overlay').length === 0) {
+            createPopupStructure();
+        }
+        
+        // Show overlay with loading state
+        const $overlay = $('#cbm-popup-overlay');
+        const $container = $('#cbm-popup-container');
+        const $content = $('#cbm-popup-content');
+        
+        $overlay.fadeIn(100);
+        $content.html('<div class="cbm-loading">Loading...</div>');
+        
+        // Load boxes via AJAX (fallback)
+        loadBoxes(courseId, function(html) {
+            $content.html(html);
+            
+            // Re-initialize any JavaScript for the boxes
+            initializeBoxScripts();
+        });
     }
     
     function createPopupStructure() {
@@ -592,8 +643,10 @@
     }
     
     function closePopup() {
-        $('#cbm-popup-overlay').fadeOut(300);
-        // Don't empty content if it's pre-rendered
+        const overlay = document.getElementById('cbm-popup-overlay');
+        if (overlay) {
+            overlay.style.display = 'none'; // Direct DOM for instant close
+        }
     }
     
     // Expose for external use

@@ -85,56 +85,93 @@ function selectable_boxes_shortcode($atts) {
 add_action('wp_footer', __NAMESPACE__ . '\\prerender_popup_content');
 
 function prerender_popup_content() {
-    // Get current post ID
-    $course_id = get_the_ID();
+    // Only pre-render on course pages
+    if (!is_singular('course')) {
+        return;
+    }
     
-    // Only pre-render if we have a valid course ID
+    $course_id = get_the_ID();
     if (!$course_id) {
         return;
     }
     
-    // Pre-render the popup HTML server-side
+    // Get the box to render
+    $box = BoxFactory::create($course_id);
+    if (!$box) {
+        return;
+    }
+    
+    // Start output buffering for box content
     ob_start();
-    ?>
-    <div id="cbm-popup-overlay" class="cbm-popup-overlay" style="display:none;">
-        <div id="cbm-popup-container" class="cbm-popup-container">
-            <button id="cbm-popup-close" class="cbm-popup-close">&times;</button>
-            <div id="cbm-popup-content" class="cbm-popup-content">
+    $box_html = $box->render();
+    
+    // Check if we have multiple boxes (EnrollBuyBox scenario)
+    $has_tabs = false;
+    if (strpos($box_html, 'enroll-course') !== false && strpos($box_html, 'buy-course') !== false) {
+        $has_tabs = true;
+        
+        // Pre-render with tabs already created
+        ?>
+        <div class="cbm-tabs" data-prerendered-tabs="true">
+            <div class="cbm-tabs-header">
+                <button class="cbm-tab-btn active" data-tab="0" type="button">Buy Course</button>
+                <button class="cbm-tab-btn" data-tab="1" type="button">Enroll in Live Course</button>
+            </div>
+            <div class="cbm-tabs-content">
                 <?php
-                // Use BoxFactory to create and render boxes
-                $box = BoxFactory::create($course_id);
-                if ($box) {
-                    echo $box->render();
+                // Extract individual boxes from the rendered HTML
+                if (preg_match('/<div[^>]*class="[^"]*buy-course[^"]*"[^>]*>.*?<\/div>(?=\s*<div|$)/s', $box_html, $buy_match)) {
+                    echo '<div class="cbm-tab-pane active" data-tab="0">' . $buy_match[0] . '</div>';
+                }
+                if (preg_match('/<div[^>]*class="[^"]*enroll-course[^"]*"[^>]*>.*?<\/div>(?=\s*<div|$)/s', $box_html, $enroll_match)) {
+                    echo '<div class="cbm-tab-pane" data-tab="1">' . $enroll_match[0] . '</div>';
                 }
                 ?>
             </div>
         </div>
-    </div>
-    <?php
-    $popup_html = ob_get_clean();
+        <?php
+        $final_html = ob_get_clean();
+    } else {
+        // Single box, no tabs needed
+        $final_html = $box_html;
+        ob_end_clean();
+    }
     
-    // Output the pre-rendered popup
-    echo $popup_html;
-    
-    // Add initialization script
+    // Output the complete pre-rendered popup
     ?>
+    <div id="cbm-popup-overlay" class="cbm-popup-overlay" style="display:none;" data-prerendered="true" data-has-tabs="<?php echo $has_tabs ? 'true' : 'false'; ?>">
+        <div id="cbm-popup-container" class="cbm-popup-container">
+            <button id="cbm-popup-close" class="cbm-popup-close">&times;</button>
+            <div id="cbm-popup-content" class="cbm-popup-content">
+                <?php echo $final_html; ?>
+            </div>
+        </div>
+    </div>
+    
     <script>
-    jQuery(document).ready(function($) {
-        // Check if there are popup triggers on the page
-        if ($('.cbm-popup-trigger').length > 0) {
-            console.log('[CBM] Popup pre-rendered and ready for instant display');
+    (function() {
+        console.log('[CBM] Popup HTML pre-rendered on server');
+        
+        // Simple close handler - no jQuery dependency
+        document.addEventListener('DOMContentLoaded', function() {
+            var overlay = document.getElementById('cbm-popup-overlay');
+            var closeBtn = document.getElementById('cbm-popup-close');
             
-            // Mark popup as pre-rendered
-            $('#cbm-popup-overlay').attr('data-prerendered', 'true');
-            
-            // Initialize close button
-            $('#cbm-popup-close, #cbm-popup-overlay').on('click', function(e) {
-                if (e.target === this || $(e.target).attr('id') === 'cbm-popup-close') {
-                    $('#cbm-popup-overlay').hide();
-                }
-            });
-        }
-    });
+            if (overlay && closeBtn) {
+                // Close on button click
+                closeBtn.addEventListener('click', function() {
+                    overlay.style.display = 'none';
+                });
+                
+                // Close on overlay click
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) {
+                        overlay.style.display = 'none';
+                    }
+                });
+            }
+        });
+    })();
     </script>
     <?php
 }
