@@ -313,7 +313,7 @@ body.cbm-popup-open {
 }
 
 .cbm-popup-container .box.selected {
-    background: linear-gradient(180deg, rgba(242, 46, 190, 0.2), rgba(170, 0, 212, 0.2)) !important;
+    background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
     border: none;
     padding: 16px 12px;
 }
@@ -379,7 +379,7 @@ body.cbm-popup-open {
 
 .cbm-popup-container .box.selected {
     border-color: #0073aa;
-    background: #f0f8ff;
+    background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%);
 }
 
 /* Date buttons in popup */
