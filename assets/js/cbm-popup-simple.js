@@ -40,26 +40,40 @@
     }
     
     function showPopup(courseId) {
-        // Create overlay if it doesn't exist
-        if ($('#cbm-popup-overlay').length === 0) {
-            createPopupStructure();
-        }
+        // Check if pre-rendered popup exists
+        const $existingOverlay = $('#cbm-popup-overlay');
         
-        // Show overlay with loading state
-        const $overlay = $('#cbm-popup-overlay');
-        const $container = $('#cbm-popup-container');
-        const $content = $('#cbm-popup-content');
-        
-        $overlay.fadeIn(100);
-        $content.html('<div class="cbm-loading">Loading...</div>');
-        
-        // Load boxes via AJAX
-        loadBoxes(courseId, function(html) {
-            $content.html(html);
+        if ($existingOverlay.length > 0) {
+            // Use pre-rendered popup - just show it
+            console.log('[CBM Popup] Using pre-rendered popup');
+            $existingOverlay.fadeIn(100);
             
-            // Re-initialize any JavaScript for the boxes
+            // Re-initialize box scripts for the pre-rendered content
             initializeBoxScripts();
-        });
+        } else {
+            // Fallback: Create popup if not pre-rendered
+            console.log('[CBM Popup] No pre-rendered popup, creating new');
+            
+            if ($('#cbm-popup-overlay').length === 0) {
+                createPopupStructure();
+            }
+            
+            // Show overlay with loading state
+            const $overlay = $('#cbm-popup-overlay');
+            const $container = $('#cbm-popup-container');
+            const $content = $('#cbm-popup-content');
+            
+            $overlay.fadeIn(100);
+            $content.html('<div class="cbm-loading">Loading...</div>');
+            
+            // Load boxes via AJAX (fallback)
+            loadBoxes(courseId, function(html) {
+                $content.html(html);
+                
+                // Re-initialize any JavaScript for the boxes
+                initializeBoxScripts();
+            });
+        }
     }
     
     function createPopupStructure() {
@@ -588,9 +602,8 @@
     }
     
     function closePopup() {
-        $('#cbm-popup-overlay').fadeOut(300, function() {
-            $('#cbm-popup-content').empty();
-        });
+        $('#cbm-popup-overlay').fadeOut(300);
+        // Don't empty content if it's pre-rendered
     }
     
     // Expose for external use
