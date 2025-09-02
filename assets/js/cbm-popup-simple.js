@@ -50,7 +50,7 @@
         const $container = $('#cbm-popup-container');
         const $content = $('#cbm-popup-content');
         
-        $overlay.fadeIn(300);
+        $overlay.fadeIn(100);
         $content.html('<div class="cbm-loading">Loading...</div>');
         
         // Load boxes via AJAX
