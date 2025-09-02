@@ -92,7 +92,7 @@
     display: flex;
 }
 
-/* Radio button selected state */
+/* Radio button active state (ringed circle) */
 .circlecontainer {
     width: 24px;
     height: 24px;
@@ -129,7 +129,7 @@
     background-color: #DE04A4;
 }
 
-/* Radio button unselected state */
+/* Radio button inactive state (simple circle) */
 .circle-container {
     width: 24px;
     height: 24px;
@@ -143,6 +143,23 @@
     height: 14px;
     border-radius: 50%;
     border: 2px solid rgba(155, 159, 170, 0.24);
+}
+
+/* Display rules based on selection */
+.box.selected .circlecontainer {
+    display: flex !important;
+}
+
+.box.selected .circle-container {
+    display: none !important;
+}
+
+.box:not(.selected) .circlecontainer {
+    display: none !important;
+}
+
+.box:not(.selected) .circle-container {
+    display: flex !important;
 }
 
 /* Divider */

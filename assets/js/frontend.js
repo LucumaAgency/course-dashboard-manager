@@ -23,19 +23,20 @@ window.selectBox = function(element, boxType, courseId) {
     
     // Toggle selection
     if ($box.hasClass('selected')) {
+        // Deselect: show simple circle (inactive state)
         $box.removeClass('selected');
-        $box.find('.circlecontainer').show();
-        $box.find('.circle-container').hide();
-    } else {
-        // Deselect siblings
-        $box.siblings('.box').removeClass('selected');
-        $box.siblings('.box').find('.circlecontainer').show();
-        $box.siblings('.box').find('.circle-container').hide();
-        
-        // Select this box
-        $box.addClass('selected');
         $box.find('.circlecontainer').hide();
         $box.find('.circle-container').show();
+    } else {
+        // Deselect siblings: show simple circle for them
+        $box.siblings('.box').removeClass('selected');
+        $box.siblings('.box').find('.circlecontainer').hide();
+        $box.siblings('.box').find('.circle-container').show();
+        
+        // Select this box: show ringed circle (active state)
+        $box.addClass('selected');
+        $box.find('.circlecontainer').show();
+        $box.find('.circle-container').hide();
     }
 };
 

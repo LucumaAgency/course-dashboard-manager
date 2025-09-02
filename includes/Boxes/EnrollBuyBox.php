@@ -177,21 +177,21 @@ class EnrollBuyBox extends AbstractBox {
                     if (!box) return;
                     
                     if (isSelected) {
-                        // Active state: show filled circle (circle-container)
+                        // Active state: show ringed circle (circlecontainer)
                         box.classList.add('selected');
-                        box.classList.remove('no-button');
-                        const circleContainer = box.querySelector('.circlecontainer');
-                        const circle = box.querySelector('.circle-container');
-                        if (circleContainer) circleContainer.style.display = 'none';
-                        if (circle) circle.style.display = 'flex';
-                    } else {
-                        // Inactive state: show empty circle (circlecontainer)
-                        box.classList.remove('selected');
                         box.classList.remove('no-button');
                         const circleContainer = box.querySelector('.circlecontainer');
                         const circle = box.querySelector('.circle-container');
                         if (circleContainer) circleContainer.style.display = 'flex';
                         if (circle) circle.style.display = 'none';
+                    } else {
+                        // Inactive state: show simple circle (circle-container)
+                        box.classList.remove('selected');
+                        box.classList.remove('no-button');
+                        const circleContainer = box.querySelector('.circlecontainer');
+                        const circle = box.querySelector('.circle-container');
+                        if (circleContainer) circleContainer.style.display = 'none';
+                        if (circle) circle.style.display = 'flex';
                     }
                 }
                 
@@ -216,21 +216,21 @@ class EnrollBuyBox extends AbstractBox {
                                 return;
                             }
                             
-                            // Deselect all boxes
+                            // Deselect all boxes (show simple circle for inactive)
                             boxes.forEach(b => {
                                 b.classList.remove('selected');
                                 const circleContainer = b.querySelector('.circlecontainer');
                                 const circle = b.querySelector('.circle-container');
-                                if (circleContainer) circleContainer.style.display = 'flex';
-                                if (circle) circle.style.display = 'none';
+                                if (circleContainer) circleContainer.style.display = 'none';
+                                if (circle) circle.style.display = 'flex';
                             });
                             
-                            // Select clicked box
+                            // Select clicked box (show ringed circle for active)
                             this.classList.add('selected');
                             const thisCircleContainer = this.querySelector('.circlecontainer');
                             const thisCircle = this.querySelector('.circle-container');
-                            if (thisCircleContainer) thisCircleContainer.style.display = 'none';
-                            if (thisCircle) thisCircle.style.display = 'flex';
+                            if (thisCircleContainer) thisCircleContainer.style.display = 'flex';
+                            if (thisCircle) thisCircle.style.display = 'none';
                         });
                     });
                     
@@ -251,23 +251,23 @@ class EnrollBuyBox extends AbstractBox {
                                 const paneBox = pane.querySelector('.box');
                                 if (pane.dataset.tab === targetTab) {
                                     pane.classList.add('active');
-                                    // Select the box in the active tab
+                                    // Select the box in the active tab (show ringed circle)
                                     if (paneBox) {
                                         paneBox.classList.add('selected');
                                         const circleContainer = paneBox.querySelector('.circlecontainer');
                                         const circle = paneBox.querySelector('.circle-container');
-                                        if (circleContainer) circleContainer.style.display = 'none';
-                                        if (circle) circle.style.display = 'flex';
+                                        if (circleContainer) circleContainer.style.display = 'flex';
+                                        if (circle) circle.style.display = 'none';
                                     }
                                 } else {
                                     pane.classList.remove('active');
-                                    // Deselect the box in inactive tabs
+                                    // Deselect the box in inactive tabs (show simple circle)
                                     if (paneBox) {
                                         paneBox.classList.remove('selected');
                                         const circleContainer = paneBox.querySelector('.circlecontainer');
                                         const circle = paneBox.querySelector('.circle-container');
-                                        if (circleContainer) circleContainer.style.display = 'flex';
-                                        if (circle) circle.style.display = 'none';
+                                        if (circleContainer) circleContainer.style.display = 'none';
+                                        if (circle) circle.style.display = 'flex';
                                     }
                                 }
                             });
@@ -319,20 +319,22 @@ class EnrollBuyBox extends AbstractBox {
         }
         
         /* Correct radio button display based on selection state */
+        /* Active box: show ringed circle (circlecontainer) */
         .enroll-buy-combo .box.selected .circlecontainer {
-            display: none !important;
+            display: flex !important;
         }
         
         .enroll-buy-combo .box.selected .circle-container {
-            display: flex !important;
+            display: none !important;
         }
         
+        /* Inactive box: show simple circle (circle-container) */
         .enroll-buy-combo .box:not(.selected) .circlecontainer {
-            display: flex !important;
+            display: none !important;
         }
         
         .enroll-buy-combo .box:not(.selected) .circle-container {
-            display: none !important;
+            display: flex !important;
         }
         
         /* Mobile only elements */
