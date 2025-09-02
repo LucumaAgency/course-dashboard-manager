@@ -360,8 +360,6 @@
     padding: 12px 16px;
     background: transparent;
     border: none;
-    border-bottom: 2px solid #DE04A4;
-    border-radius: 0;
     cursor: pointer;
     font-size: 16px;
     transition: all 0.3s;
@@ -369,16 +367,25 @@
     position: relative;
 }
 
+.cbm-tab-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: transparent;
+    transition: background 0.3s;
+}
+
 .cbm-tab-btn:hover {
     background: transparent;
     color: rgba(255, 255, 255, 0.9);
-    border-bottom-color: #DE04A4;
 }
 
 .cbm-tab-btn:active,
 .cbm-tab-btn:focus {
     background: transparent;
-    border-bottom-color: #DE04A4;
     outline: none;
 }
 
@@ -386,7 +393,10 @@
     background: transparent !important;
     color: #DE00A5 !important;
     font-weight: bold;
-    border-bottom-color: #DE04A4 !important;
+}
+
+.cbm-tab-btn.active::after {
+    background: #DE04A4 !important;
 }
 
 .cbm-tab-pane {
