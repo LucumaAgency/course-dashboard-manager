@@ -44,9 +44,9 @@
         const $existingOverlay = $('#cbm-popup-overlay');
         
         if ($existingOverlay.length > 0) {
-            // Use pre-rendered popup - just show it
+            // Use pre-rendered popup - just show it instantly
             console.log('[CBM Popup] Using pre-rendered popup');
-            $existingOverlay.fadeIn(100);
+            $existingOverlay.show();
             
             // Re-initialize box scripts for the pre-rendered content
             initializeBoxScripts();
@@ -374,24 +374,29 @@
     function initializeBoxScripts() {
         console.log('[CBM Popup] Initializing box scripts');
         
-        // Check if we have raw HTML with multiple boxes
-        const $content = $('#cbm-popup-content');
-        const htmlContent = $content.html();
+        // Check if popup is pre-rendered
+        const isPrerendered = $('#cbm-popup-overlay').attr('data-prerendered') === 'true';
+        console.log('[CBM Popup] Is pre-rendered:', isPrerendered);
         
-        // Look for multiple boxes in the content
-        const $boxes = $content.find('.box');
-        console.log('[CBM Popup] Found boxes:', $boxes.length);
+        // Check if tabs already exist (from pre-rendering)
+        const $existingTabs = $('#cbm-popup-content').find('.cbm-tabs');
         
-        // If we have multiple boxes, create tabs
-        if ($boxes.length > 1) {
-            console.log('[CBM Popup] Multiple boxes detected, creating tabs');
-            createTabs($boxes);
+        if (isPrerendered && $existingTabs.length > 0) {
+            console.log('[CBM Popup] Using pre-rendered tabs, skipping recreation');
+            // Just bind events for pre-rendered content
+            bindTabEvents();
+        } else {
+            // Fallback: create tabs if not pre-rendered
+            const $content = $('#cbm-popup-content');
+            const $boxes = $content.find('.box');
+            console.log('[CBM Popup] Found boxes:', $boxes.length);
             
-            // After creating tabs, re-bind tab switching events
-            setTimeout(function() {
+            if ($boxes.length > 1) {
+                console.log('[CBM Popup] Multiple boxes detected, creating tabs');
+                createTabs($boxes);
                 bindTabEvents();
                 
-                // Auto-select the first box
+                // Auto-select the first box immediately (no timeout)
                 const $firstPane = $('#cbm-popup-content').find('.cbm-tab-pane.active');
                 const $firstBox = $firstPane.find('.box');
                 if ($firstBox.length > 0) {
@@ -399,30 +404,15 @@
                     $firstBox.removeClass('no-button');
                     $firstBox.find('.circlecontainer').show();
                     $firstBox.find('.circle-container').hide();
-                    
-                    // Check if buy box needs button
-                    if ($firstBox.hasClass('buy-course') && $firstBox.find('.add-to-cart-button').length === 0) {
-                        const productId = $firstBox.data('product-id') || $firstBox.attr('data-course-id');
-                        const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
-                                         '<span class="button-text">Buy Course</span>' +
-                                         '<span class="loader" style="display: none;"></span>' +
-                                         '</button>';
-                        $firstBox.append(buttonHtml);
-                        console.log('[CBM Popup] Added missing Buy button');
-                    }
-                    
                     console.log('[CBM Popup] Auto-selected first box');
                 }
-            }, 100);
-        } else if ($boxes.length === 1) {
-            console.log('[CBM Popup] Single box detected, no tabs needed');
-            // Auto-select single box
-            $boxes.addClass('selected');
-            $boxes.removeClass('no-button');
-            $boxes.find('.circlecontainer').show();
-            $boxes.find('.circle-container').hide();
-        } else {
-            console.log('[CBM Popup] No boxes found in content');
+            } else if ($boxes.length === 1) {
+                console.log('[CBM Popup] Single box detected, no tabs needed');
+                $boxes.addClass('selected');
+                $boxes.removeClass('no-button');
+                $boxes.find('.circlecontainer').show();
+                $boxes.find('.circle-container').hide();
+            }
         }
         
         // Initialize other box scripts

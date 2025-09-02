@@ -85,57 +85,54 @@ function selectable_boxes_shortcode($atts) {
 add_action('wp_footer', __NAMESPACE__ . '\\prerender_popup_content');
 
 function prerender_popup_content() {
-    // Only add popup if there's a trigger on the page
+    // Get current post ID
+    $course_id = get_the_ID();
+    
+    // Only pre-render if we have a valid course ID
+    if (!$course_id) {
+        return;
+    }
+    
+    // Pre-render the popup HTML server-side
+    ob_start();
+    ?>
+    <div id="cbm-popup-overlay" class="cbm-popup-overlay" style="display:none;">
+        <div id="cbm-popup-container" class="cbm-popup-container">
+            <button id="cbm-popup-close" class="cbm-popup-close">&times;</button>
+            <div id="cbm-popup-content" class="cbm-popup-content">
+                <?php
+                // Use BoxFactory to create and render boxes
+                $box = BoxFactory::create($course_id);
+                if ($box) {
+                    echo $box->render();
+                }
+                ?>
+            </div>
+        </div>
+    </div>
+    <?php
+    $popup_html = ob_get_clean();
+    
+    // Output the pre-rendered popup
+    echo $popup_html;
+    
+    // Add initialization script
     ?>
     <script>
     jQuery(document).ready(function($) {
         // Check if there are popup triggers on the page
         if ($('.cbm-popup-trigger').length > 0) {
-            console.log('[CBM] Pre-rendering popup content for instant display');
+            console.log('[CBM] Popup pre-rendered and ready for instant display');
             
-            // Get course ID from first trigger or page context
-            let courseId = $('.cbm-popup-trigger').first().data('course-id');
-            if (!courseId) {
-                const bodyClass = $('body').attr('class');
-                const match = bodyClass ? bodyClass.match(/postid-(\d+)/) : null;
-                if (match) courseId = match[1];
-            }
+            // Mark popup as pre-rendered
+            $('#cbm-popup-overlay').attr('data-prerendered', 'true');
             
-            // Pre-render popup structure with content
-            if ($('#cbm-popup-overlay').length === 0 && courseId) {
-                <?php
-                // Get current post ID for course boxes
-                $course_id = get_the_ID();
-                if ($course_id && get_post_type($course_id) === 'course') {
-                    // Generate the boxes HTML server-side
-                    ob_start();
-                    echo '<div id="cbm-popup-overlay" style="display:none;">';
-                    echo '<div id="cbm-popup-container">';
-                    echo '<button id="cbm-popup-close">&times;</button>';
-                    echo '<div id="cbm-popup-content">';
-                    
-                    // Render the actual boxes
-                    $renderer = new \CourseBoxManager\BoxRenderer($course_id);
-                    echo $renderer->render();
-                    
-                    echo '</div></div></div>';
-                    $popup_html = ob_get_clean();
-                    
-                    // Escape and output the HTML
-                    ?>
-                    const popupHtml = <?php echo json_encode($popup_html); ?>;
-                    $('body').append(popupHtml);
-                    
-                    // Initialize close button
-                    $('#cbm-popup-close, #cbm-popup-overlay').on('click', function(e) {
-                        if (e.target === this) {
-                            $('#cbm-popup-overlay').fadeOut(100);
-                        }
-                    });
-                    <?php
+            // Initialize close button
+            $('#cbm-popup-close, #cbm-popup-overlay').on('click', function(e) {
+                if (e.target === this || $(e.target).attr('id') === 'cbm-popup-close') {
+                    $('#cbm-popup-overlay').hide();
                 }
-                ?>
-            }
+            });
         }
     });
     </script>
