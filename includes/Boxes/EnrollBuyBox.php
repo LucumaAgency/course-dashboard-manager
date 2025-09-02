@@ -158,23 +158,59 @@ class EnrollBuyBox extends AbstractBox {
             </div>
             
             <script>
-            // Tab switching logic and prevent selectBox behavior
+            // Tab switching logic and box selection behavior
             (function() {
                 const container = document.querySelector('.enroll-buy-combo[data-course-id="<?php echo esc_js($this->course_id); ?>"]');
                 if (container) {
-                    // Prevent selectBox function from affecting these boxes
+                    // Setup box selection behavior
                     const boxes = container.querySelectorAll('.box');
+                    const buyBox = container.querySelector('.buy-box-wrapper .box, [data-tab="buy"] .box');
+                    const enrollBox = container.querySelector('.enroll-box-wrapper .box, [data-tab="enroll"] .box');
+                    
+                    // Set initial state: Buy box selected, Enroll box unselected
+                    if (buyBox) {
+                        buyBox.classList.add('selected');
+                        buyBox.classList.remove('no-button');
+                        const buyCircleContainer = buyBox.querySelector('.circlecontainer');
+                        const buyCircle = buyBox.querySelector('.circle-container');
+                        if (buyCircleContainer) buyCircleContainer.style.display = 'none';
+                        if (buyCircle) buyCircle.style.display = 'flex';
+                    }
+                    
+                    if (enrollBox) {
+                        enrollBox.classList.remove('selected');
+                        enrollBox.classList.remove('no-button');
+                        const enrollCircleContainer = enrollBox.querySelector('.circlecontainer');
+                        const enrollCircle = enrollBox.querySelector('.circle-container');
+                        if (enrollCircleContainer) enrollCircleContainer.style.display = 'flex';
+                        if (enrollCircle) enrollCircle.style.display = 'none';
+                    }
+                    
+                    // Add click handlers for box selection
                     boxes.forEach(box => {
-                        // Remove onclick if it exists
-                        box.onclick = null;
-                        // Ensure boxes are always "selected" to show buttons
-                        box.classList.add('selected');
-                        box.classList.remove('no-button');
-                        
-                        // Stop click propagation
+                        box.style.cursor = 'pointer';
                         box.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                        }, true);
+                            // Only process if click is on the box itself, not on buttons
+                            if (e.target.closest('.add-to-cart-button') || e.target.closest('.date-btn')) {
+                                return;
+                            }
+                            
+                            // Deselect all boxes
+                            boxes.forEach(b => {
+                                b.classList.remove('selected');
+                                const circleContainer = b.querySelector('.circlecontainer');
+                                const circle = b.querySelector('.circle-container');
+                                if (circleContainer) circleContainer.style.display = 'flex';
+                                if (circle) circle.style.display = 'none';
+                            });
+                            
+                            // Select clicked box
+                            this.classList.add('selected');
+                            const thisCircleContainer = this.querySelector('.circlecontainer');
+                            const thisCircle = this.querySelector('.circle-container');
+                            if (thisCircleContainer) thisCircleContainer.style.display = 'none';
+                            if (thisCircle) thisCircle.style.display = 'flex';
+                        });
                     });
                     
                     // Tab switching for mobile
@@ -189,12 +225,29 @@ class EnrollBuyBox extends AbstractBox {
                             tabButtons.forEach(b => b.classList.remove('active'));
                             this.classList.add('active');
                             
-                            // Update panes
+                            // Update panes and box selection states
                             tabPanes.forEach(pane => {
+                                const paneBox = pane.querySelector('.box');
                                 if (pane.dataset.tab === targetTab) {
                                     pane.classList.add('active');
+                                    // Select the box in the active tab
+                                    if (paneBox) {
+                                        paneBox.classList.add('selected');
+                                        const circleContainer = paneBox.querySelector('.circlecontainer');
+                                        const circle = paneBox.querySelector('.circle-container');
+                                        if (circleContainer) circleContainer.style.display = 'none';
+                                        if (circle) circle.style.display = 'flex';
+                                    }
                                 } else {
                                     pane.classList.remove('active');
+                                    // Deselect the box in inactive tabs
+                                    if (paneBox) {
+                                        paneBox.classList.remove('selected');
+                                        const circleContainer = paneBox.querySelector('.circlecontainer');
+                                        const circle = paneBox.querySelector('.circle-container');
+                                        if (circleContainer) circleContainer.style.display = 'flex';
+                                        if (circle) circle.style.display = 'none';
+                                    }
                                 }
                             });
                         });
