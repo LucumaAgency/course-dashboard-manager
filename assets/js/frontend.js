@@ -63,6 +63,15 @@ window.selectBox = function(element, boxType, courseId) {
         
         // Store selected date
         $container.data('selected-date', $btn.data('date'));
+        
+        // Store STM Course ID if available (for enroll courses)
+        const stmCourseId = $btn.data('stm-course-id');
+        if (stmCourseId) {
+            $container.data('stm-course-id', stmCourseId);
+            // Update the add to cart button with the STM Course product ID
+            $container.find('.add-to-cart-button').attr('data-product-id', stmCourseId);
+            console.log('[CBM] Updated product ID to STM Course:', stmCourseId);
+        }
     });
 
     // Add to cart handler

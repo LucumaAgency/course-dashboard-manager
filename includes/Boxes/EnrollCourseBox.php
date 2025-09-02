@@ -107,12 +107,16 @@ class EnrollCourseBox extends AbstractBox {
                     }
                 }
                 
-                // Add data attributes for button text and sold out status
+                // Get STM Course ID for this date if available
+                $stm_course_id = isset($date_info['stm_course_id']) ? $date_info['stm_course_id'] : '';
+                
+                // Add data attributes for button text, STM course, and sold out status
                 $dates_html .= sprintf(
-                    '<button class="date-btn%s" data-date="%s" data-button-text="%s" %s>%s%s</button>',
+                    '<button class="date-btn%s" data-date="%s" data-button-text="%s" data-stm-course-id="%s" %s>%s%s</button>',
                     $is_sold_out ? ' sold-out' : '',
                     esc_attr($date),
                     esc_attr($button_text),
+                    esc_attr($stm_course_id),
                     $is_sold_out ? 'disabled' : '',
                     esc_html($date),  // Display the text exactly as entered
                     $is_sold_out ? ' (Sold Out)' : ($available <= 5 ? ' (' . $available . ' left)' : '')

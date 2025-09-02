@@ -764,15 +764,16 @@ function course_box_tables_page() {
                     // Build header based on box state
                     let headerHTML = '<tr>';
                     if (boxState === 'enroll-course') {
-                        headerHTML += '<th style="width: 150px;">Date</th>';
-                        headerHTML += '<th style="width: 220px;">Product</th>';
-                        headerHTML += '<th style="width: 100px;">Reg. Price</th>';
-                        headerHTML += '<th style="width: 100px;">Sale Price</th>';
-                        headerHTML += '<th style="width: 80px;">Seats</th>';
-                        headerHTML += '<th style="width: 60px;">Sold</th>';
-                        headerHTML += '<th style="width: 80px;">Avail.</th>';
-                        headerHTML += '<th style="width: 150px;">Button Text</th>';
-                        headerHTML += '<th style="width: 120px;">Actions</th>';
+                        headerHTML += '<th style="width: 100px;">Date</th>';
+                        headerHTML += '<th style="width: 150px;">Product</th>';
+                        headerHTML += '<th style="width: 150px;">STM Course</th>';
+                        headerHTML += '<th style="width: 80px;">Reg. Price</th>';
+                        headerHTML += '<th style="width: 80px;">Sale Price</th>';
+                        headerHTML += '<th style="width: 60px;">Seats</th>';
+                        headerHTML += '<th style="width: 50px;">Sold</th>';
+                        headerHTML += '<th style="width: 60px;">Avail.</th>';
+                        headerHTML += '<th style="width: 120px;">Button Text</th>';
+                        headerHTML += '<th style="width: 100px;">Actions</th>';
                     } else if (boxState === 'buy-course') {
                         headerHTML += '<th style="width: 200px;">Product</th>';
                         headerHTML += '<th style="width: 200px;">STM Course</th>';
@@ -812,15 +813,16 @@ function course_box_tables_page() {
                     } else if (boxState === 'enroll-buy') {
                         // For enroll-buy, we'll have separate headers for each table
                         // Enroll table header (similar to enroll-course)
-                        headerHTML += '<th style="width: 120px;">Date</th>';
-                        headerHTML += '<th style="width: 180px;">Product</th>';
-                        headerHTML += '<th style="width: 80px;">Reg. Price</th>';
-                        headerHTML += '<th style="width: 80px;">Sale Price</th>';
-                        headerHTML += '<th style="width: 60px;">Seats</th>';
-                        headerHTML += '<th style="width: 50px;">Sold</th>';
-                        headerHTML += '<th style="width: 60px;">Avail.</th>';
-                        headerHTML += '<th style="width: 120px;">Button Text</th>';
-                        headerHTML += '<th style="width: 21%;">Actions</th>';
+                        headerHTML += '<th style="width: 100px;">Date</th>';
+                        headerHTML += '<th style="width: 140px;">Product</th>';
+                        headerHTML += '<th style="width: 140px;">STM Course</th>';
+                        headerHTML += '<th style="width: 70px;">Reg. Price</th>';
+                        headerHTML += '<th style="width: 70px;">Sale Price</th>';
+                        headerHTML += '<th style="width: 50px;">Seats</th>';
+                        headerHTML += '<th style="width: 40px;">Sold</th>';
+                        headerHTML += '<th style="width: 50px;">Avail.</th>';
+                        headerHTML += '<th style="width: 100px;">Button Text</th>';
+                        headerHTML += '<th style="width: 15%;">Actions</th>';
                     }
                     headerHTML += '</tr>';
                     tableHeader.innerHTML = headerHTML;
@@ -890,8 +892,12 @@ function course_box_tables_page() {
                                       (boxState === 'waitlist' ? 'Join Waitlist' : 'Enroll Now');
                     
                     if (boxState === 'enroll-course') {
+                        // Get STM Course ID for this specific date
+                        const stmCourseId = dateInfo && dateInfo.date.stm_course_id ? dateInfo.date.stm_course_id : course.related_stm_course_id || '';
+                        
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
+                        rowHTML += `<td>${buildSTMCourseSelect(stmCourseId, course.id)}</td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
@@ -964,6 +970,11 @@ function course_box_tables_page() {
                         const enrollProductId = course.enroll_product_id || course.product_id;
                         console.log('[CBM Debug] Enroll product ID for row:', enrollProductId);
                         rowHTML += `<td>${buildProductSelect(enrollProductId, 'enroll-product-select')}</td>`;
+                        
+                        // Add STM Course selector for enroll-buy (enroll section)
+                        const stmCourseId = dateInfo && dateInfo.date && dateInfo.date.stm_course_id ? dateInfo.date.stm_course_id : course.related_stm_course_id || '';
+                        rowHTML += `<td>${buildSTMCourseSelect(stmCourseId, course.id)}</td>`;
+                        
                         rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(enrollProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(enrollProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         
@@ -1267,6 +1278,15 @@ function course_box_tables_page() {
                         if (!data.date) {
                             alert('Please enter a date');
                             return;
+                        }
+                    }
+                    
+                    // Add STM Course ID for enroll-course and enroll-buy
+                    if (boxState === 'enroll-course' || boxState === 'enroll-buy') {
+                        const stmCourseSelect = row.querySelector('.stm-course-select');
+                        if (stmCourseSelect) {
+                            data.stm_course_id = stmCourseSelect.value || '';
+                            console.log('[CBM Debug] STM Course ID:', data.stm_course_id);
                         }
                     }
                     
@@ -3867,6 +3887,7 @@ function save_table_row_data() {
     $box_state = sanitize_text_field($_POST['box_state']);
     $launch_date = isset($_POST['launch_date']) ? sanitize_text_field($_POST['launch_date']) : '';
     $related_stm_course_id = isset($_POST['related_stm_course_id']) ? intval($_POST['related_stm_course_id']) : 0;
+    $stm_course_id = isset($_POST['stm_course_id']) ? intval($_POST['stm_course_id']) : 0;
     
     // Date is optional for buy-course state
     $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
@@ -3977,20 +3998,34 @@ function save_table_row_data() {
         // Update or add the date entry
         if ($date_index === 'new') {
             // Adding a new date
-            $existing_dates[] = [
+            $date_entry = [
                 'date' => $date,
                 'stock' => $stock,
                 'button_text' => $button_text
             ];
+            
+            // Add STM Course ID if provided
+            if ($stm_course_id && ($box_state === 'enroll-course' || $box_state === 'enroll-buy')) {
+                $date_entry['stm_course_id'] = $stm_course_id;
+            }
+            
+            $existing_dates[] = $date_entry;
         } else {
             // Updating existing date
             $index = intval($date_index);
             if (isset($existing_dates[$index])) {
-                $existing_dates[$index] = [
+                $date_entry = [
                     'date' => $date,
                     'stock' => $stock,
                     'button_text' => $button_text
                 ];
+                
+                // Add STM Course ID if provided
+                if ($stm_course_id && ($box_state === 'enroll-course' || $box_state === 'enroll-buy')) {
+                    $date_entry['stm_course_id'] = $stm_course_id;
+                }
+                
+                $existing_dates[$index] = $date_entry;
             }
         }
         
