@@ -7,7 +7,7 @@
 
 namespace CourseBoxManager\Frontend;
 
-use CourseBoxManager\Boxes\BoxFactory;
+use CourseBoxManager\BoxFactory;
 
 // Register shortcode
 add_shortcode('course_box_manager', __NAMESPACE__ . '\\course_box_manager_shortcode');
@@ -26,7 +26,7 @@ function course_box_manager_shortcode($atts) {
     enqueue_frontend_assets();
     
     // Get the box instance and render
-    $box = BoxFactory::create($course_id);
+    $box = BoxFactory::get_box($course_id);
     
     if ($box) {
         return $box->render();
@@ -87,15 +87,31 @@ add_action('wp_footer', __NAMESPACE__ . '\\prerender_popup_content');
 function prerender_popup_content() {
     // Get current post ID
     $course_id = get_the_ID();
+    
+    // Always add debug info
+    echo '<!-- [CBM Debug] Current post ID: ' . $course_id . ' -->';
+    echo '<!-- [CBM Debug] Post type: ' . get_post_type($course_id) . ' -->';
+    
     if (!$course_id) {
         echo '<!-- [CBM] No post ID available for pre-rendering -->';
         return;
     }
     
     // Try to get the box for this post/page
-    $box = BoxFactory::create($course_id);
+    $box = BoxFactory::get_box($course_id);
     if (!$box) {
         echo '<!-- [CBM] No box configured for post ID: ' . $course_id . ' -->';
+        // Still try to render an empty popup structure for testing
+        ?>
+        <div id="cbm-popup-overlay" class="cbm-popup-overlay" style="display:none;" data-prerendered="true" data-debug="no-box">
+            <div id="cbm-popup-container" class="cbm-popup-container">
+                <button id="cbm-popup-close" class="cbm-popup-close">&times;</button>
+                <div id="cbm-popup-content" class="cbm-popup-content">
+                    <!-- Box will be loaded via AJAX -->
+                </div>
+            </div>
+        </div>
+        <?php
         return;
     }
     
