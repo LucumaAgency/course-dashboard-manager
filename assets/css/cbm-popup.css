@@ -110,7 +110,6 @@
 
 .cbm-tabs-header {
     display: flex;
-    border-bottom: 2px solid #e0e0e0;
     margin-bottom: 20px;
 }
 
@@ -119,33 +118,24 @@
     padding: 12px 20px;
     background: transparent;
     border: none;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
     font-size: 16px;
     font-weight: 500;
-    color: #666;
+    color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
 }
 
 .cbm-tab-btn:hover {
-    color: #333;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .cbm-tab-btn.active {
-    color: #F22EBE;
+    color: #DE00A5 !important;
     font-weight: 600;
-    border-bottom-color: transparent !important;
     background: transparent !important;
-}
-
-.cbm-tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: transparent !important;
+    border-bottom-color: #DE00A5 !important;
 }
 
 .cbm-tabs-content {
