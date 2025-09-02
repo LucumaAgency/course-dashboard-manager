@@ -118,7 +118,6 @@
     padding: 12px 20px;
     background: transparent;
     border: none;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
     font-size: 16px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.7);
@@ -128,14 +127,23 @@
 }
 
 .cbm-tab-btn:hover {
+    background: transparent;
     color: rgba(255, 255, 255, 0.9);
+    border-color: transparent;
+}
+
+.cbm-tab-btn:active,
+.cbm-tab-btn:focus {
+    background: transparent;
+    border-color: transparent;
+    outline: none;
 }
 
 .cbm-tab-btn.active {
     color: #DE00A5 !important;
     font-weight: 600;
     background: transparent !important;
-    border-bottom-color: #DE00A5 !important;
+    border-color: transparent !important;
 }
 
 .cbm-tabs-content {

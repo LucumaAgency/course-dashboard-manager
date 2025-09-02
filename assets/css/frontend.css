@@ -360,7 +360,6 @@
     padding: 12px 16px;
     background: transparent;
     border: none;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
     font-size: 16px;
     transition: all 0.3s;
@@ -369,14 +368,23 @@
 }
 
 .cbm-tab-btn:hover {
+    background: transparent;
     color: rgba(255, 255, 255, 0.9);
+    border-color: transparent;
+}
+
+.cbm-tab-btn:active,
+.cbm-tab-btn:focus {
+    background: transparent;
+    border-color: transparent;
+    outline: none;
 }
 
 .cbm-tab-btn.active {
     background: transparent !important;
     color: #DE00A5 !important;
     font-weight: bold;
-    border-bottom-color: #DE00A5;
+    border-color: transparent !important;
 }
 
 .cbm-tab-pane {

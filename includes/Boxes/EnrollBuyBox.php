@@ -368,7 +368,6 @@ class EnrollBuyBox extends AbstractBox {
                 padding: 12px 16px;
                 background: transparent !important;
                 border: none;
-                border-bottom: 2px solid rgba(255, 255, 255, 0.2);
                 cursor: pointer;
                 font-size: 16px;
                 transition: all 0.3s;
@@ -376,13 +375,22 @@ class EnrollBuyBox extends AbstractBox {
             }
             
             .enroll-buy-combo .cbm-tab-btn:hover {
+                background: transparent !important;
                 color: rgba(255, 255, 255, 0.9);
+                border-color: transparent !important;
+            }
+            
+            .enroll-buy-combo .cbm-tab-btn:active,
+            .enroll-buy-combo .cbm-tab-btn:focus {
+                background: transparent !important;
+                border-color: transparent !important;
+                outline: none;
             }
             
             .enroll-buy-combo .cbm-tab-btn.active {
                 background: transparent !important;
                 color: #DE00A5 !important;
-                border-bottom-color: #DE00A5 !important;
+                border-color: transparent !important;
                 font-weight: bold;
             }
             
