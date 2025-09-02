@@ -85,21 +85,21 @@ function selectable_boxes_shortcode($atts) {
 add_action('wp_footer', __NAMESPACE__ . '\\prerender_popup_content');
 
 function prerender_popup_content() {
-    // Only pre-render on course pages
-    if (!is_singular('course')) {
-        return;
-    }
-    
+    // Get current post ID
     $course_id = get_the_ID();
     if (!$course_id) {
+        echo '<!-- [CBM] No post ID available for pre-rendering -->';
         return;
     }
     
-    // Get the box to render
+    // Try to get the box for this post/page
     $box = BoxFactory::create($course_id);
     if (!$box) {
+        echo '<!-- [CBM] No box configured for post ID: ' . $course_id . ' -->';
         return;
     }
+    
+    echo '<!-- [CBM] Pre-rendering popup for post ID: ' . $course_id . ' -->';
     
     // Start output buffering for box content
     ob_start();
