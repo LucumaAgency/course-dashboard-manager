@@ -309,13 +309,18 @@ body.cbm-popup-open {
 .cbm-popup-container .box {
     margin: 0;
     box-shadow: none;
-    border: 2px solid #9B9FAA7A;
+    padding: 15px;
+}
+
+.cbm-popup-container .box:not(.selected) {
+    background: #0E0D0F !important;
+    border: 2px solid rgba(155, 159, 170, 0.24) !important;
 }
 
 .cbm-popup-container .box.selected {
     background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
-    border: none;
-    padding: 16px 12px;
+    border: 2px solid transparent;
+    padding: 15px;
 }
 
 /* Ensure buttons are visible in popup when box is selected */
@@ -378,8 +383,8 @@ body.cbm-popup-open {
 }
 
 .cbm-popup-container .box.selected {
-    border-color: #0073aa;
-    background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%);
+    background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
+    border: 2px solid transparent;
 }
 
 /* Date buttons in popup */

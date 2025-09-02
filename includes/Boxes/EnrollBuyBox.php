@@ -176,6 +176,7 @@ class EnrollBuyBox extends AbstractBox {
                         if (!box) return;
                         
                         if (isSelected) {
+                            // Active state: show filled circle (circle-container)
                             box.classList.add('selected');
                             box.classList.remove('no-button');
                             const circleContainer = box.querySelector('.circlecontainer');
@@ -183,6 +184,7 @@ class EnrollBuyBox extends AbstractBox {
                             if (circleContainer) circleContainer.style.display = 'none';
                             if (circle) circle.style.display = 'flex';
                         } else {
+                            // Inactive state: show empty circle (circlecontainer)
                             box.classList.remove('selected');
                             box.classList.remove('no-button');
                             const circleContainer = box.querySelector('.circlecontainer');
@@ -280,15 +282,15 @@ class EnrollBuyBox extends AbstractBox {
             display: flex !important;
         }
         
-        /* Initial state: Buy box selected, Enroll box unselected */
-        .enroll-buy-combo .buy-box-wrapper .box,
-        .enroll-buy-combo [data-tab="buy"] .box {
-            /* Will be overridden by JS but provides default */
+        /* Box states in enroll-buy combo */
+        .enroll-buy-combo .box.selected {
+            background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
+            border: 2px solid transparent !important;
         }
         
-        .enroll-buy-combo .enroll-box-wrapper .box,
-        .enroll-buy-combo [data-tab="enroll"]:not(.active) .box {
-            opacity: 0.7;
+        .enroll-buy-combo .box:not(.selected) {
+            background: #0E0D0F !important;
+            border: 2px solid rgba(155, 159, 170, 0.24) !important;
         }
         
         /* Correct radio button display based on selection state */
