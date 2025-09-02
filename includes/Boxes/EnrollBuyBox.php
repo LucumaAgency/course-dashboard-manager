@@ -159,32 +159,44 @@ class EnrollBuyBox extends AbstractBox {
             
             <script>
             // Tab switching logic and box selection behavior
-            (function() {
+            document.addEventListener('DOMContentLoaded', function() {
                 const container = document.querySelector('.enroll-buy-combo[data-course-id="<?php echo esc_js($this->course_id); ?>"]');
                 if (container) {
                     // Setup box selection behavior
                     const boxes = container.querySelectorAll('.box');
-                    const buyBox = container.querySelector('.buy-box-wrapper .box, [data-tab="buy"] .box');
-                    const enrollBox = container.querySelector('.enroll-box-wrapper .box, [data-tab="enroll"] .box');
+                    
+                    // More specific selectors for both desktop and mobile views
+                    const buyBoxDesktop = container.querySelector('.buy-box-wrapper .box');
+                    const enrollBoxDesktop = container.querySelector('.enroll-box-wrapper .box');
+                    const buyBoxMobile = container.querySelector('[data-tab="buy"] .box');
+                    const enrollBoxMobile = container.querySelector('[data-tab="enroll"] .box');
+                    
+                    // Function to set box state
+                    function setBoxState(box, isSelected) {
+                        if (!box) return;
+                        
+                        if (isSelected) {
+                            box.classList.add('selected');
+                            box.classList.remove('no-button');
+                            const circleContainer = box.querySelector('.circlecontainer');
+                            const circle = box.querySelector('.circle-container');
+                            if (circleContainer) circleContainer.style.display = 'none';
+                            if (circle) circle.style.display = 'flex';
+                        } else {
+                            box.classList.remove('selected');
+                            box.classList.remove('no-button');
+                            const circleContainer = box.querySelector('.circlecontainer');
+                            const circle = box.querySelector('.circle-container');
+                            if (circleContainer) circleContainer.style.display = 'flex';
+                            if (circle) circle.style.display = 'none';
+                        }
+                    }
                     
                     // Set initial state: Buy box selected, Enroll box unselected
-                    if (buyBox) {
-                        buyBox.classList.add('selected');
-                        buyBox.classList.remove('no-button');
-                        const buyCircleContainer = buyBox.querySelector('.circlecontainer');
-                        const buyCircle = buyBox.querySelector('.circle-container');
-                        if (buyCircleContainer) buyCircleContainer.style.display = 'none';
-                        if (buyCircle) buyCircle.style.display = 'flex';
-                    }
-                    
-                    if (enrollBox) {
-                        enrollBox.classList.remove('selected');
-                        enrollBox.classList.remove('no-button');
-                        const enrollCircleContainer = enrollBox.querySelector('.circlecontainer');
-                        const enrollCircle = enrollBox.querySelector('.circle-container');
-                        if (enrollCircleContainer) enrollCircleContainer.style.display = 'flex';
-                        if (enrollCircle) enrollCircle.style.display = 'none';
-                    }
+                    setBoxState(buyBoxDesktop, true);
+                    setBoxState(buyBoxMobile, true);
+                    setBoxState(enrollBoxDesktop, false);
+                    setBoxState(enrollBoxMobile, false);
                     
                     // Add click handlers for box selection
                     boxes.forEach(box => {
@@ -253,7 +265,7 @@ class EnrollBuyBox extends AbstractBox {
                         });
                     });
                 }
-            })();
+            });
             </script>
             
         </div>
@@ -268,13 +280,32 @@ class EnrollBuyBox extends AbstractBox {
             display: flex !important;
         }
         
-        /* Ensure boxes in combo show their radio buttons properly */
+        /* Initial state: Buy box selected, Enroll box unselected */
+        .enroll-buy-combo .buy-box-wrapper .box,
+        .enroll-buy-combo [data-tab="buy"] .box {
+            /* Will be overridden by JS but provides default */
+        }
+        
+        .enroll-buy-combo .enroll-box-wrapper .box,
+        .enroll-buy-combo [data-tab="enroll"]:not(.active) .box {
+            opacity: 0.7;
+        }
+        
+        /* Correct radio button display based on selection state */
         .enroll-buy-combo .box.selected .circlecontainer {
+            display: none !important;
+        }
+        
+        .enroll-buy-combo .box.selected .circle-container {
+            display: flex !important;
+        }
+        
+        .enroll-buy-combo .box:not(.selected) .circlecontainer {
             display: flex !important;
         }
         
         .enroll-buy-combo .box:not(.selected) .circle-container {
-            display: flex !important;
+            display: none !important;
         }
         
         /* Mobile only elements */
