@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.6.5
+ * Version: 1.8.0
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.6.5');
+define('CBM_VERSION', '1.8.0');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -4621,5 +4621,18 @@ function sync_course_instructors($post_id) {
             update_post_meta($instructor_id, 'instructor_courses', $courses);
         }
     }
+}
+
+// Initialize Export/Import functionality
+if (is_admin()) {
+    add_action('init', function() {
+        // Load Export/Import classes if they exist
+        if (file_exists(CBM_PLUGIN_DIR . 'includes/ExportImport/CourseExporter.php')) {
+            require_once CBM_PLUGIN_DIR . 'includes/ExportImport/CourseExporter.php';
+        }
+        if (file_exists(CBM_PLUGIN_DIR . 'includes/ExportImport/CourseImporter.php')) {
+            require_once CBM_PLUGIN_DIR . 'includes/ExportImport/CourseImporter.php';
+        }
+    });
 }
 ?>
