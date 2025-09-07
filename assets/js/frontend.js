@@ -98,7 +98,11 @@ window.selectBox = function(element, boxType, courseId) {
         // Add loading state
         $button.addClass('loading');
         const originalText = $button.find('.button-text').text();
-        $button.find('.button-text').text('Adding...');
+        
+        // Add spinner if it doesn't exist
+        if (!$button.find('.loading-spinner').length) {
+            $button.append('<span class="loading-spinner"></span>');
+        }
         
         // Check if cbm_ajax is available (should always be available now)
         if (typeof cbm_ajax === 'undefined' || !cbm_ajax.ajax_url) {
@@ -146,7 +150,10 @@ window.selectBox = function(element, boxType, courseId) {
                 console.log('Cart response:', response);
                 
                 if (response.success) {
-                    // Update button
+                    // Remove loading state immediately
+                    $button.removeClass('loading');
+                    
+                    // Update button text briefly to show success
                     $button.find('.button-text').text('Added!');
                     
                     // Check if FunnelKit Cart is active
@@ -173,17 +180,16 @@ window.selectBox = function(element, boxType, courseId) {
                         }
                     }
                     
-                    // Reset button after delay
+                    // Reset button text after delay (loading already removed)
                     setTimeout(function() {
-                        $button.removeClass('loading');
                         $button.find('.button-text').text(originalText);
-                    }, 2000);
+                    }, 1500);
                     
                 } else {
                     // Error handling
-                    alert('Error adding to cart. Please try again.');
                     $button.removeClass('loading');
                     $button.find('.button-text').text(originalText);
+                    alert('Error adding to cart. Please try again.');
                     
                     if (response.product_url) {
                         window.location.href = response.product_url;
@@ -195,6 +201,10 @@ window.selectBox = function(element, boxType, courseId) {
                 console.error('[CBM] Response status:', xhr.status);
                 console.error('[CBM] Response text:', xhr.responseText ? xhr.responseText.substring(0, 500) : 'empty');
                 
+                // Remove loading state
+                $button.removeClass('loading');
+                $button.find('.button-text').text(originalText);
+                
                 // Check if response is HTML instead of JSON
                 if (xhr.responseText && xhr.responseText.indexOf('<!DOCTYPE') !== -1) {
                     console.error('[CBM] Received HTML instead of JSON - AJAX endpoint not found');
@@ -202,9 +212,6 @@ window.selectBox = function(element, boxType, courseId) {
                 } else {
                     alert('Error adding to cart. Please try again.');
                 }
-                
-                $button.removeClass('loading');
-                $button.find('.button-text').text(originalText);
             }
         });
     });

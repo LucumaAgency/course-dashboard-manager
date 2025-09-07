@@ -118,7 +118,6 @@ abstract class AbstractBox {
         return sprintf(
             '<button class="add-to-cart-button" data-product-id="%s">
                 <span class="button-text">%s</span>
-                <span class="loader" style="display: none;"></span>
             </button>',
             esc_attr($this->course_product_id),
             esc_html($text)
