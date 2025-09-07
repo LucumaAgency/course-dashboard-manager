@@ -289,6 +289,14 @@
 /* Loader - deprecated, removed to avoid duplicate spinners */
 /* .loader class removed - use .loading-spinner instead */
 
+/* Hide WooCommerce "View cart" link that appears after adding to cart */
+.add-to-cart-button + a.added_to_cart,
+.add-to-cart-button ~ a.added_to_cart,
+.box a.added_to_cart,
+.course-box a.added_to_cart {
+    display: none !important;
+}
+
 /* Sold out box */
 .soldout-header {
     background: #ff3e3e;

@@ -157,6 +157,9 @@ window.selectBox = function(element, boxType, courseId) {
                     // Update button text briefly to show success
                     $button.find('.button-text').text('Added!');
                     
+                    // Mark button to prevent WooCommerce from adding "View cart" link
+                    $button.addClass('cbm-processed');
+                    
                     // Update cart fragments first
                     if (response.fragments) {
                         $.each(response.fragments, function(key, value) {
@@ -184,9 +187,15 @@ window.selectBox = function(element, boxType, courseId) {
                         }, 100);
                     }
                     
-                    // Reset button text after delay
+                    // Reset button text after delay and remove any "View cart" links
                     setTimeout(function() {
+                        // Remove any "View cart" link that WooCommerce might have added
+                        $button.siblings('a.added_to_cart').remove();
+                        $button.parent().find('a.added_to_cart').remove();
+                        
+                        // Reset button text
                         $button.find('.button-text').text(originalText);
+                        $button.removeClass('cbm-processed');
                     }, 1500);
                     
                 } else if (response.error) {
@@ -254,6 +263,14 @@ window.selectBox = function(element, boxType, courseId) {
     // Initialize on page load
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
+        
+        // Remove any "View cart" links that appear
+        $(document).on('DOMNodeInserted', function(e) {
+            if ($(e.target).hasClass('added_to_cart') || $(e.target).find('.added_to_cart').length > 0) {
+                $('.add-to-cart-button').siblings('a.added_to_cart').remove();
+                $('.add-to-cart-button').parent().find('a.added_to_cart').remove();
+            }
+        });
         
         // Auto-select first available date if only one option
         $('.box').each(function() {
