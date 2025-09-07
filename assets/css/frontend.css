@@ -286,19 +286,8 @@
     transition: opacity 0.2s, visibility 0.2s;
 }
 
-/* Loader - deprecated, using .loading-spinner instead */
-.loader {
-    width: 8px;
-    height: 8px;
-    border: 2px solid transparent;
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
+/* Loader - deprecated, removed to avoid duplicate spinners */
+/* .loader class removed - use .loading-spinner instead */
 
 /* Sold out box */
 .soldout-header {
