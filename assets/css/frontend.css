@@ -297,6 +297,19 @@
     display: none !important;
 }
 
+/* Ensure only white spinner is visible and hide any other loaders */
+.add-to-cart-button .loader,
+.add-to-cart-button::before,
+.add-to-cart-button::after {
+    display: none !important;
+}
+
+/* Force our spinner to be white only */
+.add-to-cart-button .loading-spinner {
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    border-top-color: #fff !important;
+}
+
 /* Sold out box */
 .soldout-header {
     background: #ff3e3e;
