@@ -84,6 +84,78 @@ function cbm_stm_diagnostic_notice() {
  * Include the main tables page content
  */
 function course_box_tables_page() {
-    // This will be moved here from the main file
+    // Handle form submissions before outputting any content
+    handle_course_group_actions();
+    
+    // Include the tables page content
     require_once CBM_PLUGIN_DIR . 'admin/tables-page.php';
+}
+
+/**
+ * Handle course group form submissions and actions
+ */
+function handle_course_group_actions() {
+    // Handle create course group
+    if (isset($_POST['action']) && $_POST['action'] === 'create_course_group') {
+        // Verify nonce
+        if (!isset($_POST['course_group_nonce']) || !wp_verify_nonce($_POST['course_group_nonce'], 'create_course_group')) {
+            wp_die('Security check failed');
+        }
+        
+        // Check permissions
+        if (!current_user_can('edit_posts')) {
+            wp_die('You do not have permission to create course groups');
+        }
+        
+        // Get and sanitize input
+        $group_name = sanitize_text_field($_POST['group_name']);
+        $group_description = sanitize_textarea_field($_POST['group_description'] ?? '');
+        
+        if (empty($group_name)) {
+            wp_die('Group name is required');
+        }
+        
+        // Create the term
+        $result = wp_insert_term(
+            $group_name,
+            'course_group',
+            [
+                'description' => $group_description,
+            ]
+        );
+        
+        if (is_wp_error($result)) {
+            wp_die('Error creating group: ' . $result->get_error_message());
+        }
+        
+        // Redirect back to tables page
+        wp_redirect(admin_url('admin.php?page=course-box-tables&group_created=1'));
+        exit;
+    }
+    
+    // Handle delete course group
+    if (isset($_GET['action']) && $_GET['action'] === 'delete_group' && isset($_GET['group_id'])) {
+        $group_id = intval($_GET['group_id']);
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_GET['_wpnonce'] ?? '', 'delete_group_' . $group_id)) {
+            wp_die('Security check failed');
+        }
+        
+        // Check permissions
+        if (!current_user_can('edit_posts')) {
+            wp_die('You do not have permission to delete course groups');
+        }
+        
+        // Delete the term
+        $result = wp_delete_term($group_id, 'course_group');
+        
+        if (is_wp_error($result)) {
+            wp_die('Error deleting group: ' . $result->get_error_message());
+        }
+        
+        // Redirect back to tables page
+        wp_redirect(admin_url('admin.php?page=course-box-tables&group_deleted=1'));
+        exit;
+    }
 }
