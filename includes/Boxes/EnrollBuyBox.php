@@ -15,6 +15,10 @@ class EnrollBuyBox extends AbstractBox {
     private $buy_product_id;
     private $enroll_product_id;
     private $buy_price;
+    private $buy_regular_price;     // Added to fix deprecated warning
+    private $buy_sale_price;         // Added to fix deprecated warning
+    private $enroll_regular_price;   // Added to fix deprecated warning
+    private $enroll_sale_price;      // Added to fix deprecated warning
     private $enroll_in_stock;
     private $enroll_dates;
     

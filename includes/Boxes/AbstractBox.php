@@ -15,6 +15,7 @@ abstract class AbstractBox {
     protected $course_price;
     protected $enroll_price;
     protected $available_dates;
+    protected $available_dates_full;  // Added to fix deprecated warning
     protected $is_out_of_stock;
     protected $launch_date;
     protected $show_countdown;
