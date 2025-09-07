@@ -23,8 +23,9 @@ add_action('wp_ajax_delete_course', __NAMESPACE__ . '\\delete_course');
 add_action('wp_ajax_delete_table_row', __NAMESPACE__ . '\\delete_table_row');
 
 // Cart AJAX handlers
-add_action('wp_ajax_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
-add_action('wp_ajax_nopriv_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
+// Temporarily disabled to avoid conflicts with existing WooCommerce/FunnelKit handlers
+// add_action('wp_ajax_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
+// add_action('wp_ajax_nopriv_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
 
 /**
  * Add to cart AJAX handler
@@ -65,8 +66,38 @@ function cbm_ajax_add_to_cart() {
         if ($cart_item_key) {
             do_action('woocommerce_ajax_added_to_cart', $product_id);
             
-            // Get cart fragments
-            WC_AJAX::get_refreshed_fragments();
+            // Get mini cart HTML
+            ob_start();
+            woocommerce_mini_cart();
+            $mini_cart = ob_get_clean();
+            
+            // Get cart count
+            $cart_count = WC()->cart->get_cart_contents_count();
+            
+            // Check if FunnelKit Cart is active
+            $use_funnelkit = defined('FKCART_VERSION') || class_exists('FKCart') || class_exists('\\FKCart');
+            
+            // Prepare fragments
+            $fragments = apply_filters('woocommerce_add_to_cart_fragments', array(
+                'div.widget_shopping_cart_content' => '<div class="widget_shopping_cart_content">' . $mini_cart . '</div>',
+            ));
+            
+            // FunnelKit specific fragments if needed
+            if ($use_funnelkit) {
+                // Update FunnelKit cart count
+                $fragments['.fkcart-cart-count'] = '<span class="fkcart-cart-count">' . $cart_count . '</span>';
+                $fragments['.hfe-cart-count'] = '<span class="hfe-cart-count">' . $cart_count . '</span>';
+            }
+            
+            $data = array(
+                'success' => true,
+                'cart_hash' => WC()->cart->get_cart_hash(),
+                'cart_count' => $cart_count,
+                'fragments' => $fragments,
+                'use_funnelkit' => $use_funnelkit
+            );
+            
+            wp_send_json($data);
             
         } else {
             // Failed to add to cart
