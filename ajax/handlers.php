@@ -178,3 +178,141 @@ function assign_course_to_group() {
     
     wp_send_json_success();
 }
+
+/**
+ * Save group settings
+ */
+function save_group_settings() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    
+    $group_id = intval($_POST['group_id']);
+    $box_state = sanitize_text_field($_POST['box_state']);
+    $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+    
+    // Get all courses in the group
+    $courses_to_update = [];
+    if ($group_id) {
+        $courses = get_posts([
+            'post_type' => 'course',
+            'posts_per_page' => -1,
+            'tax_query' => [
+                [
+                    'taxonomy' => 'course_group',
+                    'field' => 'term_id',
+                    'terms' => $group_id,
+                ],
+            ],
+            'fields' => 'ids'
+        ]);
+        
+        if (!empty($courses)) {
+            $courses_to_update = $courses;
+        }
+    }
+    
+    // If we have a specific course_id, use that, otherwise use all courses in group
+    if ($course_id && !in_array($course_id, $courses_to_update)) {
+        $courses_to_update[] = $course_id;
+    }
+    
+    if (empty($courses_to_update)) {
+        wp_send_json_error('No courses found in group');
+        return;
+    }
+    
+    // Update all courses in the group
+    foreach ($courses_to_update as $course_id) {
+        // Update box state
+        update_post_meta($course_id, 'box_state', $box_state);
+    }
+    
+    // Use the first course for saving the main configuration
+    $course_id = $courses_to_update[0];
+    
+    if ($box_state === 'enroll-buy') {
+        // Save buy product configuration
+        if (isset($_POST['buy_product_id'])) {
+            update_post_meta($course_id, 'buy_product_id', intval($_POST['buy_product_id']));
+        }
+        
+        if (isset($_POST['buy_button_text'])) {
+            update_post_meta($course_id, 'buy_button_text', sanitize_text_field($_POST['buy_button_text']));
+        }
+        
+        // Update buy product prices if provided
+        if (isset($_POST['buy_product_id']) && $_POST['buy_product_id']) {
+            $buy_product_id = intval($_POST['buy_product_id']);
+            
+            if (isset($_POST['buy_regular_price']) && $_POST['buy_regular_price'] !== '') {
+                update_post_meta($buy_product_id, '_regular_price', sanitize_text_field($_POST['buy_regular_price']));
+            }
+            
+            if (isset($_POST['buy_sale_price']) && $_POST['buy_sale_price'] !== '') {
+                update_post_meta($buy_product_id, '_sale_price', sanitize_text_field($_POST['buy_sale_price']));
+                update_post_meta($buy_product_id, '_price', sanitize_text_field($_POST['buy_sale_price']));
+            } else if (isset($_POST['buy_regular_price'])) {
+                update_post_meta($buy_product_id, '_price', sanitize_text_field($_POST['buy_regular_price']));
+            }
+        }
+        
+        // Save enroll product configuration
+        if (isset($_POST['enroll_product_id'])) {
+            update_post_meta($course_id, 'enroll_product_id', intval($_POST['enroll_product_id']));
+        }
+        
+        // Save enroll dates
+        if (isset($_POST['enroll_dates'])) {
+            $enroll_dates = json_decode(stripslashes($_POST['enroll_dates']), true);
+            if (is_array($enroll_dates)) {
+                // Format dates for storage
+                $formatted_dates = [];
+                foreach ($enroll_dates as $date_info) {
+                    if (!empty($date_info['date'])) {
+                        $formatted_dates[] = [
+                            'date' => sanitize_text_field($date_info['date']),
+                            'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : 20,
+                            'button_text' => isset($date_info['button_text']) ? sanitize_text_field($date_info['button_text']) : 'Enroll Now'
+                        ];
+                    }
+                }
+                
+                // Save using ACF or post meta
+                if (function_exists('update_field')) {
+                    update_field('course_dates', $formatted_dates, $course_id);
+                } else {
+                    update_post_meta($course_id, 'course_dates', $formatted_dates);
+                }
+            }
+        }
+    } else {
+        // Handle other box states
+        if (isset($_POST['linked_product_id'])) {
+            update_post_meta($course_id, 'linked_product_id', intval($_POST['linked_product_id']));
+        }
+        
+        if (isset($_POST['dates'])) {
+            $dates = json_decode(stripslashes($_POST['dates']), true);
+            if (is_array($dates)) {
+                $formatted_dates = [];
+                foreach ($dates as $date_info) {
+                    if (!empty($date_info['date'])) {
+                        $formatted_dates[] = [
+                            'date' => sanitize_text_field($date_info['date']),
+                            'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : 20,
+                            'button_text' => isset($date_info['button_text']) ? sanitize_text_field($date_info['button_text']) : ''
+                        ];
+                    }
+                }
+                
+                // Save using ACF or post meta
+                if (function_exists('update_field')) {
+                    update_field('course_dates', $formatted_dates, $course_id);
+                } else {
+                    update_post_meta($course_id, 'course_dates', $formatted_dates);
+                }
+            }
+        }
+    }
+    
+    wp_send_json_success(['message' => 'Settings saved successfully']);
+}
