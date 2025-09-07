@@ -121,3 +121,60 @@ function delete_course_group() {
         wp_send_json_error($result->get_error_message());
     }
 }
+
+/**
+ * Assign course to group
+ */
+function assign_course_to_group() {
+    error_log('[CBM Debug] assign_course_to_group called');
+    error_log('[CBM Debug] POST data: ' . print_r($_POST, true));
+    
+    check_ajax_referer('course_box_nonce', 'nonce');
+    $course_id = intval($_POST['course_id']);
+    $group_id = intval($_POST['group_id']);
+    $instructors = isset($_POST['instructors']) ? json_decode(stripslashes($_POST['instructors']), true) : [];
+    
+    error_log('[CBM Debug] Course ID: ' . $course_id . ', Group ID: ' . $group_id);
+    
+    if (!$course_id) {
+        error_log('[CBM Debug] No course selected');
+        wp_send_json_error('No course selected.');
+    }
+    
+    // Clear existing group terms and set new one
+    wp_set_post_terms($course_id, [], 'course_group');
+    
+    if ($group_id > 0) {
+        $result = wp_set_post_terms($course_id, [$group_id], 'course_group');
+        error_log('[CBM Debug] wp_set_post_terms result: ' . print_r($result, true));
+        if (is_wp_error($result)) {
+            error_log('[CBM Debug] Error setting terms: ' . $result->get_error_message());
+            wp_send_json_error($result->get_error_message());
+        }
+    }
+    
+    // Update instructors for this course
+    if (!empty($instructors)) {
+        update_post_meta($course_id, 'course_instructors', $instructors);
+        \CourseBoxManager\cbm_update_field('course_instructors', $instructors, $course_id); // Update ACF field if exists
+        
+        // Update instructor meta - clear from all instructors first
+        $all_instructors = get_posts(['post_type' => 'instructor', 'posts_per_page' => -1, 'fields' => 'ids']);
+        foreach ($all_instructors as $instructor_id) {
+            $courses = get_post_meta($instructor_id, 'instructor_courses', true) ?: [];
+            $courses = array_filter($courses, function($id) use ($course_id) { return $id != $course_id; });
+            update_post_meta($instructor_id, 'instructor_courses', $courses);
+        }
+        
+        // Add course to selected instructors
+        foreach ($instructors as $instructor_id) {
+            $courses = get_post_meta($instructor_id, 'instructor_courses', true) ?: [];
+            if (!in_array($course_id, $courses)) {
+                $courses[] = $course_id;
+                update_post_meta($instructor_id, 'instructor_courses', $courses);
+            }
+        }
+    }
+    
+    wp_send_json_success();
+}
