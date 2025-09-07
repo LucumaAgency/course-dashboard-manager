@@ -39,6 +39,10 @@ abstract class AbstractBox {
         $this->enroll_price = \CourseBoxManager\cbm_get_field('enroll_price', $this->course_id, 1249.99);
         
         $available_dates_raw = \CourseBoxManager\cbm_get_field('course_dates', $this->course_id, []);
+        // Ensure we have an array before using array_column
+        if (!is_array($available_dates_raw)) {
+            $available_dates_raw = [];
+        }
         $this->available_dates = array_column($available_dates_raw, 'date');
         $this->available_dates_full = $available_dates_raw; // Keep full date info with stock and button_text
         
