@@ -50,7 +50,7 @@
     right: 15px;
     width: 30px;
     height: 30px;
-    background: transparent;
+    background: transparent !important;
     border: none;
     font-size: 28px;
     line-height: 1;
@@ -58,10 +58,24 @@
     color: #999;
     z-index: 100000;
     transition: color 0.3s ease;
+    outline: none !important;
 }
 
 .cbm-popup-close:hover {
     color: #fff;
+    background: transparent !important;
+}
+
+.cbm-popup-close:focus,
+.cbm-popup-close:active {
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.cbm-popup-close::before,
+.cbm-popup-close::after {
+    display: none !important;
 }
 
 /* Content wrapper */
