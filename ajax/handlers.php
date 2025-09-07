@@ -23,50 +23,63 @@ add_action('wp_ajax_delete_course', __NAMESPACE__ . '\\delete_course');
 add_action('wp_ajax_delete_table_row', __NAMESPACE__ . '\\delete_table_row');
 
 // Cart AJAX handlers
-// Commented out - using the handler in main file instead to avoid conflicts
-// add_action('wp_ajax_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
-// add_action('wp_ajax_nopriv_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
+add_action('wp_ajax_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
+add_action('wp_ajax_nopriv_woocommerce_add_to_cart', __NAMESPACE__ . '\\cbm_ajax_add_to_cart');
 
 /**
  * Add to cart AJAX handler
  */
 function cbm_ajax_add_to_cart() {
-    check_ajax_referer('woocommerce-add-to-cart', 'nonce');
+    // Verify nonce - handle both our custom nonce and WooCommerce nonce
+    $nonce_valid = false;
+    if (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'woocommerce-add-to-cart')) {
+        $nonce_valid = true;
+    } elseif (isset($_POST['security']) && wp_verify_nonce($_POST['security'], 'woocommerce-add-to-cart')) {
+        $nonce_valid = true;
+    }
+    
+    if (!$nonce_valid) {
+        wp_send_json_error('Invalid security token');
+        return;
+    }
     
     $product_id = apply_filters('woocommerce_add_to_cart_product_id', absint($_POST['product_id']));
     $quantity = empty($_POST['quantity']) ? 1 : wc_stock_amount($_POST['quantity']);
-    $variation_id = absint($_POST['variation_id']);
+    $variation_id = isset($_POST['variation_id']) ? absint($_POST['variation_id']) : 0;
     $passed_validation = apply_filters('woocommerce_add_to_cart_validation', true, $product_id, $quantity);
     $product_status = get_post_status($product_id);
     
-    if ($passed_validation && WC()->cart->add_to_cart($product_id, $quantity, $variation_id) && 'publish' === $product_status) {
-        do_action('woocommerce_ajax_added_to_cart', $product_id);
+    // Add custom cart item data for course date if provided
+    $cart_item_data = array();
+    if (!empty($_POST['course_date'])) {
+        $cart_item_data['course_date'] = sanitize_text_field($_POST['course_date']);
+    }
+    if (!empty($_POST['start_date'])) {
+        $cart_item_data['start_date'] = sanitize_text_field($_POST['start_date']);
+    }
+    
+    if ($passed_validation && 'publish' === $product_status) {
+        // Add to cart with custom data
+        $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, $variation_id, array(), $cart_item_data);
         
-        // Get mini cart HTML
-        ob_start();
-        woocommerce_mini_cart();
-        $mini_cart = ob_get_clean();
-        
-        // Get cart count
-        $cart_count = WC()->cart->get_cart_contents_count();
-        
-        // Check if FunnelKit Cart is active
-        $use_funnelkit = defined('FKCART_VERSION') || class_exists('FKCart');
-        
-        $data = array(
-            'success' => true,
-            'cart_hash' => WC()->cart->get_cart_hash(),
-            'cart_count' => $cart_count,
-            'fragments' => apply_filters('woocommerce_add_to_cart_fragments', array(
-                'div.widget_shopping_cart_content' => '<div class="widget_shopping_cart_content">' . $mini_cart . '</div>',
-            )),
-            'use_funnelkit' => $use_funnelkit
-        );
-        
-        wp_send_json($data);
+        if ($cart_item_key) {
+            do_action('woocommerce_ajax_added_to_cart', $product_id);
+            
+            // Get cart fragments
+            WC_AJAX::get_refreshed_fragments();
+            
+        } else {
+            // Failed to add to cart
+            $data = array(
+                'error' => true,
+                'product_url' => apply_filters('woocommerce_cart_redirect_after_error', get_permalink($product_id), $product_id)
+            );
+            wp_send_json($data);
+        }
     } else {
+        // Validation failed
         $data = array(
-            'success' => false,
+            'error' => true,
             'product_url' => apply_filters('woocommerce_cart_redirect_after_error', get_permalink($product_id), $product_id)
         );
         
