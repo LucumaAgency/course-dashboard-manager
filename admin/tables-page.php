@@ -11,7 +11,9 @@ if (!defined('ABSPATH')) {
 }
 
 // Note: This file is included from dashboard.php which is in the CourseBoxManager\Admin namespace
-// So we need to use global namespace for WordPress functions with \function course_box_tables_page() {
+// So we need to use global namespace for WordPress functions with \
+
+// Main function content (no function declaration needed - included inline)
     // Show success messages
     if (isset($_GET['group_created'])) {
         echo '<div class="notice notice-success is-dismissible"><p>Course group created successfully!</p></div>';
@@ -1469,8 +1471,3 @@ if (!defined('ABSPATH')) {
         </script>
         <?php endif; ?>
     </div>
-    <?php
-}
-
-// Dashboard page content
-function course_box_manager_page() {
