@@ -343,29 +343,40 @@ body.cbm-popup-open {
     background-color: #cc3071;
 }
 
-/* Date buttons in popup */
+/* Date options container in popup */
+.cbm-popup-container .date-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* Date buttons in popup - match desktop styles */
 .cbm-popup-container .date-btn {
-    display: block;
-    width: 100%;
-    margin-bottom: 8px;
-    padding: 10px;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    text-align: center;
-}
-
-.cbm-popup-container .date-btn:hover {
-    background: #e8e8e8;
-    border-color: #bbb;
-}
-
-.cbm-popup-container .date-btn.selected {
-    background: #F22EBE;
+    width: auto;
+    min-width: 68px;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 25px;
+    background-color: rgba(255, 255, 255, 0.08);
     color: white;
-    border-color: #F22EBE;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+    display: inline-block;
+    margin: 2px;
+}
+
+.cbm-popup-container .date-btn:hover:not(:disabled),
+.cbm-popup-container .date-btn.selected:not(:disabled) {
+    background-color: #cc3071;
+}
+
+.cbm-popup-container .date-btn.sold-out,
+.cbm-popup-container .date-btn:disabled {
+    background-color: #555;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 /* Box styles within popup */
@@ -397,27 +408,7 @@ body.cbm-popup-open {
     border: 2px solid transparent;
 }
 
-/* Date buttons in popup */
-.cbm-popup-container .date-btn {
-    padding: 8px 16px;
-    margin: 5px;
-    border: 1px solid #ddd;
-    background: #fff;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.cbm-popup-container .date-btn:hover {
-    border-color: #0073aa;
-    background: #f0f8ff;
-}
-
-.cbm-popup-container .date-btn.selected {
-    background: #0073aa;
-    color: #fff;
-    border-color: #0073aa;
-}
+/* Date button styles moved above to avoid duplication */
 
 /* Ensure trigger button is visible */
 .cbm-popup-trigger {
