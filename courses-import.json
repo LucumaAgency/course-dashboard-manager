@@ -1,0 +1,151 @@
+{
+  "courses": [
+    {
+      "title": "How to make Echo Hunter?",
+      "post_type": "course",
+      "post_status": "publish",
+      "meta": {
+        "box_state": "enroll-course",
+        "course_price": 949.99,
+        "enroll_price": 499.99,
+        "course_dates": [
+          {
+            "date": "July 27th @ 10am PST",
+            "stock": 0,
+            "button_text": "Sold Out"
+          },
+          {
+            "date": "Sept 8th @ 7pm PST",
+            "stock": 20,
+            "button_text": "Enroll"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Producer-Driven AI Filmmaking",
+      "post_type": "course",
+      "post_status": "publish",
+      "meta": {
+        "box_state": "enroll-course",
+        "course_price": 699.99,
+        "enroll_price": 499.99,
+        "course_dates": [
+          {
+            "date": "Sept 30th @ 6pm PST",
+            "stock": 20,
+            "button_text": "Enroll"
+          },
+          {
+            "date": "July 28 (Completed)",
+            "stock": 0,
+            "button_text": "Sold Out"
+          },
+          {
+            "date": "June 26 (Completed)",
+            "stock": 0,
+            "button_text": "Sold Out"
+          }
+        ]
+      }
+    },
+    {
+      "title": "How to train AI Models ?",
+      "post_type": "course",
+      "post_status": "publish",
+      "meta": {
+        "box_state": "enroll-course",
+        "course_price": 899.97,
+        "enroll_price": 579.97,
+        "course_dates": [
+          {
+            "date": "Sept 11th @ 9pm PST",
+            "stock": 20,
+            "button_text": "Enroll"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Beginner Course for Architects",
+      "post_type": "course",
+      "post_status": "publish",
+      "meta": {
+        "box_state": "enroll-course",
+        "course_price": 399.99,
+        "enroll_price": 249.99,
+        "course_dates": [
+          {
+            "date": "Oct 10, Saturday @ 11am PST",
+            "stock": 20,
+            "button_text": "Enroll"
+          }
+        ]
+      }
+    },
+    {
+      "title": "Secrets to Making R-Rated AI Films",
+      "post_type": "course",
+      "post_status": "publish",
+      "meta": {
+        "box_state": "enroll-course",
+        "course_price": 789.99,
+        "enroll_price": 579.97,
+        "course_dates": [
+          {
+            "date": "August 7 @ 7pm PST (Completed)",
+            "stock": 0,
+            "button_text": "Sold Out"
+          },
+          {
+            "date": "Oct 9 @ 9pm PST",
+            "stock": 20,
+            "button_text": "Enroll"
+          }
+        ]
+      }
+    },
+    {
+      "title": "AI Commercial Production Mastery",
+      "post_type": "course",
+      "post_status": "publish",
+      "meta": {
+        "box_state": "enroll-course",
+        "course_price": 899.99,
+        "enroll_price": 499.99,
+        "course_dates": [
+          {
+            "date": "August 3rd @ 11am EST (Completed)",
+            "stock": 0,
+            "button_text": "Sold Out"
+          },
+          {
+            "date": "July 10th @ 11am EST (Completed)",
+            "stock": 0,
+            "button_text": "Sold Out"
+          }
+        ]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "AI Courses",
+      "description": "All AI-related courses",
+      "courses": [
+        "How to make Echo Hunter?",
+        "Producer-Driven AI Filmmaking",
+        "How to train AI Models ?",
+        "Beginner Course for Architects",
+        "Secrets to Making R-Rated AI Films",
+        "AI Commercial Production Mastery"
+      ]
+    }
+  ],
+  "settings": {
+    "default_stock": 20,
+    "default_button_text": "Enroll",
+    "sold_out_text": "Sold Out",
+    "currency": "USD"
+  }
+}

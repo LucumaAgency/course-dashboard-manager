@@ -232,6 +232,7 @@ function save_group_settings() {
     $group_id = intval($_POST['group_id']);
     $box_state = sanitize_text_field($_POST['box_state']);
     $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+    $selling_page_id = isset($_POST['selling_page_id']) ? intval($_POST['selling_page_id']) : 0;
     
     // Get all courses in the group
     $courses_to_update = [];
@@ -268,6 +269,19 @@ function save_group_settings() {
     foreach ($courses_to_update as $course_id) {
         // Update box state
         update_post_meta($course_id, 'box_state', $box_state);
+        
+        // Update selling page flag - remove from all courses first
+        delete_post_meta($course_id, 'is_selling_page');
+    }
+    
+    // Set the selling page for the selected course
+    if ($selling_page_id > 0) {
+        update_post_meta($selling_page_id, 'is_selling_page', '1');
+        
+        // Make sure the selling page is in the group if not already
+        if (!in_array($selling_page_id, $courses_to_update)) {
+            wp_set_post_terms($selling_page_id, [$group_id], 'course_group');
+        }
     }
     
     // Use the first course for saving the main configuration
