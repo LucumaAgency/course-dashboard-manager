@@ -86,7 +86,7 @@ class EnrollBuyBox extends AbstractBox {
         }
         
         // Get enroll dates - these are stored as course_dates
-        $this->enroll_dates = \CourseBoxManager\cbm_get_field('course_dates', $this->course_id) ?: $this->available_dates_full;
+        $this->enroll_dates = \cbm_get_field('course_dates', $this->course_id) ?: $this->available_dates_full;
         error_log('[EnrollBuyBox] Enroll Dates: ' . print_r($this->enroll_dates, true));
         
         // Create instances of both boxes with custom configurations
