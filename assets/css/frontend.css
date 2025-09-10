@@ -201,7 +201,8 @@
 }
 
 .date-btn:hover:not(:disabled),
-.date-btn.selected:not(:disabled) {
+.date-btn.selected:not(:disabled),
+.date-btn:active:not(:disabled) {
     background-color: #cc3071;
 }
 
