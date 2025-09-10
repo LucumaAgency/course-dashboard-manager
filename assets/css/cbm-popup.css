@@ -3,7 +3,7 @@
  * Responsive popup with automatic tab conversion for mobile
  */
 
-/* Overlay */
+/* Overlay - Higher z-index than FunnelKit cart */
 .cbm-popup-overlay {
     position: fixed;
     top: 0;
@@ -11,12 +11,12 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-    z-index: 99998;
+    z-index: 999998 !important; /* Higher than FunnelKit which uses 999999 */
     display: none;
     animation: fadeIn 0.1s ease;
 }
 
-/* Container */
+/* Container - Ensure it's above FunnelKit */
 .cbm-popup-container {
     position: fixed;
     top: 50%;
@@ -32,10 +32,22 @@
     max-height: 90vh;
     overflow-y: auto;
     overflow-x: hidden;
-    z-index: 99999;
+    z-index: 999999 !important; /* Same as FunnelKit to ensure it's on top */
     animation: slideIn 0.15s ease;
     padding: 40px;
     box-sizing: border-box;
+}
+
+/* Hide FunnelKit cart when popup is open */
+body.cbm-popup-open .fkcart-panel,
+body.cbm-popup-open .fkcart-modal,
+body.cbm-popup-open .fkcart-drawer,
+body.cbm-popup-open .fkcart-slide-cart,
+body.cbm-popup-open .fkcart-float-icon,
+body.cbm-popup-open .fkcart-icon-wrap {
+    display: none !important;
+    visibility: hidden !important;
+    z-index: 1 !important;
 }
 
 /* ID selector for more specificity */
