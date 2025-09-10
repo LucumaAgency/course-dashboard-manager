@@ -297,27 +297,9 @@ class EnrollBuyBox extends AbstractBox {
             jQuery(document).ready(function($) {
                 console.log('[CBM] Initializing enroll-buy combo FunnelKit integration');
                 
-                // Wait for FunnelKit to be fully loaded
-                function waitForFunnelKit(callback) {
-                    var attempts = 0;
-                    var checkInterval = setInterval(function() {
-                        attempts++;
-                        if (typeof fkcart_show_cart === 'function' || 
-                            (window.FKCart && window.FKCart.show_cart) || 
-                            $('.fkcart-icon-wrap').length > 0) {
-                            clearInterval(checkInterval);
-                            console.log('[CBM] FunnelKit is ready after ' + attempts + ' attempts');
-                            callback();
-                        } else if (attempts > 20) { // Stop after 2 seconds
-                            clearInterval(checkInterval);
-                            console.log('[CBM] FunnelKit not detected after ' + attempts + ' attempts');
-                        }
-                    }, 100);
-                }
-                
-                // Initialize when FunnelKit is ready
-                waitForFunnelKit(function() {
-                    console.log('[CBM] FunnelKit is loaded, setting up enroll-buy handlers');
+                // Setup handlers immediately, don't wait for FunnelKit
+                function setupHandlers() {
+                    console.log('[CBM] Setting up enroll-buy cart handlers');
                     
                     // Override the add to cart success handler for enroll-buy combo
                     $(document.body).on('added_to_cart', function(e, fragments, cart_hash, $triggeredButton) {
@@ -374,30 +356,56 @@ class EnrollBuyBox extends AbstractBox {
                             setTimeout(showCart, 600);
                         }
                     });
-                });
-                
-                // Also add a global fallback for enroll-buy combo buttons
-                $(document).on('click', '.enroll-buy-combo .add-to-cart-button', function() {
-                    var $btn = $(this);
-                    // Mark button so we can track it
-                    $btn.addClass('enroll-buy-triggered');
                     
-                    // Set a timeout to check if cart should be shown
-                    setTimeout(function() {
-                        if ($btn.hasClass('enroll-buy-triggered') && !$btn.hasClass('loading')) {
-                            // Button finished loading, ensure cart is visible
-                            if ($('.fkcart-panel.active, .fkcart-modal.active, .fkcart-drawer.active').length === 0) {
-                                console.log('[CBM] Cart not visible after add to cart, forcing display');
-                                if (typeof fkcart_show_cart === 'function') {
-                                    fkcart_show_cart();
-                                } else if ($('.fkcart-icon-wrap').length > 0) {
-                                    $('.fkcart-icon-wrap').trigger('click');
+                    // Also add a global fallback for enroll-buy combo buttons
+                    $(document).on('click', '.enroll-buy-combo .add-to-cart-button', function() {
+                        var $btn = $(this);
+                        // Mark button so we can track it
+                        $btn.addClass('enroll-buy-triggered');
+                        
+                        // Set a timeout to check if cart should be shown
+                        setTimeout(function() {
+                            if ($btn.hasClass('enroll-buy-triggered') && !$btn.hasClass('loading')) {
+                                // Button finished loading, ensure cart is visible
+                                console.log('[CBM] Checking for cart visibility after add to cart');
+                                
+                                // Check for any FunnelKit cart elements
+                                var cartVisible = $('.fkcart-panel.active, .fkcart-modal.active, .fkcart-drawer.active, .fkcart-slide-cart.active').length > 0;
+                                
+                                if (!cartVisible) {
+                                    console.log('[CBM] Cart not visible, attempting to show it');
+                                    
+                                    // Try all methods to show cart
+                                    if (typeof fkcart_show_cart === 'function') {
+                                        console.log('[CBM] Calling fkcart_show_cart');
+                                        fkcart_show_cart();
+                                    } else if (window.FKCart && window.FKCart.show_cart) {
+                                        console.log('[CBM] Calling FKCart.show_cart');
+                                        window.FKCart.show_cart();
+                                    } else if ($('.fkcart-icon-wrap, .fkcart-float-icon').length > 0) {
+                                        console.log('[CBM] Clicking FunnelKit cart icon');
+                                        $('.fkcart-icon-wrap, .fkcart-float-icon').first().trigger('click');
+                                    } else {
+                                        console.log('[CBM] FunnelKit not available, trying events');
+                                        $(document.body).trigger('fkcart_show_cart');
+                                        $(document.body).trigger('fkcart_open');
+                                    }
                                 }
+                                $btn.removeClass('enroll-buy-triggered');
                             }
-                            $btn.removeClass('enroll-buy-triggered');
-                        }
-                    }, 1500);
-                });
+                        }, 1800);
+                    });
+                }
+                
+                // Setup handlers immediately
+                setupHandlers();
+                
+                // Also try to setup after a delay in case FunnelKit loads later
+                setTimeout(function() {
+                    if (typeof fkcart_show_cart === 'function' || window.FKCart) {
+                        console.log('[CBM] FunnelKit detected after delay, reinforcing handlers');
+                    }
+                }, 1000);
             });
             </script>
             

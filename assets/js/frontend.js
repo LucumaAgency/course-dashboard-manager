@@ -170,21 +170,59 @@ window.selectBox = function(element, boxType, courseId) {
                     // Trigger WooCommerce added_to_cart event
                     $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
                     
-                    // Check if FunnelKit Cart is active and trigger it
-                    if (response.use_funnelkit || cbm_ajax.is_funnelkit_active || typeof fkcart_show_cart === 'function' || typeof FKCart !== 'undefined') {
+                    // Check if FunnelKit Cart should be triggered
+                    // Always try to show cart for enroll-buy combo
+                    var isEnrollBuyCombo = $button.closest('.enroll-buy-combo').length > 0;
+                    
+                    if (isEnrollBuyCombo || response.use_funnelkit || cbm_ajax.is_funnelkit_active || typeof fkcart_show_cart === 'function' || typeof FKCart !== 'undefined') {
                         // Small delay to ensure cart is updated
                         setTimeout(function() {
+                            console.log('[CBM] Attempting to show FunnelKit cart', {
+                                isEnrollBuyCombo: isEnrollBuyCombo,
+                                hasFkcartFunction: typeof fkcart_show_cart === 'function',
+                                hasFKCart: typeof FKCart !== 'undefined',
+                                hasWindowFKCart: window.FKCart ? true : false
+                            });
+                            
                             if (typeof fkcart_show_cart === 'function') {
+                                console.log('[CBM] Using fkcart_show_cart()');
                                 fkcart_show_cart();
                             } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
+                                console.log('[CBM] Using FKCart.show_cart()');
                                 FKCart.show_cart();
                             } else if (window.FKCart && window.FKCart.show_cart) {
+                                console.log('[CBM] Using window.FKCart.show_cart()');
                                 window.FKCart.show_cart();
+                            } else if (window.wcffwc_show_cart && typeof window.wcffwc_show_cart === 'function') {
+                                console.log('[CBM] Using wcffwc_show_cart()');
+                                window.wcffwc_show_cart();
                             } else {
+                                console.log('[CBM] Trying FunnelKit events and icon click');
                                 // Try to trigger FunnelKit by event
                                 $(document.body).trigger('fkcart_show_cart');
+                                $(document.body).trigger('fkcart_open');
+                                $(document.body).trigger('wcffwc_show_cart');
+                                
+                                // Try clicking the cart icon
+                                var $cartIcon = $('.fkcart-icon-wrap, .fkcart-float-icon, .wcffwc-icon-wrap').first();
+                                if ($cartIcon.length > 0) {
+                                    console.log('[CBM] Found cart icon, clicking it');
+                                    $cartIcon.trigger('click');
+                                }
                             }
                         }, 100);
+                        
+                        // Try again after a longer delay for enroll-buy combo
+                        if (isEnrollBuyCombo) {
+                            setTimeout(function() {
+                                console.log('[CBM] Second attempt to show cart for enroll-buy combo');
+                                if (typeof fkcart_show_cart === 'function') {
+                                    fkcart_show_cart();
+                                } else if ($('.fkcart-icon-wrap, .fkcart-float-icon').length > 0) {
+                                    $('.fkcart-icon-wrap, .fkcart-float-icon').first().trigger('click');
+                                }
+                            }, 500);
+                        }
                     }
                     
                     // Reset button text after delay and remove any "View cart" links
