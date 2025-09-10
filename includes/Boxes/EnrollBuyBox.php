@@ -215,8 +215,13 @@ class EnrollBuyBox extends AbstractBox {
                     boxes.forEach(box => {
                         box.style.cursor = 'pointer';
                         box.addEventListener('click', function(e) {
-                            // Only process if click is on the box itself, not on buttons
-                            if (e.target.closest('.add-to-cart-button') || e.target.closest('.date-btn')) {
+                            // Don't change selection when clicking on interactive elements
+                            if (e.target.closest('.add-to-cart-button') || 
+                                e.target.closest('.date-btn') || 
+                                e.target.closest('.date-options') ||
+                                e.target.closest('.start-dates')) {
+                                // Keep current selection state
+                                e.stopPropagation();
                                 return;
                             }
                             
