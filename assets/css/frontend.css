@@ -203,7 +203,7 @@
 .date-btn:hover:not(:disabled),
 .date-btn.selected:not(:disabled),
 .date-btn:active:not(:disabled) {
-    background-color: #cc3071;
+    background-color: #cc3071 !important;
 }
 
 .date-btn.sold-out,

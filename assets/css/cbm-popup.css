@@ -383,7 +383,7 @@ body.cbm-popup-open {
 .cbm-popup-container .date-btn:hover:not(:disabled),
 .cbm-popup-container .date-btn.selected:not(:disabled),
 .cbm-popup-container .date-btn:active:not(:disabled) {
-    background-color: #cc3071;
+    background-color: #cc3071 !important;
 }
 
 .cbm-popup-container .date-btn.sold-out,
