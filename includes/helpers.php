@@ -79,8 +79,6 @@ function get_courses_in_group($group_id) {
 // Define global helper functions that need to be accessible everywhere
 // These are defined in the global namespace after the file is included
 
-}
-
 // Global namespace functions
 namespace {
     
