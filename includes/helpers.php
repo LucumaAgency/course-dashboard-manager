@@ -5,6 +5,31 @@
  * Common utility functions used throughout the plugin
  */
 
+// Global helper functions (no namespace)
+/**
+ * Helper function to safely get ACF field
+ */
+function cbm_get_field($field, $post_id = false, $default = null) {
+    if (function_exists('get_field')) {
+        $value = get_field($field, $post_id);
+        return $value !== false ? $value : $default;
+    }
+    // Fallback to post meta
+    $value = get_post_meta($post_id, $field, true);
+    return $value !== '' ? $value : $default;
+}
+
+/**
+ * Helper function to safely update ACF field
+ */
+function cbm_update_field($field, $value, $post_id = false) {
+    if (function_exists('update_field')) {
+        return update_field($field, $value, $post_id);
+    }
+    // Fallback to post meta
+    return update_post_meta($post_id, $field, $value);
+}
+
 namespace CourseBoxManager;
 
 /**
@@ -43,30 +68,6 @@ function calculate_seats_sold($product_id, $date_text = null) {
     }
     
     return $total_sold;
-}
-
-/**
- * Helper function to safely get ACF field
- */
-function cbm_get_field($field, $post_id = false, $default = null) {
-    if (function_exists('get_field')) {
-        $value = get_field($field, $post_id);
-        return $value !== false ? $value : $default;
-    }
-    // Fallback to post meta
-    $value = get_post_meta($post_id, $field, true);
-    return $value !== '' ? $value : $default;
-}
-
-/**
- * Helper function to safely update ACF field
- */
-function cbm_update_field($field, $value, $post_id = false) {
-    if (function_exists('update_field')) {
-        return update_field($field, $value, $post_id);
-    }
-    // Fallback to post meta
-    return update_post_meta($post_id, $field, $value);
 }
 
 /**
