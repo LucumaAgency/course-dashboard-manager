@@ -47,13 +47,23 @@ window.selectBox = function(element, boxType, courseId) {
     console.log('[CBM] Frontend jQuery code initializing...');
 
     // Date selection handler
-    $(document).on('click', '.date-btn:not(.sold-out)', function() {
+    $(document).on('click', '.date-btn:not(.sold-out)', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const $btn = $(this);
         const $container = $btn.closest('.box');
         
-        // Remove selected class from siblings
-        $btn.siblings().removeClass('selected');
+        // Remove selected class from all date buttons in this container
+        $container.find('.date-btn').removeClass('selected');
+        
+        // Add selected class to clicked button
         $btn.addClass('selected');
+        
+        // Force style update to ensure color is applied
+        $btn.css('background-color', '#cc3071');
+        
+        console.log('[CBM] Date selected:', $btn.text(), 'Has selected class:', $btn.hasClass('selected'));
         
         // Update button text if data attribute exists
         const buttonText = $btn.data('button-text');
@@ -72,6 +82,9 @@ window.selectBox = function(element, boxType, courseId) {
             $container.find('.add-to-cart-button').attr('data-product-id', stmCourseId);
             console.log('[CBM] Updated product ID to STM Course:', stmCourseId);
         }
+        
+        // Force re-render to ensure styles are applied
+        $btn.hide().show(0);
     });
 
     // Add to cart handler

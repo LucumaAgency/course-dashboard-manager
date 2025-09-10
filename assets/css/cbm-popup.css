@@ -382,8 +382,20 @@ body.cbm-popup-open {
 
 .cbm-popup-container .date-btn:hover:not(:disabled),
 .cbm-popup-container .date-btn.selected:not(:disabled),
-.cbm-popup-container .date-btn:active:not(:disabled) {
+.cbm-popup-container .date-btn:active:not(:disabled),
+.cbm-popup-container .date-btn:focus:not(:disabled) {
     background-color: #cc3071 !important;
+    background: #cc3071 !important;
+    color: white !important;
+}
+
+/* Override any theme or WooCommerce styles in popup */
+.cbm-popup-container .box .date-btn.selected,
+.cbm-popup-container .date-options .date-btn.selected,
+.cbm-popup-container .start-dates .date-btn.selected {
+    background-color: #cc3071 !important;
+    background: #cc3071 !important;
+    color: white !important;
 }
 
 .cbm-popup-container .date-btn.sold-out,

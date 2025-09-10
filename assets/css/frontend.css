@@ -202,8 +202,21 @@
 
 .date-btn:hover:not(:disabled),
 .date-btn.selected:not(:disabled),
-.date-btn:active:not(:disabled) {
+.date-btn:active:not(:disabled),
+.date-btn:focus:not(:disabled) {
     background-color: #cc3071 !important;
+    background: #cc3071 !important;
+    color: white !important;
+}
+
+/* Override any theme or WooCommerce styles */
+.box .date-btn.selected,
+.course-box .date-btn.selected,
+.date-options .date-btn.selected,
+.start-dates .date-btn.selected {
+    background-color: #cc3071 !important;
+    background: #cc3071 !important;
+    color: white !important;
 }
 
 .date-btn.sold-out,
