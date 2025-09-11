@@ -4084,6 +4084,8 @@ function update_group_selling_page() {
     $group_id = intval($_POST['group_id']);
     $selling_page_id = intval($_POST['selling_page_id']);
     
+    error_log('[CBM Debug] update_group_selling_page called - Group: ' . $group_id . ', Selling Page: ' . $selling_page_id);
+    
     if (!$group_id) {
         wp_send_json_error('Invalid group ID');
     }
@@ -4102,15 +4104,30 @@ function update_group_selling_page() {
         ],
     ]);
     
+    error_log('[CBM Debug] Found ' . count($courses) . ' courses in group: ' . implode(', ', $courses));
+    
     // Clear all selling page flags in this group
+    $cleared_count = 0;
     foreach ($courses as $course_id) {
-        delete_post_meta($course_id, 'is_selling_page');
+        $existing = get_post_meta($course_id, 'is_selling_page', true);
+        if ($existing) {
+            delete_post_meta($course_id, 'is_selling_page');
+            $cleared_count++;
+            error_log('[CBM Debug] Cleared selling page flag from course ' . $course_id);
+        }
     }
+    error_log('[CBM Debug] Cleared selling page flags from ' . $cleared_count . ' courses');
     
     // Set the new selling page flag
     if ($selling_page_id && in_array($selling_page_id, $courses)) {
-        update_post_meta($selling_page_id, 'is_selling_page', '1');
-        error_log('[CBM Debug] Set selling page flag for course ID: ' . $selling_page_id);
+        $result = update_post_meta($selling_page_id, 'is_selling_page', '1');
+        error_log('[CBM Debug] Set selling page flag for course ID ' . $selling_page_id . ' - Result: ' . ($result ? 'success' : 'failed'));
+        
+        // Verify it was saved
+        $verify = get_post_meta($selling_page_id, 'is_selling_page', true);
+        error_log('[CBM Debug] Verification - is_selling_page for ' . $selling_page_id . ': ' . $verify);
+    } else if ($selling_page_id) {
+        error_log('[CBM Debug] Course ' . $selling_page_id . ' is not in group ' . $group_id);
     }
     
     wp_send_json_success(['message' => 'Selling page updated', 'selling_page_id' => $selling_page_id]);

@@ -130,6 +130,10 @@ if (!defined('ABSPATH')) {
             
             // Get selling page for the group
             $selling_page_id = 0;
+            
+            // Debug: Check all courses in group for selling page
+            error_log('[CBM Debug] Looking for selling page in group ' . $group_id);
+            
             $group_courses = get_posts([
                 'post_type' => 'course',
                 'posts_per_page' => 1,
@@ -143,8 +147,30 @@ if (!defined('ABSPATH')) {
                     ],
                 ],
             ]);
+            
             if (!empty($group_courses)) {
                 $selling_page_id = $group_courses[0]->ID;
+                error_log('[CBM Debug] Found selling page: ' . $selling_page_id);
+            } else {
+                error_log('[CBM Debug] No selling page found in group');
+                
+                // Debug: Check all courses in group and their meta
+                $all_group_courses = get_posts([
+                    'post_type' => 'course',
+                    'posts_per_page' => -1,
+                    'tax_query' => [
+                        [
+                            'taxonomy' => 'course_group',
+                            'field' => 'term_id',
+                            'terms' => $group_id,
+                        ],
+                    ],
+                ]);
+                
+                foreach ($all_group_courses as $course) {
+                    $is_selling = get_post_meta($course->ID, 'is_selling_page', true);
+                    error_log('[CBM Debug] Course ' . $course->ID . ' (' . $course->post_title . ') - is_selling_page: ' . ($is_selling ? $is_selling : 'not set'));
+                }
             }
             ?>
             <h2>Group: <?php echo esc_html($group->name); ?></h2>
@@ -394,6 +420,24 @@ if (!defined('ABSPATH')) {
                 console.log('[CBM Debug] Group ID:', typeof groupId !== 'undefined' ? groupId : 'NOT DEFINED');
                 console.log('[CBM Debug] Courses data available:', typeof coursesData !== 'undefined' ? 'YES' : 'NO');
                 console.log('[CBM Debug] All products available:', typeof allProducts !== 'undefined' ? 'YES' : 'NO');
+                
+                // Debug selling page selection
+                const sellingPageSelect = document.getElementById('group-selling-page');
+                if (sellingPageSelect) {
+                    console.log('[CBM Debug] Selling page dropdown value on load:', sellingPageSelect.value);
+                    const selectedOption = sellingPageSelect.options[sellingPageSelect.selectedIndex];
+                    console.log('[CBM Debug] Selected option:', selectedOption ? {value: selectedOption.value, text: selectedOption.text} : 'none');
+                    
+                    // Check if PHP set the selection
+                    const phpSellingPageId = <?php echo json_encode($selling_page_id); ?>;
+                    console.log('[CBM Debug] PHP selling_page_id:', phpSellingPageId);
+                    
+                    // Force set the value if needed
+                    if (phpSellingPageId && sellingPageSelect.value !== phpSellingPageId.toString()) {
+                        console.log('[CBM Debug] Forcing selling page selection to:', phpSellingPageId);
+                        sellingPageSelect.value = phpSellingPageId;
+                    }
+                }
                 
                 let currentBoxState = document.getElementById('group-box-state').value;
                 let rowCounter = 0;
@@ -806,6 +850,9 @@ if (!defined('ABSPATH')) {
                     
                     // Get current course's STM ID
                     const currentSTMId = coursesData && coursesData[0] ? coursesData[0].related_stm_course_id : '';
+                    
+                    console.log('[CBM Debug] Populating STM selector, current STM ID:', currentSTMId);
+                    console.log('[CBM Debug] Course data for STM:', coursesData && coursesData[0] ? coursesData[0] : 'no course data');
                     
                     // Build options HTML
                     let html = '<option value="">None</option>';
