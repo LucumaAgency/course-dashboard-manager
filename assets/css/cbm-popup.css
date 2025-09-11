@@ -34,7 +34,7 @@
     overflow-x: hidden;
     z-index: 99999;
     animation: slideIn 0.15s ease;
-    padding: 40px;
+    padding: 0;
     box-sizing: border-box;
 }
 
@@ -263,10 +263,19 @@
 @media (max-width: 480px) {
     .cbm-popup-container {
         max-width: 100%;
-        height: 100%;
         max-height: 100vh;
         border-radius: 0;
         margin: 0;
+    }
+    
+    /* When buy course is active in mobile */
+    .cbm-popup-container:has(.buy-course:not(.cbm-tab-pane .buy-course)) {
+        height: 400px;
+    }
+    
+    /* When buy tab is active in mobile */
+    .cbm-popup-container:has(.cbm-tab-pane.active .buy-course) {
+        height: 400px;
     }
     
     .cbm-popup-content {
@@ -320,6 +329,17 @@ body.cbm-popup-open {
     margin: 0;
     box-shadow: none;
     padding: 15px;
+    /* min-height removed for buy state, will be added conditionally */
+}
+
+/* Buy course box - no min-height */
+.cbm-popup-container .buy-course {
+    /* No min-height for buy state */
+}
+
+/* Enroll course box - with min-height */
+.cbm-popup-container .enroll-course {
+    min-height: 400px;
 }
 
 .cbm-popup-container .box:not(.selected) {
