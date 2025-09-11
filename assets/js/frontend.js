@@ -38,15 +38,7 @@ window.selectBox = function(element, boxType, courseId) {
         $box.find('.circlecontainer').show();
         $box.find('.circle-container').hide();
         
-        // If this is an enroll box, ensure first date is selected if none selected
-        if (boxType === 'box2' || $box.hasClass('enroll-course')) {
-            const $dates = $box.find('.date-btn:not(.sold-out)');
-            if ($dates.length > 0 && $dates.filter('.selected').length === 0) {
-                // Click the first date to select it
-                $dates.first().trigger('click');
-                console.log('[CBM] Auto-selected first date on box selection');
-            }
-        }
+        // Don't auto-select dates - let the user choose
     }
 };
 
@@ -74,43 +66,28 @@ window.selectBox = function(element, boxType, courseId) {
         let dateValue = $btn.data('date') || $btn.attr('data-date') || $btn.text().trim();
         
         console.log('[CBM] Date button clicked:', dateValue);
-        console.log('[CBM] Container found:', $container.attr('class'));
         
-        // Find ALL date buttons in ALL boxes (to handle enroll-buy combo)
-        const $enrollBuyCombo = $btn.closest('.enroll-buy-combo');
-        let $allDateBtns;
+        // Find ALL date buttons in the current box
+        const $allDateBtnsInBox = $container.find('.date-btn');
         
-        if ($enrollBuyCombo.length > 0) {
-            // We're in a combo, deselect dates from ALL boxes in the combo
-            $allDateBtns = $enrollBuyCombo.find('.date-btn');
-            console.log('[CBM] In combo mode - deselecting all dates in combo');
-        } else {
-            // Single box, just deselect in this box
-            $allDateBtns = $container.find('.date-btn');
-        }
+        console.log('[CBM] Deselecting', $allDateBtnsInBox.length, 'date buttons in current box');
         
-        console.log('[CBM] Found date buttons to deselect:', $allDateBtns.length);
-        
-        // Force remove selected class from ALL date buttons
-        $allDateBtns.removeClass('selected').each(function() {
-            // Double-check with native JS
-            if (this.classList.contains('selected')) {
-                this.classList.remove('selected');
-                console.log('[CBM] Force removed selected from:', $(this).data('date'));
-            }
-        });
+        // Remove selected class from all date buttons in this box
+        $allDateBtnsInBox.removeClass('selected');
         
         // Add selected class to clicked button
         $btn.addClass('selected');
         
-        console.log('[CBM] Date button selected:', $btn.hasClass('selected'));
-        
-        // Verify selection state across all containers
-        const $allSelected = $enrollBuyCombo.length ? 
-                            $enrollBuyCombo.find('.date-btn.selected') : 
-                            $container.find('.date-btn.selected');
-        
-        console.log('[CBM] Total selected dates after update:', $allSelected.length);
+        // Force the style to ensure it's visible
+        setTimeout(function() {
+            if (!$btn.hasClass('selected')) {
+                console.log('[CBM] Forcing selected class');
+                $btn.addClass('selected');
+            }
+            // Log final state
+            console.log('[CBM] Final button classes:', $btn.attr('class'));
+            console.log('[CBM] Selected dates in box:', $container.find('.date-btn.selected').length);
+        }, 10);
         
         // Update button text if data attribute exists
         const buttonText = $btn.data('button-text');
@@ -118,14 +95,9 @@ window.selectBox = function(element, boxType, courseId) {
             $container.find('.add-to-cart-button .button-text').text(buttonText);
         }
         
-        // Store selected date - ensure we're storing the value
+        // Store selected date
         $container.data('selected-date', dateValue);
         $container.attr('data-selected-date', dateValue);
-        
-        // Also store on the combo container if it exists
-        if ($enrollBuyCombo.length) {
-            $enrollBuyCombo.data('selected-date', dateValue);
-        }
         
         console.log('[CBM] Date stored:', dateValue);
         
@@ -351,23 +323,8 @@ window.selectBox = function(element, boxType, courseId) {
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
         
-        // Auto-select first available date for all boxes with dates
-        $('.box').each(function() {
-            const $box = $(this);
-            const $dates = $box.find('.date-btn:not(.sold-out)');
-            
-            // If there are dates and none selected, select the first one
-            if ($dates.length > 0 && $dates.filter('.selected').length === 0) {
-                $dates.first().addClass('selected');
-                // Store the date value
-                const dateValue = $dates.first().data('date') || $dates.first().text().trim();
-                $box.data('selected-date', dateValue);
-                $box.attr('data-selected-date', dateValue);
-                console.log('[CBM] Auto-selected first date on page load:', dateValue);
-            }
-        });
-        
-        // Initialize Enroll-Buy combo box selection
+        // NO auto-selection of dates - let user choose
+        // Only initialize the Enroll-Buy combo box selection
         initEnrollBuySelection();
     });
     
