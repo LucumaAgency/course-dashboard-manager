@@ -58,16 +58,36 @@ window.selectBox = function(element, boxType, courseId) {
         let dateValue = $btn.data('date') || $btn.attr('data-date') || $btn.text().trim();
         
         console.log('[CBM] Date button clicked:', dateValue);
-        console.log('[CBM] Current button classes:', $btn.attr('class'));
+        console.log('[CBM] Current button classes before:', $btn.attr('class'));
         
-        // Remove selected class from ALL date buttons in this container
-        $container.find('.date-btn').removeClass('selected');
+        // Find ALL date buttons in the entire container hierarchy
+        // This ensures we get all dates even if they're in nested structures
+        const $allDateBtns = $container.find('.date-btn');
+        console.log('[CBM] Found date buttons to deselect:', $allDateBtns.length);
+        
+        // Force remove selected class from ALL date buttons
+        $allDateBtns.each(function() {
+            $(this).removeClass('selected');
+            // Also remove via direct attribute manipulation as backup
+            this.classList.remove('selected');
+        });
         
         // Add selected class to clicked button
         $btn.addClass('selected');
+        // Also add via direct attribute manipulation to ensure it sticks
+        $btn[0].classList.add('selected');
         
-        console.log('[CBM] Date button selected state after click:', $btn.hasClass('selected'));
-        console.log('[CBM] Total selected dates in container:', $container.find('.date-btn.selected').length);
+        console.log('[CBM] Date button classes after:', $btn.attr('class'));
+        console.log('[CBM] Selected state after click:', $btn.hasClass('selected'));
+        
+        // Verify selection state
+        const $selectedDates = $container.find('.date-btn.selected');
+        console.log('[CBM] Total selected dates after update:', $selectedDates.length);
+        if ($selectedDates.length > 1) {
+            console.warn('[CBM] WARNING: Multiple dates selected!', $selectedDates.map(function() {
+                return $(this).data('date');
+            }).get());
+        }
         
         // Update button text if data attribute exists
         const buttonText = $btn.data('button-text');
@@ -79,7 +99,7 @@ window.selectBox = function(element, boxType, courseId) {
         $container.data('selected-date', dateValue);
         $container.attr('data-selected-date', dateValue); // Also set as attribute for debugging
         
-        console.log('[CBM] Date stored on container:', $container.data('selected-date'));
+        console.log('[CBM] Date stored on container:', dateValue);
         
         // Store STM Course ID if available (for enroll courses)
         const stmCourseId = $btn.data('stm-course-id');
