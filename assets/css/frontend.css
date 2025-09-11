@@ -302,6 +302,13 @@
     visibility: hidden;
 }
 
+/* Hide any ::before or ::after pseudo-elements during loading */
+.add-to-cart-button.loading::before,
+.add-to-cart-button.loading::after {
+    display: none !important;
+    content: none !important;
+}
+
 /* Sold out box */
 .soldout-header {
     background: #ff3e3e;
