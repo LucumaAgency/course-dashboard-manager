@@ -63,6 +63,11 @@ add_action('init', function() {
     if (class_exists('WooCommerce')) {
         new CourseBoxManager\EnrollmentSync();
     }
+    
+    // Load frontend shortcode file which includes pre-rendering for popup
+    if (file_exists(CBM_PLUGIN_DIR . 'frontend/shortcode.php')) {
+        require_once CBM_PLUGIN_DIR . 'frontend/shortcode.php';
+    }
 });
 
 // Register course_group taxonomy
@@ -4572,7 +4577,8 @@ add_action('woocommerce_email_order_meta', function ($order) {
     }
 }, 10, 1);
 
-add_shortcode('course_box_manager', 'course_box_manager_shortcode');
+// Shortcode registration now handled in frontend/shortcode.php
+// add_shortcode('course_box_manager', 'course_box_manager_shortcode');
 
 // Sync course creation with product only (no selling page)
 add_action('save_post_course', 'sync_course_to_product_and_page', 10, 3);

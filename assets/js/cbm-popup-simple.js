@@ -490,7 +490,6 @@
                 if (productId) {
                     const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
                                      '<span class="button-text">Enroll Now</span>' +
-                                     '<span class="loading-spinner"></span>' +
                                      '</button>';
                     $box.append(buttonHtml);
                     console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);
@@ -590,7 +589,6 @@
                         if (productId) {
                             const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
                                              '<span class="button-text">Enroll Now</span>' +
-                                             '<span class="loading-spinner"></span>' +
                                              '</button>';
                             $box.append(buttonHtml);
                             console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);
