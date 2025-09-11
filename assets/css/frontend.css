@@ -1,5 +1,13 @@
 /* Course Box Manager - Frontend Styles */
 
+/* Fix FunnelKit Cart visibility - minimal intervention */
+#fkcart-floating-toggler {
+    width: 60px !important;
+    height: 60px !important;
+    min-width: 60px !important;
+    min-height: 60px !important;
+}
+
 /* Box Container */
 .course-boxes-container,
 .box-container {
