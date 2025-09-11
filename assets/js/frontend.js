@@ -341,17 +341,46 @@ window.selectBox = function(element, boxType, courseId) {
                 // Manually bind click event if needed
                 $('#fkcart-floating-toggler').off('click.cbm').on('click.cbm', function(e) {
                     e.preventDefault();
+                    e.stopPropagation();
                     console.log('[CBM] Cart icon clicked, triggering FunnelKit...');
+                    
+                    // Debug: Check what FunnelKit objects are available
+                    console.log('[CBM Debug] FunnelKit availability:', {
+                        'fkcart_show_cart': typeof fkcart_show_cart,
+                        'FKCart': typeof FKCart,
+                        'window.FKCart': typeof window.FKCart,
+                        'window.fkcart': typeof window.fkcart,
+                        'jQuery.fkcart': typeof jQuery.fkcart
+                    });
+                    
+                    // Try to find and click the actual cart panel toggle
+                    const $cartPanel = $('.fkcart-panel, .fkcart-modal, .fkcart-drawer, .fkcart-slide-cart');
+                    if ($cartPanel.length > 0) {
+                        console.log('[CBM] Found cart panel, toggling visibility...');
+                        if ($cartPanel.hasClass('active') || $cartPanel.is(':visible')) {
+                            $cartPanel.removeClass('active').hide();
+                        } else {
+                            $cartPanel.addClass('active').show();
+                        }
+                        return;
+                    }
                     
                     // Try various methods to open the cart
                     if (typeof fkcart_show_cart === 'function') {
+                        console.log('[CBM] Using fkcart_show_cart()');
                         fkcart_show_cart();
                     } else if (window.FKCart && window.FKCart.show_cart) {
+                        console.log('[CBM] Using window.FKCart.show_cart()');
                         window.FKCart.show_cart();
                     } else {
+                        console.log('[CBM] Triggering FunnelKit events...');
                         // Trigger FunnelKit events
                         $(document.body).trigger('fkcart_show_cart');
                         $(document.body).trigger('fkcart_open');
+                        $(document.body).trigger('wcffwc_show_cart');
+                        
+                        // As last resort, try to trigger WooCommerce mini cart
+                        $(document.body).trigger('wc_fragment_refresh');
                     }
                 });
             }, 100);
