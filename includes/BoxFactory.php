@@ -28,7 +28,7 @@ class BoxFactory {
         $box_types = [
             SoldOutBox::class,
             CountdownBox::class,
-            WaitlistBox::class,
+            // WaitlistBox::class,  // Temporarily disabled - show soldout instead
             EnrollBuyBox::class,  // Check this before individual boxes
             BuyCourseBox::class,
             EnrollCourseBox::class
