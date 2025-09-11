@@ -377,14 +377,15 @@ body.cbm-popup-open {
 }
 
 .cbm-popup-container .date-btn:hover {
-    background: #e8e8e8;
-    border-color: #bbb;
+    background: #DE04A4 !important;
+    border-color: #DE04A4 !important;
+    color: white !important;
 }
 
 .cbm-popup-container .date-btn.selected {
-    background: #F22EBE;
-    color: white;
-    border-color: #F22EBE;
+    background: #DE04A4 !important;
+    color: white !important;
+    border-color: #DE04A4 !important;
 }
 
 /* Box styles within popup */
@@ -428,14 +429,15 @@ body.cbm-popup-open {
 }
 
 .cbm-popup-container .date-btn:hover {
-    border-color: #0073aa;
-    background: #f0f8ff;
+    border-color: #DE04A4 !important;
+    background: #DE04A4 !important;
+    color: white !important;
 }
 
 .cbm-popup-container .date-btn.selected {
-    background: #0073aa;
-    color: #fff;
-    border-color: #0073aa;
+    background: #DE04A4 !important;
+    color: white !important;
+    border-color: #DE04A4 !important;
 }
 
 /* Ensure trigger button is visible */

@@ -215,11 +215,11 @@
 .date-btn.selected:hover,
 .date-btn.selected:focus,
 .date-btn.selected:active {
-    background-color: #cc3071 !important;
+    background-color: #DE04A4 !important;
     color: white !important;
     font-weight: 600 !important;
-    border: 1px solid #cc3071 !important;
-    box-shadow: 0 2px 8px rgba(204, 48, 113, 0.3) !important;
+    border: 1px solid #DE04A4 !important;
+    box-shadow: 0 2px 8px rgba(222, 4, 164, 0.3) !important;
     opacity: 1 !important;
 }
 
