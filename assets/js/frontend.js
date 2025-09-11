@@ -120,41 +120,31 @@ window.selectBox = function(element, boxType, courseId) {
         const $button = $(this);
         let $box = $button.closest('.box');
         
-        // If we're in an Enroll-Buy combo, we might need to look for the selected box
-        const $enrollBuyCombo = $button.closest('.enroll-buy-combo');
-        if ($enrollBuyCombo.length > 0) {
-            // In combo mode, find the currently selected/visible box
-            const $selectedBox = $enrollBuyCombo.find('.box.selected');
-            if ($selectedBox.length > 0) {
-                $box = $selectedBox;
-                console.log('[CBM] Using selected box in combo mode');
-            }
-        }
-        
         const productId = $button.data('product-id');
         const quantity = $button.data('quantity') || 1;
         
         // Debug: Log the box we're working with
+        console.log('[CBM] Add to cart clicked');
         console.log('[CBM] Box element:', $box[0]);
         console.log('[CBM] Box classes:', $box.attr('class'));
         
         // Try multiple ways to get the selected date
         let selectedDate = '';
         
-        // Method 1: Check data attribute on box
-        selectedDate = $box.data('selected-date') || $box.attr('data-selected-date');
-        console.log('[CBM] Method 1 - Box data selected-date:', selectedDate);
+        // Method 1: Find selected date button within this specific box
+        const $selectedDateBtn = $box.find('.date-btn.selected');
+        console.log('[CBM] Found selected date buttons in box:', $selectedDateBtn.length);
+        if ($selectedDateBtn.length > 0) {
+            selectedDate = $selectedDateBtn.data('date') || 
+                          $selectedDateBtn.attr('data-date') || 
+                          $selectedDateBtn.text().trim();
+            console.log('[CBM] Method 1 - Selected date from button:', selectedDate);
+        }
         
-        // Method 2: Find selected date button within this specific box
+        // Method 2: Check data attribute on box
         if (!selectedDate) {
-            const $selectedDateBtn = $box.find('.date-btn.selected');
-            console.log('[CBM] Found selected date buttons:', $selectedDateBtn.length);
-            if ($selectedDateBtn.length > 0) {
-                selectedDate = $selectedDateBtn.data('date') || 
-                              $selectedDateBtn.attr('data-date') || 
-                              $selectedDateBtn.text().trim();
-                console.log('[CBM] Method 2 - Selected date button:', selectedDate);
-            }
+            selectedDate = $box.data('selected-date') || $box.attr('data-selected-date');
+            console.log('[CBM] Method 2 - Box data selected-date:', selectedDate);
         }
         
         // Method 3: Check parent containers for date selection
@@ -183,20 +173,25 @@ window.selectBox = function(element, boxType, courseId) {
         }
         
         console.log('[CBM] Final selected date:', selectedDate);
-        console.log('[CBM] Date options found:', $box.find('.date-options').length);
+        
+        // Check how many date buttons exist in this box
+        const $allDateButtons = $box.find('.date-btn');
+        const $availableDateButtons = $box.find('.date-btn:not(.sold-out)');
+        
+        console.log('[CBM] Total date buttons:', $allDateButtons.length);
+        console.log('[CBM] Available date buttons:', $availableDateButtons.length);
         
         if (!productId) {
             console.error('[CBM] No product ID found');
             return;
         }
         
-        // Check if date selection is required (only if date options exist and no date selected)
-        const hasDateOptions = $box.find('.date-options').length > 0 || 
-                              $box.find('.date-btn').length > 0;
-        
-        if (hasDateOptions && !selectedDate) {
-            console.error('[CBM] Date validation failed - date options exist but no date selected');
-            console.error('[CBM] Box HTML:', $box.html());
+        // Only require date selection if there are available date buttons to choose from
+        if ($availableDateButtons.length > 0 && !selectedDate) {
+            console.error('[CBM] Date validation failed - available dates exist but none selected');
+            console.error('[CBM] Available dates:', $availableDateButtons.map(function() {
+                return $(this).data('date') || $(this).text();
+            }).get());
             alert('Please select a date');
             return;
         }
