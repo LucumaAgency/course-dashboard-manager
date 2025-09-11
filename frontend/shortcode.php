@@ -125,28 +125,10 @@ function prerender_popup_content() {
     $has_tabs = false;
     if (strpos($box_html, 'enroll-course') !== false && strpos($box_html, 'buy-course') !== false) {
         $has_tabs = true;
-        
-        // Pre-render with tabs already created
-        ?>
-        <div class="cbm-tabs" data-prerendered-tabs="true">
-            <div class="cbm-tabs-header">
-                <button class="cbm-tab-btn active" data-tab="0" type="button">Buy Course</button>
-                <button class="cbm-tab-btn" data-tab="1" type="button">Enroll in Live Course</button>
-            </div>
-            <div class="cbm-tabs-content">
-                <?php
-                // Extract individual boxes from the rendered HTML
-                if (preg_match('/<div[^>]*class="[^"]*buy-course[^"]*"[^>]*>.*?<\/div>(?=\s*<div|$)/s', $box_html, $buy_match)) {
-                    echo '<div class="cbm-tab-pane active" data-tab="0">' . $buy_match[0] . '</div>';
-                }
-                if (preg_match('/<div[^>]*class="[^"]*enroll-course[^"]*"[^>]*>.*?<\/div>(?=\s*<div|$)/s', $box_html, $enroll_match)) {
-                    echo '<div class="cbm-tab-pane" data-tab="1">' . $enroll_match[0] . '</div>';
-                }
-                ?>
-            </div>
-        </div>
-        <?php
-        $final_html = ob_get_clean();
+        // For EnrollBuyBox, the HTML already contains both boxes
+        // We'll let the JavaScript handle the tab creation
+        $final_html = $box_html;
+        ob_end_clean();
     } else {
         // Single box, no tabs needed
         $final_html = $box_html;
