@@ -480,17 +480,47 @@ window.selectBox = function(element, boxType, courseId) {
         console.log('[CBM] window.FKCart:', typeof window.FKCart !== 'undefined' ? window.FKCart : 'Not found');
         console.log('[CBM] window.fkcart_show_cart:', typeof window.fkcart_show_cart);
         
+        // Check for Vue or React instances
+        console.log('[CBM] Vue detected:', typeof window.Vue !== 'undefined');
+        console.log('[CBM] React detected:', typeof window.React !== 'undefined');
+        
+        // Check for FunnelKit in other locations
+        console.log('[CBM] Checking for FunnelKit in other locations:');
+        for (let key in window) {
+            if (key.toLowerCase().includes('fk') || key.toLowerCase().includes('funnel')) {
+                console.log('[CBM] Found:', key, '=', typeof window[key]);
+            }
+        }
+        
         // Check for FunnelKit elements in DOM
         console.log('[CBM] Cart elements found:');
         console.log('[CBM] - .fkcart-modal:', jQuery('.fkcart-modal').length);
         console.log('[CBM] - .fkcart-coupon-button:', jQuery('.fkcart-coupon-button').length);
         console.log('[CBM] - #fkcart-coupon__input:', jQuery('#fkcart-coupon__input').length);
         
-        // Check for event listeners
+        // Check for event listeners using native method
         const couponBtn = jQuery('.fkcart-coupon-button')[0];
         if (couponBtn) {
-            const events = jQuery._data(couponBtn, 'events');
-            console.log('[CBM] Event listeners on coupon button:', events);
+            // Check jQuery events
+            const jqEvents = jQuery._data(couponBtn, 'events');
+            console.log('[CBM] jQuery event listeners on coupon button:', jqEvents);
+            
+            // Check for onclick attribute
+            console.log('[CBM] onclick attribute:', couponBtn.onclick);
+            
+            // Check for addEventListener events (harder to detect)
+            console.log('[CBM] Button element:', couponBtn);
+        }
+        
+        // Check for AJAX settings
+        if (typeof fkcart_data !== 'undefined') {
+            console.log('[CBM] fkcart_data found:', fkcart_data);
+        }
+        if (typeof fkcart_settings !== 'undefined') {
+            console.log('[CBM] fkcart_settings found:', fkcart_settings);
+        }
+        if (typeof fkcart_ajax !== 'undefined') {
+            console.log('[CBM] fkcart_ajax found:', fkcart_ajax);
         }
         
         return true;
@@ -586,32 +616,78 @@ window.selectBox = function(element, boxType, courseId) {
                 
                 console.log('[CBM] Manually applying coupon:', code);
                 
-                // Try different methods to apply coupon
-                if (typeof window.fkcart !== 'undefined' && window.fkcart.apply_coupon) {
-                    console.log('[CBM] Using fkcart.apply_coupon');
-                    window.fkcart.apply_coupon(code);
-                } else if (typeof window.FKCart !== 'undefined' && window.FKCart.applyCoupon) {
-                    console.log('[CBM] Using FKCart.applyCoupon');
-                    window.FKCart.applyCoupon(code);
-                } else {
-                    console.log('[CBM] Triggering AJAX manually');
-                    // Manual AJAX as last resort
-                    jQuery.ajax({
-                        type: 'POST',
-                        url: cbm_ajax.ajax_url,
-                        data: {
-                            action: 'fkcart_apply_coupon',
-                            coupon_code: code,
-                            security: jQuery('#fkcart-coupon-nonce').val() || cbm_ajax.nonce
-                        },
-                        success: function(response) {
-                            console.log('[CBM] Coupon response:', response);
-                        },
-                        error: function(xhr, status, error) {
-                            console.error('[CBM] Coupon error:', error);
-                        }
-                    });
+                // Since FunnelKit JS objects are not available, simulate a click
+                // First set the input value
+                couponInput.val(code);
+                
+                // Remove loading state
+                couponBtn.removeClass('fkcart-loading');
+                
+                // Try to find the actual nonce
+                let nonce = '';
+                // Look for nonce in various places
+                if (jQuery('[name="fkcart_nonce"]').length) {
+                    nonce = jQuery('[name="fkcart_nonce"]').val();
+                } else if (jQuery('#fkcart-nonce').length) {
+                    nonce = jQuery('#fkcart-nonce').val();
+                } else if (typeof fkcart_data !== 'undefined' && fkcart_data.nonce) {
+                    nonce = fkcart_data.nonce;
                 }
+                
+                console.log('[CBM] Found nonce:', nonce || 'Using default');
+                
+                // Show loading state
+                couponBtn.addClass('fkcart-loading');
+                
+                // Make AJAX call using WooCommerce standard action
+                jQuery.ajax({
+                    type: 'POST',
+                    url: cbm_ajax.ajax_url,
+                    data: {
+                        action: 'woocommerce_apply_coupon',
+                        coupon_code: code,
+                        security: nonce || cbm_ajax.nonce
+                    },
+                    success: function(response) {
+                        console.log('[CBM] Coupon response:', response);
+                        couponBtn.removeClass('fkcart-loading');
+                        
+                        // Refresh cart display
+                        if (response.success || response.fragments) {
+                            // Update cart fragments
+                            if (response.fragments) {
+                                jQuery.each(response.fragments, function(key, value) {
+                                    jQuery(key).replaceWith(value);
+                                });
+                            }
+                            
+                            // Show success message
+                            const errorDiv = jQuery('.fkcart-input-error');
+                            errorDiv.removeClass('fkcart-hide').attr('data-content', 'Coupon applied successfully').css('color', 'green');
+                            
+                            // Clear input
+                            couponInput.val('');
+                            
+                            // Reload cart to show updated prices
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            // Show error
+                            const errorDiv = jQuery('.fkcart-input-error');
+                            const errorMsg = response.data || 'Invalid coupon code';
+                            errorDiv.removeClass('fkcart-hide').attr('data-content', errorMsg);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('[CBM] Coupon error:', error);
+                        couponBtn.removeClass('fkcart-loading');
+                        
+                        // Show error message
+                        const errorDiv = jQuery('.fkcart-input-error');
+                        errorDiv.removeClass('fkcart-hide').attr('data-content', 'Error applying coupon');
+                    }
+                });
             };
             
             console.log('[CBM] Added cbmApplyCoupon() function - call it to manually apply coupon');
