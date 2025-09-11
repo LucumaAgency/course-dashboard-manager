@@ -255,7 +255,11 @@ window.selectBox = function(element, boxType, courseId) {
             success: function(response) {
                 console.log('Cart response:', response);
                 
-                if (response.success) {
+                // Check if product was added successfully
+                // FunnelKit might return just fragments without success field
+                const wasSuccessful = response.success || (response.fragments && response.cart_hash);
+                
+                if (wasSuccessful) {
                     // Update button
                     $button.find('.button-text').text('Added!');
                     
@@ -269,9 +273,15 @@ window.selectBox = function(element, boxType, courseId) {
                     // Always trigger the WooCommerce added_to_cart event first
                     $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
                     
-                    // Check if FunnelKit Cart is active
-                    if (response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
-                        console.log('[CBM] FunnelKit is active, attempting to show cart...');
+                    // Check if FunnelKit Cart is active (check multiple ways)
+                    const isFunnelKitActive = response.use_funnelkit || 
+                                              cbm_ajax.is_funnelkit_active || 
+                                              (typeof window.FKCart !== 'undefined') ||
+                                              (typeof window.fkcart_show_cart === 'function') ||
+                                              $('.fkcart-icon, .fkcart-trigger').length > 0;
+                    
+                    if (isFunnelKitActive) {
+                        console.log('[CBM] FunnelKit detected, attempting to show cart...');
                         
                         // Wait for cart fragments to be processed
                         setTimeout(function() {
@@ -286,8 +296,8 @@ window.selectBox = function(element, boxType, courseId) {
                             }
                         }, 300); // Initial delay for cart update
                     } else {
-                        // Regular WooCommerce behavior
-                        $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
+                        console.log('[CBM] FunnelKit not detected, using regular WooCommerce behavior');
+                        // Regular WooCommerce behavior only if FunnelKit not detected
                         
                         // Optionally redirect to cart
                         if (cbm_ajax.cart_url) {
@@ -304,9 +314,10 @@ window.selectBox = function(element, boxType, courseId) {
                         $button.find('.loading-spinner').remove(); // Remove spinner from DOM
                     }, 2000);
                     
-                } else {
-                    // Error handling
-                    alert('Error adding to cart. Please try again.');
+                } else if (response.error || response.success === false) {
+                    // Error handling - only if explicitly an error
+                    const errorMessage = response.data || response.error || 'Error adding to cart. Please try again.';
+                    alert(errorMessage);
                     $button.removeClass('loading');
                     $button.find('.button-text').text(originalText);
                     $button.find('.loading-spinner').remove(); // Remove spinner from DOM
@@ -314,6 +325,17 @@ window.selectBox = function(element, boxType, courseId) {
                     if (response.product_url) {
                         window.location.href = response.product_url;
                     }
+                } else {
+                    // Unknown response format - assume success if we got here
+                    console.log('[CBM] Unknown response format, assuming success');
+                    $button.find('.button-text').text('Added!');
+                    $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
+                    
+                    setTimeout(function() {
+                        $button.removeClass('loading');
+                        $button.find('.button-text').text(originalText);
+                        $button.find('.loading-spinner').remove();
+                    }, 2000);
                 }
             },
             error: function(xhr, status, error) {

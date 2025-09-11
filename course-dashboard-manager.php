@@ -3428,9 +3428,10 @@ function assign_course_to_group() {
 }
 
 // AJAX handler for adding products to cart (compatible with FunnelKit)
-// Priority 20 to run after FunnelKit's handlers (usually at priority 10)
-add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 20);
-add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 20);
+// Priority 5 to run BEFORE FunnelKit's handlers (usually at priority 10)
+// This ensures we handle our products first
+add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 5);
+add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 5);
 
 function cbm_ajax_add_to_cart() {
     // Check if this is a FunnelKit cart action that we shouldn't handle
