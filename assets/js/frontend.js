@@ -183,22 +183,27 @@ window.selectBox = function(element, boxType, courseId) {
                     // Trigger WooCommerce added_to_cart event
                     $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
                     
-                    // Check if FunnelKit Cart is active - simplified approach
-                    if (response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
-                        // Small delay to ensure cart is updated
-                        setTimeout(function() {
-                            // Simple approach: just call the functions if they exist
-                            if (typeof fkcart_show_cart === 'function') {
-                                fkcart_show_cart();
-                            } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
-                                FKCart.show_cart();
-                            } else {
-                                // Trigger FunnelKit events as fallback
+                    // Try to show FunnelKit Cart if available
+                    // Small delay to ensure cart is updated
+                    setTimeout(function() {
+                        // Always try to show cart if functions exist
+                        if (typeof fkcart_show_cart === 'function') {
+                            console.log('[CBM] Calling fkcart_show_cart()');
+                            fkcart_show_cart();
+                        } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
+                            console.log('[CBM] Calling FKCart.show_cart()');
+                            FKCart.show_cart();
+                        } else if (window.FKCart && window.FKCart.show_cart) {
+                            console.log('[CBM] Calling window.FKCart.show_cart()');
+                            window.FKCart.show_cart();
+                        } else {
+                            // Only log if we're expecting FunnelKit
+                            if (response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
+                                console.log('[CBM] FunnelKit functions not found, triggering events');
                                 $(document.body).trigger('fkcart_show_cart');
-                                $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
                             }
-                        }, 100);
-                    }
+                        }
+                    }, 300);
                     
                     // Reset button text after delay and remove any "View cart" links
                     setTimeout(function() {
@@ -245,6 +250,18 @@ window.selectBox = function(element, boxType, courseId) {
     // Initialize on page load
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
+        
+        // Ensure FunnelKit cart is visible if it exists
+        setTimeout(function() {
+            var $fkcart = $('#fkcart-floating-toggler');
+            if ($fkcart.length > 0) {
+                console.log('[CBM] FunnelKit cart found, ensuring visibility');
+                // Don't force styles, just ensure it's not hidden
+                if ($fkcart.css('display') === 'none') {
+                    $fkcart.css('display', '');
+                }
+            }
+        }, 1000);
         
         // Remove any "View cart" links that appear
         $(document).on('DOMNodeInserted', function(e) {

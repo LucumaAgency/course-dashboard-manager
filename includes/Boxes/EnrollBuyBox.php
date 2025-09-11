@@ -293,6 +293,23 @@ class EnrollBuyBox extends AbstractBox {
             // Also run after a short delay to catch any dynamic rendering
             setTimeout(initEnrollBuyCombo, 500);
             
+            // Simple FunnelKit integration for enroll-buy combo
+            jQuery(document).ready(function($) {
+                // Listen for successful add to cart from enroll-buy combo
+                $(document.body).on('added_to_cart', function(e, fragments, cart_hash, $triggeredButton) {
+                    // Check if this is from enroll-buy combo
+                    if ($triggeredButton && $triggeredButton.closest('.enroll-buy-combo').length > 0) {
+                        // Simple delay then show cart
+                        setTimeout(function() {
+                            if (typeof fkcart_show_cart === 'function') {
+                                fkcart_show_cart();
+                            } else if (window.FKCart && window.FKCart.show_cart) {
+                                window.FKCart.show_cart();
+                            }
+                        }, 300);
+                    }
+                });
+            });
             </script>
             
         </div>
