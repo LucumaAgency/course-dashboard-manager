@@ -59,8 +59,9 @@ spl_autoload_register(function ($class) {
 add_action('init', function() {
     new CourseBoxManager\SeatsRemaining();
     
-    // Initialize enrollment sync for STM LMS integration
+    // Include and initialize enrollment sync for STM LMS integration
     if (class_exists('WooCommerce')) {
+        require_once CBM_PLUGIN_DIR . 'includes/EnrollmentSync.php';
         new CourseBoxManager\EnrollmentSync();
     }
     
