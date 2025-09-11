@@ -10,16 +10,17 @@ namespace CourseBoxManager;
 class CartHandler {
     
     public function __construct() {
+        // TEMPORARILY DISABLED - Using main handler in course-dashboard-manager.php
         // Hook into WordPress AJAX actions with our own action name
-        add_action('wp_ajax_cbm_add_to_cart', [$this, 'handle_add_to_cart']);
-        add_action('wp_ajax_nopriv_cbm_add_to_cart', [$this, 'handle_add_to_cart']);
+        // add_action('wp_ajax_cbm_add_to_cart', [$this, 'handle_add_to_cart']);
+        // add_action('wp_ajax_nopriv_cbm_add_to_cart', [$this, 'handle_add_to_cart']);
         
         // Hook into woocommerce_add_to_cart with high priority to override others
-        add_action('wp_ajax_woocommerce_add_to_cart', [$this, 'handle_add_to_cart'], 5);
-        add_action('wp_ajax_nopriv_woocommerce_add_to_cart', [$this, 'handle_add_to_cart'], 5);
+        // add_action('wp_ajax_woocommerce_add_to_cart', [$this, 'handle_add_to_cart'], 5);
+        // add_action('wp_ajax_nopriv_woocommerce_add_to_cart', [$this, 'handle_add_to_cart'], 5);
         
         // Log initialization
-        error_log('[CBM CartHandler] Initialized with AJAX handlers');
+        error_log('[CBM CartHandler] Temporarily disabled - using main handler');
     }
     
     /**
