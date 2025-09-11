@@ -296,13 +296,19 @@ window.selectBox = function(element, boxType, courseId) {
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
         
-        // Auto-select first available date if only one option
+        // Auto-select first available date for all boxes with dates
         $('.box').each(function() {
             const $box = $(this);
             const $dates = $box.find('.date-btn:not(.sold-out)');
             
-            if ($dates.length === 1) {
-                $dates.first().click();
+            // If there are dates and none selected, select the first one
+            if ($dates.length > 0 && $dates.filter('.selected').length === 0) {
+                $dates.first().addClass('selected');
+                // Store the date value
+                const dateValue = $dates.first().data('date') || $dates.first().text().trim();
+                $box.data('selected-date', dateValue);
+                $box.attr('data-selected-date', dateValue);
+                console.log('[CBM] Auto-selected first date on page load:', dateValue);
             }
         });
         
@@ -337,6 +343,18 @@ window.selectBox = function(element, boxType, courseId) {
                 $clickedBox.addClass('selected');
                 $clickedBox.find('.circlecontainer').show();
                 $clickedBox.find('.circle-container').hide();
+                
+                // If this is an enroll box with dates, auto-select the first available date
+                const $availableDates = $clickedBox.find('.date-btn:not(.sold-out)');
+                if ($availableDates.length > 0) {
+                    // Check if any date is already selected
+                    const $selectedDate = $availableDates.filter('.selected');
+                    if ($selectedDate.length === 0) {
+                        // No date selected, auto-select the first one
+                        $availableDates.first().click();
+                        console.log('[CBM] Auto-selected first available date');
+                    }
+                }
                 
                 console.log('[CBM] Box selected:', $clickedBox.closest('.buy-box-wrapper, .enroll-box-wrapper').attr('class'));
             });
