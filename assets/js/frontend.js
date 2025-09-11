@@ -522,6 +522,25 @@ window.selectBox = function(element, boxType, courseId) {
         if (typeof fkcart_ajax !== 'undefined') {
             console.log('[CBM] fkcart_ajax found:', fkcart_ajax);
         }
+        if (typeof fkcart_app_data !== 'undefined') {
+            console.log('[CBM] fkcart_app_data found:', fkcart_app_data);
+        }
+        
+        // Try to find Vue instance
+        console.log('[CBM] Looking for Vue instance...');
+        const cartModal = document.querySelector('.fkcart-modal');
+        if (cartModal && cartModal.__vue__) {
+            console.log('[CBM] Vue instance found on .fkcart-modal!');
+            window.fkcartVue = cartModal.__vue__;
+            console.log('[CBM] Vue instance methods:', Object.keys(cartModal.__vue__.$options.methods || {}));
+            console.log('[CBM] Vue instance data:', cartModal.__vue__.$data);
+        }
+        
+        // Check coupon button for Vue
+        if (couponBtn && couponBtn.__vue__) {
+            console.log('[CBM] Vue instance found on coupon button!');
+            console.log('[CBM] Button Vue methods:', Object.keys(couponBtn.__vue__.$options.methods || {}));
+        }
         
         return true;
     };
@@ -608,7 +627,7 @@ window.selectBox = function(element, boxType, courseId) {
             
             // Try to trigger FunnelKit's coupon application manually if needed
             window.cbmApplyCoupon = function() {
-                const code = couponInput.val();
+                const code = couponInput.val() || jQuery('#fkcart-coupon__input').val();
                 if (!code) {
                     alert('Please enter a coupon code');
                     return;
@@ -616,9 +635,37 @@ window.selectBox = function(element, boxType, courseId) {
                 
                 console.log('[CBM] Manually applying coupon:', code);
                 
-                // Since FunnelKit JS objects are not available, simulate a click
-                // First set the input value
-                couponInput.val(code);
+                // Try to use Vue instance first
+                const cartModal = document.querySelector('.fkcart-modal');
+                if (cartModal && cartModal.__vue__) {
+                    const vueInstance = cartModal.__vue__;
+                    console.log('[CBM] Found Vue instance, attempting to apply coupon through Vue...');
+                    
+                    // Try to find the apply coupon method
+                    if (vueInstance.applyCoupon) {
+                        console.log('[CBM] Calling vueInstance.applyCoupon()');
+                        vueInstance.applyCoupon(code);
+                        return;
+                    } else if (vueInstance.$children) {
+                        // Look in child components
+                        for (let child of vueInstance.$children) {
+                            if (child.applyCoupon) {
+                                console.log('[CBM] Found applyCoupon in child component');
+                                child.applyCoupon(code);
+                                return;
+                            }
+                        }
+                    }
+                    
+                    // Try to trigger through Vue events
+                    if (vueInstance.$emit) {
+                        console.log('[CBM] Emitting apply-coupon event');
+                        vueInstance.$emit('apply-coupon', code);
+                    }
+                }
+                
+                // Fallback: Set the input value
+                jQuery('#fkcart-coupon__input').val(code);
                 
                 // Remove loading state
                 couponBtn.removeClass('fkcart-loading');
@@ -704,5 +751,60 @@ window.selectBox = function(element, boxType, courseId) {
             }
         }, 2000);
     });
+    
+    // Function to explore Vue instance
+    window.cbmExploreVue = function() {
+        const cartModal = document.querySelector('.fkcart-modal');
+        if (!cartModal || !cartModal.__vue__) {
+            console.log('[CBM] No Vue instance found');
+            return;
+        }
+        
+        const vue = cartModal.__vue__;
+        console.log('[CBM] === Vue Instance Exploration ===');
+        console.log('[CBM] Vue root data:', vue.$data);
+        console.log('[CBM] Vue root methods:', vue.$options.methods);
+        
+        // Explore all components
+        function exploreComponent(component, path = 'root') {
+            if (component.$options.methods) {
+                const methods = Object.keys(component.$options.methods);
+                if (methods.length > 0) {
+                    console.log(`[CBM] Component ${path} methods:`, methods);
+                    
+                    // Look for coupon-related methods
+                    methods.forEach(method => {
+                        if (method.toLowerCase().includes('coupon')) {
+                            console.log(`[CBM] *** Found coupon method: ${path}.${method}`);
+                            window.lastFoundCouponMethod = {component, method};
+                        }
+                    });
+                }
+            }
+            
+            // Check data for coupon-related properties
+            if (component.$data) {
+                Object.keys(component.$data).forEach(key => {
+                    if (key.toLowerCase().includes('coupon')) {
+                        console.log(`[CBM] Found coupon data: ${path}.${key} =`, component.$data[key]);
+                    }
+                });
+            }
+            
+            // Recursively check children
+            if (component.$children && component.$children.length > 0) {
+                component.$children.forEach((child, index) => {
+                    exploreComponent(child, `${path}.$children[${index}]`);
+                });
+            }
+        }
+        
+        exploreComponent(vue);
+        
+        if (window.lastFoundCouponMethod) {
+            console.log('[CBM] To apply coupon, you can try:');
+            console.log('[CBM] window.lastFoundCouponMethod.component.' + window.lastFoundCouponMethod.method + '("YOUR_CODE")');
+        }
+    };
 
 })(jQuery);
