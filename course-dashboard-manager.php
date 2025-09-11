@@ -3434,23 +3434,45 @@ add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 5);
 add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 5);
 
 function cbm_ajax_add_to_cart() {
-    // Check if this is a FunnelKit cart action that we shouldn't handle
-    if (isset($_POST['action']) && $_POST['action'] === 'woocommerce_add_to_cart') {
-        // Check for FunnelKit-specific actions
-        if (isset($_POST['fkcart_apply_coupon']) || 
-            isset($_POST['apply_coupon']) || 
-            isset($_POST['remove_coupon']) || 
-            isset($_POST['update_cart']) ||
-            isset($_POST['coupon_code']) ||
-            (isset($_POST['cart_item_key']) && !isset($_POST['product_id']))) {
-            // This is likely a FunnelKit coupon or cart update action
-            error_log('[CBM Cart] Skipping - FunnelKit coupon/cart action detected');
-            return;
-        }
-        
-        // Only handle if we have a product_id (our add to cart action)
-        if (!isset($_POST['product_id'])) {
-            error_log('[CBM Cart] Skipping - No product_id, likely not our action');
+    // Log what type of request we're seeing
+    if (isset($_POST['coupon_code']) || isset($_POST['apply_coupon']) || isset($_POST['fkcart_apply_coupon'])) {
+        error_log('[CBM Cart] Coupon action detected, skipping our handler');
+        return;
+    }
+    
+    // ONLY handle our specific add to cart actions
+    // Must have product_id and must NOT be a coupon/update action
+    if (!isset($_POST['product_id'])) {
+        // Not our action, let other handlers process it
+        return;
+    }
+    
+    // Skip if this is a cart update action (let FunnelKit handle these)
+    if (isset($_POST['remove_coupon']) || 
+        isset($_POST['update_cart']) ||
+        isset($_POST['update_shipping']) ||
+        isset($_POST['calc_shipping']) ||
+        (isset($_POST['cart_item_key']) && !isset($_POST['quantity']))) {
+        // This is a FunnelKit cart update action, don't interfere
+        error_log('[CBM Cart] Cart update action detected, skipping our handler');
+        return;
+    }
+    
+    // Check if this looks like a FunnelKit-initiated add to cart (has special FunnelKit fields)
+    if (isset($_POST['fkcart_source']) || isset($_POST['_fkcart_nonce'])) {
+        // This is FunnelKit's own add to cart, let it handle it
+        return;
+    }
+    
+    // Additional check: if this has start_date or course_date, it's definitely ours
+    $is_our_request = isset($_POST['start_date']) || isset($_POST['course_date']);
+    
+    // If it's not clearly our request and doesn't have our custom fields, let others handle it
+    if (!$is_our_request) {
+        // Check if this looks like a standard WooCommerce/FunnelKit add to cart
+        // by checking if it has typical cart fields but no course fields
+        if (!isset($_POST['start_date']) && !isset($_POST['course_date'])) {
+            // Not our course box add to cart, return early
             return;
         }
     }
@@ -3459,7 +3481,7 @@ function cbm_ajax_add_to_cart() {
     $nonce = isset($_POST['security']) ? $_POST['security'] : (isset($_POST['nonce']) ? $_POST['nonce'] : '');
     
     if (!$nonce || !wp_verify_nonce($nonce, 'woocommerce-add-to-cart')) {
-        error_log('[CBM Cart] Invalid nonce. Received: ' . print_r($_POST, true));
+        error_log('[CBM Cart] Invalid nonce for our request. Received: ' . print_r($_POST, true));
         wp_send_json_error('Invalid security token');
         return;
     }
