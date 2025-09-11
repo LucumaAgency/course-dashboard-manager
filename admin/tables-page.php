@@ -134,6 +134,21 @@ if (!defined('ABSPATH')) {
             // Debug: Check all courses in group for selling page
             error_log('[CBM Debug] Looking for selling page in group ' . $group_id);
             
+            // First, let's see all courses in this group
+            $all_in_group = get_posts([
+                'post_type' => 'course',
+                'posts_per_page' => -1,
+                'fields' => 'ids',
+                'tax_query' => [
+                    [
+                        'taxonomy' => 'course_group',
+                        'field' => 'term_id',
+                        'terms' => $group_id,
+                    ],
+                ],
+            ]);
+            error_log('[CBM Debug] Total courses in group ' . $group_id . ': ' . count($all_in_group) . ' - IDs: ' . implode(', ', $all_in_group));
+            
             $group_courses = get_posts([
                 'post_type' => 'course',
                 'posts_per_page' => 1,
@@ -209,9 +224,26 @@ if (!defined('ABSPATH')) {
                         <select id="group-selling-page" style="margin-left: 10px; padding: 5px; min-width: 200px;">
                             <option value="">None</option>
                             <?php
-                            // Get all courses for selling page selection
-                            $all_courses = get_posts(['post_type' => 'course', 'posts_per_page' => -1, 'orderby' => 'title', 'order' => 'ASC']);
-                            foreach ($all_courses as $course) {
+                            // Get only courses in this group for selling page selection
+                            $group_courses_for_select = get_posts([
+                                'post_type' => 'course',
+                                'posts_per_page' => -1,
+                                'orderby' => 'title',
+                                'order' => 'ASC',
+                                'tax_query' => [
+                                    [
+                                        'taxonomy' => 'course_group',
+                                        'field' => 'term_id',
+                                        'terms' => $group_id,
+                                    ],
+                                ],
+                            ]);
+                            
+                            error_log('[CBM Debug] Courses available for selling page dropdown: ' . count($group_courses_for_select));
+                            
+                            foreach ($group_courses_for_select as $course) {
+                                $is_selected = ($selling_page_id == $course->ID);
+                                error_log('[CBM Debug] Option: ' . $course->ID . ' - ' . $course->post_title . ' - Selected: ' . ($is_selected ? 'YES' : 'NO'));
                                 echo '<option value="' . esc_attr($course->ID) . '"' . selected($selling_page_id, $course->ID, false) . '>' . 
                                      esc_html($course->post_title) . '</option>';
                             }
@@ -1181,11 +1213,15 @@ if (!defined('ABSPATH')) {
                 });
                 
                 // Selling page change handler - auto-save when changed
-                document.getElementById('group-selling-page').addEventListener('change', function() {
-                    const sellingPageId = this.value;
-                    const groupId = <?php echo $group_id; ?>;
+                const sellingPageDropdown = document.getElementById('group-selling-page');
+                if (sellingPageDropdown) {
+                    console.log('[CBM Debug] Adding change handler to selling page dropdown');
+                    sellingPageDropdown.addEventListener('change', function() {
+                        const sellingPageId = this.value;
+                        const groupId = <?php echo $group_id; ?>;
                     
                     console.log('[CBM Debug] Selling page changed to:', sellingPageId);
+                    console.log('[CBM Debug] Group ID for saving:', groupId);
                     
                     // Update all courses in the group with the selling page
                     if (coursesData && coursesData.length > 0) {
@@ -1203,14 +1239,19 @@ if (!defined('ABSPATH')) {
                         }
                     }
                     
+                    // Prepare request data
+                    const requestBody = 'action=update_group_selling_page' +
+                          '&group_id=' + groupId + 
+                          '&selling_page_id=' + sellingPageId +
+                          '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>';
+                    
+                    console.log('[CBM Debug] Sending AJAX request with:', requestBody);
+                    
                     // Save selling page immediately
                     fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: 'action=update_group_selling_page' +
-                              '&group_id=' + groupId + 
-                              '&selling_page_id=' + sellingPageId +
-                              '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                        body: requestBody
                     })
                     .then(response => response.json())
                     .then(result => {
@@ -1232,6 +1273,9 @@ if (!defined('ABSPATH')) {
                         console.error('[CBM Debug] Error updating selling page:', error);
                     });
                 });
+                } else {
+                    console.error('[CBM Debug] Selling page dropdown not found!');
+                }
                 
                 // Save all changes button
                 const saveAllBtn = document.getElementById('save-all-changes');
