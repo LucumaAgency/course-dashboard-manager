@@ -473,6 +473,29 @@ window.selectBox = function(element, boxType, courseId) {
         });
     }
 
+    // Function to debug FunnelKit availability
+    window.cbmDebugFunnelKit = function() {
+        console.log('[CBM] === FunnelKit Debug Info ===');
+        console.log('[CBM] window.fkcart:', typeof window.fkcart !== 'undefined' ? window.fkcart : 'Not found');
+        console.log('[CBM] window.FKCart:', typeof window.FKCart !== 'undefined' ? window.FKCart : 'Not found');
+        console.log('[CBM] window.fkcart_show_cart:', typeof window.fkcart_show_cart);
+        
+        // Check for FunnelKit elements in DOM
+        console.log('[CBM] Cart elements found:');
+        console.log('[CBM] - .fkcart-modal:', jQuery('.fkcart-modal').length);
+        console.log('[CBM] - .fkcart-coupon-button:', jQuery('.fkcart-coupon-button').length);
+        console.log('[CBM] - #fkcart-coupon__input:', jQuery('#fkcart-coupon__input').length);
+        
+        // Check for event listeners
+        const couponBtn = jQuery('.fkcart-coupon-button')[0];
+        if (couponBtn) {
+            const events = jQuery._data(couponBtn, 'events');
+            console.log('[CBM] Event listeners on coupon button:', events);
+        }
+        
+        return true;
+    };
+    
     // Global function to open FunnelKit cart (accessible from console for testing)
     window.cbmOpenFunnelKitCart = function() {
         console.log('[CBM] Attempting to open FunnelKit cart...');
@@ -533,17 +556,77 @@ window.selectBox = function(element, boxType, courseId) {
     // Function to manually remove loading state from coupon button (for debugging)
     window.cbmFixCouponButton = function() {
         const couponBtn = jQuery('.fkcart-coupon-button');
-        if (couponBtn.length) {
-            couponBtn.removeClass('fkcart-loading');
-            console.log('[CBM] Removed loading class from coupon button');
-        }
+        const couponInput = jQuery('#fkcart-coupon__input');
         
-        // Also try to re-bind click handler
-        couponBtn.off('click.cbm').on('click.cbm', function(e) {
-            console.log('[CBM] Coupon button clicked');
-            // Don't prevent default or stop propagation
-            // Let FunnelKit handle it
-        });
+        if (couponBtn.length) {
+            // Remove loading state
+            couponBtn.removeClass('fkcart-loading fkcart-disabled');
+            console.log('[CBM] Removed loading class from coupon button');
+            
+            // Remove any existing click handlers that might be blocking
+            couponBtn.off('click.cbm');
+            
+            // Add a monitor to see when clicked
+            couponBtn.on('click.cbm', function(e) {
+                console.log('[CBM] Coupon button clicked!');
+                const couponCode = couponInput.val();
+                console.log('[CBM] Coupon code:', couponCode);
+                
+                // Don't interfere - let the event bubble
+                // FunnelKit should handle it
+            });
+            
+            // Try to trigger FunnelKit's coupon application manually if needed
+            window.cbmApplyCoupon = function() {
+                const code = couponInput.val();
+                if (!code) {
+                    alert('Please enter a coupon code');
+                    return;
+                }
+                
+                console.log('[CBM] Manually applying coupon:', code);
+                
+                // Try different methods to apply coupon
+                if (typeof window.fkcart !== 'undefined' && window.fkcart.apply_coupon) {
+                    console.log('[CBM] Using fkcart.apply_coupon');
+                    window.fkcart.apply_coupon(code);
+                } else if (typeof window.FKCart !== 'undefined' && window.FKCart.applyCoupon) {
+                    console.log('[CBM] Using FKCart.applyCoupon');
+                    window.FKCart.applyCoupon(code);
+                } else {
+                    console.log('[CBM] Triggering AJAX manually');
+                    // Manual AJAX as last resort
+                    jQuery.ajax({
+                        type: 'POST',
+                        url: cbm_ajax.ajax_url,
+                        data: {
+                            action: 'fkcart_apply_coupon',
+                            coupon_code: code,
+                            security: jQuery('#fkcart-coupon-nonce').val() || cbm_ajax.nonce
+                        },
+                        success: function(response) {
+                            console.log('[CBM] Coupon response:', response);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('[CBM] Coupon error:', error);
+                        }
+                    });
+                }
+            };
+            
+            console.log('[CBM] Added cbmApplyCoupon() function - call it to manually apply coupon');
+        }
     };
+    
+    // Auto-fix coupon button on page load if it's stuck
+    jQuery(document).ready(function() {
+        setTimeout(function() {
+            const couponBtn = jQuery('.fkcart-coupon-button.fkcart-loading');
+            if (couponBtn.length) {
+                console.log('[CBM] Found stuck coupon button, auto-fixing...');
+                window.cbmFixCouponButton();
+            }
+        }, 2000);
+    });
 
 })(jQuery);
