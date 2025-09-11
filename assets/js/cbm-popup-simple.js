@@ -446,25 +446,19 @@
                 console.log('[CBM Popup] Multiple boxes detected, creating tabs');
                 createTabs($boxes);
                 bindTabEvents();
-                
-                // Auto-select the first box immediately (no timeout)
-                const $firstPane = $('#cbm-popup-content').find('.cbm-tab-pane.active');
-                const $firstBox = $firstPane.find('.box');
-                if ($firstBox.length > 0) {
-                    $firstBox.addClass('selected');
-                    $firstBox.removeClass('no-button');
-                    $firstBox.find('.circlecontainer').show();
-                    $firstBox.find('.circle-container').hide();
-                    console.log('[CBM Popup] Auto-selected first box');
-                }
-            } else if ($boxes.length === 1) {
-                console.log('[CBM Popup] Single box detected, no tabs needed');
-                $boxes.addClass('selected');
-                $boxes.removeClass('no-button');
-                $boxes.find('.circlecontainer').show();
-                $boxes.find('.circle-container').hide();
             }
         }
+        
+        // ALWAYS keep ALL boxes in selected state in popup
+        const $allBoxes = $('#cbm-popup-content').find('.box');
+        $allBoxes.each(function() {
+            const $box = $(this);
+            $box.addClass('selected');
+            $box.removeClass('no-button');
+            $box.find('.circlecontainer').show();
+            $box.find('.circle-container').hide();
+        });
+        console.log('[CBM Popup] All boxes set to selected state');
         
         // Initialize other box scripts
         initializeBoxInteractions();
@@ -485,14 +479,6 @@
             $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="buy"]').addClass('active');
             $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="enroll"]').removeClass('active');
             
-            // Select the buy box
-            const $buyBox = $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="buy"] .box');
-            if ($buyBox.length > 0) {
-                $buyBox.addClass('selected');
-                $buyBox.find('.circlecontainer').show();
-                $buyBox.find('.circle-container').hide();
-            }
-            
             console.log('[CBM Popup] Buy tab selected by default');
         }
         
@@ -511,45 +497,16 @@
             const $activePane = $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="' + tabIndex + '"]');
             $activePane.addClass('active');
             
-            // Auto-select the box in the active tab
+            // Box is already selected, just ensure it stays that way
             const $box = $activePane.find('.box');
             if ($box.length > 0) {
-                // Add selected class to show the box as selected
+                // Keep selected state
                 $box.addClass('selected');
-                
-                // Ensure the button is visible
                 $box.removeClass('no-button');
-                
-                // Make sure the add-to-cart button exists, if not add it
-                if ($box.find('.add-to-cart-button').length === 0) {
-                    // Check if this is an enroll box that needs a button
-                    if ($box.hasClass('enroll-course')) {
-                        // Try to get product ID from various sources
-                        let productId = $box.find('.date-btn').first().data('product-id') || 
-                                      $box.data('product-id') || 
-                                      $box.attr('data-product-id') ||
-                                      $box.attr('data-course-id');
-                        
-                        // For enroll, check if there's a specific enroll product ID
-                        const enrollProductInput = $box.find('input[name="enroll_product_id"]');
-                        if (enrollProductInput.length > 0) {
-                            productId = enrollProductInput.val();
-                        }
-                        
-                        const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
-                                         '<span class="button-text">Enroll Now</span>' +
-                                         '<span class="loader" style="display: none;"></span>' +
-                                         '</button>';
-                        $box.append(buttonHtml);
-                        console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);
-                    }
-                }
-                
-                // Update radio button indicators
                 $box.find('.circlecontainer').show();
                 $box.find('.circle-container').hide();
                 
-                console.log('[CBM Popup] Auto-selected box in tab:', tabIndex);
+                console.log('[CBM Popup] Box remains selected in tab:', tabIndex);
             }
             
             console.log('[CBM Popup] Switched to tab:', tabIndex);
@@ -562,15 +519,10 @@
         // Re-initialize date selection
         $('#cbm-popup-content').find('.date-btn:not(.sold-out)').off('click').on('click', function(e) {
             e.preventDefault();
-            e.stopPropagation(); // Prevent event from bubbling to box
+            e.stopPropagation(); // Prevent event from bubbling
             
             const $btn = $(this);
             const $box = $btn.closest('.box');
-            
-            // Keep the box selected
-            $box.addClass('selected');
-            $box.find('.circlecontainer').show();
-            $box.find('.circle-container').hide();
             
             // Handle date selection
             $btn.siblings().removeClass('selected');
@@ -590,16 +542,10 @@
         // Re-initialize add to cart
         $('#cbm-popup-content').find('.add-to-cart-button').off('click').on('click', function(e) {
             e.preventDefault();
-            e.stopPropagation(); // Prevent event from bubbling to box
+            e.stopPropagation(); // Prevent event from bubbling
             
             const $button = $(this);
             const $box = $button.closest('.box');
-            
-            // Keep the box selected
-            $box.addClass('selected');
-            $box.find('.circlecontainer').show();
-            $box.find('.circle-container').hide();
-            
             const productId = $button.data('product-id');
             const selectedDate = $box.data('selected-date') || $box.find('.date-btn.selected').data('date') || '';
             
