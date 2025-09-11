@@ -233,7 +233,8 @@ window.selectBox = function(element, boxType, courseId) {
             product_id: productId,
             quantity: quantity,
             variation_id: 0,
-            security: cbm_ajax.nonce || ''
+            nonce: cbm_ajax.nonce || '',  // Changed from 'security' to 'nonce'
+            security: cbm_ajax.nonce || '' // Keep both for compatibility
         };
         
         // Add selected date if available

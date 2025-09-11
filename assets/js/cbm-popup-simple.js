@@ -694,7 +694,8 @@
             action: 'woocommerce_add_to_cart',
             product_id: productId,
             quantity: 1,
-            security: window.cbm_ajax.nonce || '',
+            nonce: window.cbm_ajax.nonce || '',  // Changed from 'security' to 'nonce'
+            security: window.cbm_ajax.nonce || '', // Keep both for compatibility
             start_date: selectedDate,
             course_date: selectedDate
         };
