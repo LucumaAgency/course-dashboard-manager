@@ -1,5 +1,29 @@
 /* Course Box Manager - Frontend Styles */
 
+/* Force FunnelKit Cart to be visible */
+#fkcart-floating-toggler,
+.fkcart-toggler,
+.fkcart-floating-icon,
+.fkcart-float-icon,
+.fkcart-icon-wrap {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 999990 !important; /* High but below popup */
+}
+
+/* Ensure the cart container is visible */
+.fkcart-panel,
+.fkcart-modal,
+.fkcart-drawer,
+.fkcart-slide-cart {
+    /* Don't force display, let FunnelKit control when it opens */
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
 /* Box Container */
 .course-boxes-container,
 .box-container {
