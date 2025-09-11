@@ -1,0 +1,40 @@
+# Backup files
+course-dashboard-manager-old-backup.php
+course-dashboard-manager-new.php
+*-backup.php
+*-old.php
+*-new.php
+*.bak
+*.backup
+
+# IDE and system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# WordPress specific
+wp-config.php
+.htaccess
+
+# Logs
+*.log
+error_log
+debug.log
+
+# Dependencies (if any)
+/vendor/
+/node_modules/
+
+# Build files
+/dist/
+/build/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
