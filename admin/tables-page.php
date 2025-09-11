@@ -445,6 +445,31 @@ if (!defined('ABSPATH')) {
                 console.log('[CBM Debug] Current box state:', currentBoxState);
                 console.log('[CBM Debug] Courses data:', typeof coursesData !== 'undefined' ? coursesData : 'NOT DEFINED');
                 
+                // Debug selling page selection - MOVED HERE
+                const sellingPageSelectDebug = document.getElementById('group-selling-page');
+                if (sellingPageSelectDebug) {
+                    console.log('[CBM Debug] Selling page dropdown value on load:', sellingPageSelectDebug.value);
+                    const selectedOptionDebug = sellingPageSelectDebug.options[sellingPageSelectDebug.selectedIndex];
+                    console.log('[CBM Debug] Selected option:', selectedOptionDebug ? {value: selectedOptionDebug.value, text: selectedOptionDebug.text} : 'none');
+                    
+                    // Check if PHP set the selection
+                    const phpSellingPageIdDebug = <?php echo json_encode($selling_page_id); ?>;
+                    console.log('[CBM Debug] PHP selling_page_id:', phpSellingPageIdDebug);
+                    
+                    // Force set the value if needed
+                    if (phpSellingPageIdDebug && sellingPageSelectDebug.value !== phpSellingPageIdDebug.toString()) {
+                        console.log('[CBM Debug] Forcing selling page selection to:', phpSellingPageIdDebug);
+                        sellingPageSelectDebug.value = phpSellingPageIdDebug.toString();
+                        
+                        // Double check it was set
+                        setTimeout(() => {
+                            console.log('[CBM Debug] After forcing, selling page value is:', sellingPageSelectDebug.value);
+                        }, 100);
+                    }
+                } else {
+                    console.log('[CBM Debug] Selling page dropdown not found!');
+                }
+                
                 // Function to render table based on box state
                 function renderTable(boxState) {
                     const tableHeader = document.getElementById('table-header');
@@ -466,8 +491,10 @@ if (!defined('ABSPATH')) {
                     if (boxState === 'enroll-course' || boxState === 'enroll-buy') {
                         stmCourseSelector.style.display = 'block';
                         populateSTMCourseSelector();
+                        console.log('[CBM Debug] STM selector shown and populated for state:', boxState);
                     } else {
                         stmCourseSelector.style.display = 'none';
+                        console.log('[CBM Debug] STM selector hidden for state:', boxState);
                     }
                     
                     // Handle enroll-buy state with two separate tables
@@ -953,6 +980,15 @@ if (!defined('ABSPATH')) {
                     row.querySelectorAll('input, select').forEach(field => {
                         field.addEventListener('change', function() {
                             row.classList.add('has-changes');
+                            
+                            // Log STM course changes
+                            if (this.classList.contains('inline-edit-stm-course')) {
+                                console.log('[CBM Debug] STM course changed in row to:', this.value);
+                                console.log('[CBM Debug] Row data:', {
+                                    courseId: row.dataset.courseId,
+                                    dateIndex: row.dataset.dateIndex
+                                });
+                            }
                             
                             // Update available when stock changes
                             if (this.classList.contains('inline-edit-stock')) {
