@@ -521,4 +521,29 @@ window.selectBox = function(element, boxType, courseId) {
         return false;
     };
 
+    // Debug AJAX requests to see what FunnelKit is doing
+    if (window.location.href.includes('debug=fkcart')) {
+        jQuery(document).ajaxSend(function(event, xhr, settings) {
+            if (settings.url.includes('admin-ajax.php')) {
+                console.log('[CBM Debug] AJAX Request:', settings.data);
+            }
+        });
+    }
+    
+    // Function to manually remove loading state from coupon button (for debugging)
+    window.cbmFixCouponButton = function() {
+        const couponBtn = jQuery('.fkcart-coupon-button');
+        if (couponBtn.length) {
+            couponBtn.removeClass('fkcart-loading');
+            console.log('[CBM] Removed loading class from coupon button');
+        }
+        
+        // Also try to re-bind click handler
+        couponBtn.off('click.cbm').on('click.cbm', function(e) {
+            console.log('[CBM] Coupon button clicked');
+            // Don't prevent default or stop propagation
+            // Let FunnelKit handle it
+        });
+    };
+
 })(jQuery);

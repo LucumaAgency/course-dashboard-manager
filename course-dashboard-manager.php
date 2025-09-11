@@ -3428,54 +3428,25 @@ function assign_course_to_group() {
 }
 
 // AJAX handler for adding products to cart (compatible with FunnelKit)
-// Priority 5 to run BEFORE FunnelKit's handlers (usually at priority 10)
-// This ensures we handle our products first
-add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 5);
-add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 5);
+// Priority 999 to run AFTER FunnelKit's handlers
+// Only handle if FunnelKit didn't already handle it
+add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 999);
+add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 999);
 
 function cbm_ajax_add_to_cart() {
-    // Log what type of request we're seeing
-    if (isset($_POST['coupon_code']) || isset($_POST['apply_coupon']) || isset($_POST['fkcart_apply_coupon'])) {
-        error_log('[CBM Cart] Coupon action detected, skipping our handler');
+    // ONLY handle requests that have our course-specific fields
+    // This ensures we never interfere with FunnelKit or other cart operations
+    if (!isset($_POST['start_date']) && !isset($_POST['course_date'])) {
+        // Not our course box request, let others handle it
         return;
     }
     
-    // ONLY handle our specific add to cart actions
-    // Must have product_id and must NOT be a coupon/update action
+    // Additional safety check: must have product_id
     if (!isset($_POST['product_id'])) {
-        // Not our action, let other handlers process it
         return;
     }
     
-    // Skip if this is a cart update action (let FunnelKit handle these)
-    if (isset($_POST['remove_coupon']) || 
-        isset($_POST['update_cart']) ||
-        isset($_POST['update_shipping']) ||
-        isset($_POST['calc_shipping']) ||
-        (isset($_POST['cart_item_key']) && !isset($_POST['quantity']))) {
-        // This is a FunnelKit cart update action, don't interfere
-        error_log('[CBM Cart] Cart update action detected, skipping our handler');
-        return;
-    }
-    
-    // Check if this looks like a FunnelKit-initiated add to cart (has special FunnelKit fields)
-    if (isset($_POST['fkcart_source']) || isset($_POST['_fkcart_nonce'])) {
-        // This is FunnelKit's own add to cart, let it handle it
-        return;
-    }
-    
-    // Additional check: if this has start_date or course_date, it's definitely ours
-    $is_our_request = isset($_POST['start_date']) || isset($_POST['course_date']);
-    
-    // If it's not clearly our request and doesn't have our custom fields, let others handle it
-    if (!$is_our_request) {
-        // Check if this looks like a standard WooCommerce/FunnelKit add to cart
-        // by checking if it has typical cart fields but no course fields
-        if (!isset($_POST['start_date']) && !isset($_POST['course_date'])) {
-            // Not our course box add to cart, return early
-            return;
-        }
-    }
+    error_log('[CBM Cart] Processing course box add to cart request');
     
     // Verify nonce - check both 'security' and 'nonce' fields for compatibility
     $nonce = isset($_POST['security']) ? $_POST['security'] : (isset($_POST['nonce']) ? $_POST['nonce'] : '');
