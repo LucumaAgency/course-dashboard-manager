@@ -172,33 +172,17 @@ class SeatsRemaining {
                 document.querySelectorAll('.date-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
-                        // Get the date from data-date attribute or button text
-                        let selectedDate = this.getAttribute('data-date');
-                        // If data-date is empty or literally "date", use the button text
-                        if (!selectedDate || selectedDate === 'date') {
-                            selectedDate = this.textContent.trim();
-                        }
-                        console.log('Seats Remaining Shortcode: Date button clicked, selected date: ' + selectedDate);
+                        const selectedDate = this.getAttribute('data-date') || this.textContent.trim();
                         updateSeats(selectedDate);
                     });
                 });
 
                 // Skip forced AJAX call if default date is already selected
                 const defaultDateBtn = document.querySelector('.date-btn.selected');
-                if (defaultDateBtn) {
-                    let selectedBtnDate = defaultDateBtn.getAttribute('data-date');
-                    // If data-date is empty or literally "date", use the button text
-                    if (!selectedBtnDate || selectedBtnDate === 'date') {
-                        selectedBtnDate = defaultDateBtn.textContent.trim();
-                    }
-                    if (selectedBtnDate === '<?php echo esc_js($default_date); ?>') {
-                        console.log('Seats Remaining Shortcode: Skipping forced AJAX call, default date already selected');
-                    } else {
-                        console.log('Seats Remaining Shortcode: Attempting forced AJAX call for default date');
-                        updateSeats('<?php echo esc_js($default_date); ?>');
-                    }
+                if (defaultDateBtn && (defaultDateBtn.getAttribute('data-date') || defaultDateBtn.textContent.trim()) === '<?php echo esc_js($default_date); ?>') {
+                    console.log('Seats Remaining Shortcode: Skipping forced AJAX call, default date already selected');
                 } else {
-                    console.log('Seats Remaining Shortcode: No default date button found, attempting forced AJAX call for default date');
+                    console.log('Seats Remaining Shortcode: Attempting forced AJAX call for default date');
                     updateSeats('<?php echo esc_js($default_date); ?>');
                 }
             });
@@ -314,24 +298,10 @@ class SeatsRemaining {
             }
         }
 
-        // Check if the selected date exists (case-insensitive comparison for text dates)
-        $date_found = false;
-        $matched_date = '';
-        foreach ($available_dates as $date) {
-            if (strcasecmp(trim($date), trim($selected_date)) === 0) {
-                $date_found = true;
-                $matched_date = $date;
-                break;
-            }
+        if (!in_array($selected_date, $available_dates)) {
+            error_log('AJAX get_seats_remaining: Invalid selected date ' . $selected_date);
+            wp_send_json_error(['message' => 'Invalid date']);
         }
-        
-        if (!$date_found) {
-            error_log('AJAX get_seats_remaining: Invalid selected date "' . $selected_date . '". Available dates: ' . implode(', ', $available_dates));
-            wp_send_json_error(['message' => 'Invalid date: "' . $selected_date . '"']);
-        }
-        
-        // Use the matched date for consistency
-        $selected_date = $matched_date;
 
         $seats_remaining = $this->calculate_seats_remaining($product_id, $selected_date, $available_dates, $date_stocks);
         

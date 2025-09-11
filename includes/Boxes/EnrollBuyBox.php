@@ -15,10 +15,6 @@ class EnrollBuyBox extends AbstractBox {
     private $buy_product_id;
     private $enroll_product_id;
     private $buy_price;
-    private $buy_regular_price;     // Added to fix deprecated warning
-    private $buy_sale_price;         // Added to fix deprecated warning
-    private $enroll_regular_price;   // Added to fix deprecated warning
-    private $enroll_sale_price;      // Added to fix deprecated warning
     private $enroll_in_stock;
     private $enroll_dates;
     
@@ -86,7 +82,7 @@ class EnrollBuyBox extends AbstractBox {
         }
         
         // Get enroll dates - these are stored as course_dates
-        $this->enroll_dates = \CourseBoxManager\cbm_get_field('course_dates', $this->course_id) ?: $this->available_dates_full;
+        $this->enroll_dates = cbm_get_field('course_dates', $this->course_id) ?: $this->available_dates_full;
         error_log('[EnrollBuyBox] Enroll Dates: ' . print_r($this->enroll_dates, true));
         
         // Create instances of both boxes with custom configurations

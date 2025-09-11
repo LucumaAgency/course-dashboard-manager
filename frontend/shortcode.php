@@ -56,33 +56,13 @@ function enqueue_frontend_assets() {
         true
     );
     
-    // Enqueue popup script
-    wp_enqueue_script(
-        'cbm-popup-simple',
-        CBM_PLUGIN_URL . 'assets/js/cbm-popup-simple.js',
-        array('jquery'),
-        CBM_VERSION,
-        true
-    );
-    
-    // Enqueue popup styles
-    wp_enqueue_style(
-        'cbm-popup',
-        CBM_PLUGIN_URL . 'assets/css/cbm-popup.css',
-        array(),
-        CBM_VERSION
-    );
-    
-    // Localize scripts
-    $localize_data = array(
+    // Localize script
+    wp_localize_script('course-box-frontend', 'cbm_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('woocommerce-add-to-cart'),
         'cart_url' => wc_get_cart_url(),
         'is_funnelkit_active' => defined('FKCART_VERSION') || class_exists('FKCart')
-    );
-    
-    wp_localize_script('course-box-frontend', 'cbm_ajax', $localize_data);
-    wp_localize_script('cbm-popup-simple', 'cbm_ajax', $localize_data);
+    ));
 }
 
 /**
