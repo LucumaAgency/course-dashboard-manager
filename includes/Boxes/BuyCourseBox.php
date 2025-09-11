@@ -86,6 +86,7 @@ class BuyCourseBox extends AbstractBox {
         ?>
         <div class="<?php echo esc_attr($this->get_box_classes()); ?> selected" 
              data-course-id="<?php echo esc_attr($this->course_id); ?>" 
+             data-product-id="<?php echo esc_attr($this->course_product_id); ?>"
              onclick="selectBox(this, 'box1', <?php echo esc_attr($this->course_id); ?>)">
             
             <?php if (empty($custom_text)) : ?>

@@ -460,25 +460,42 @@
             
             // Make sure the add-to-cart button exists for enroll boxes
             if ($box.hasClass('enroll-course') && $box.find('.add-to-cart-button').length === 0) {
-                // Try to get product ID from various sources
-                let productId = $box.find('.date-btn').first().data('product-id') || 
-                              $box.data('product-id') || 
-                              $box.attr('data-product-id') ||
-                              $box.attr('data-course-id');
+                // For enroll boxes, the product ID should be from the existing button's data-product-id
+                // or from a hidden input, not from date buttons
+                let productId = null;
                 
-                // For enroll, check if there's a specific enroll product ID
-                const enrollProductInput = $box.find('input[name="enroll_product_id"]');
-                if (enrollProductInput.length > 0) {
-                    productId = enrollProductInput.val();
+                // First check if there's a disabled/hidden button with product ID
+                const $hiddenButton = $box.find('button[data-product-id]');
+                if ($hiddenButton.length > 0) {
+                    productId = $hiddenButton.data('product-id');
+                }
+                
+                // If not, check data attributes on the box
+                if (!productId) {
+                    productId = $box.data('product-id') || $box.attr('data-product-id');
+                }
+                
+                // Check for course ID as fallback
+                if (!productId) {
+                    const courseId = $box.data('course-id') || $box.attr('data-course-id');
+                    // You may need to get the actual product ID from course ID
+                    // For now, we'll use course ID if available
+                    if (courseId) {
+                        // Log warning
+                        console.warn('[CBM Popup] Using course ID as product ID:', courseId);
+                        productId = courseId;
+                    }
                 }
                 
                 if (productId) {
                     const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
                                      '<span class="button-text">Enroll Now</span>' +
-                                     '<span class="loading-spinner" style="display: none;"></span>' +
+                                     '<span class="loading-spinner"></span>' +
                                      '</button>';
                     $box.append(buttonHtml);
                     console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);
+                } else {
+                    console.error('[CBM Popup] Could not find product ID for enroll box');
                 }
             }
             
@@ -547,24 +564,39 @@
                 if ($box.find('.add-to-cart-button').length === 0) {
                     // Check if this is an enroll box that needs a button
                     if ($box.hasClass('enroll-course')) {
-                        // Try to get product ID from various sources
-                        let productId = $box.find('.date-btn').first().data('product-id') || 
-                                      $box.data('product-id') || 
-                                      $box.attr('data-product-id') ||
-                                      $box.attr('data-course-id');
+                        // For enroll boxes, get the product ID properly
+                        let productId = null;
                         
-                        // For enroll, check if there's a specific enroll product ID
-                        const enrollProductInput = $box.find('input[name="enroll_product_id"]');
-                        if (enrollProductInput.length > 0) {
-                            productId = enrollProductInput.val();
+                        // First check if there's a disabled/hidden button with product ID
+                        const $hiddenButton = $box.find('button[data-product-id]');
+                        if ($hiddenButton.length > 0) {
+                            productId = $hiddenButton.data('product-id');
                         }
                         
-                        const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
-                                         '<span class="button-text">Enroll Now</span>' +
-                                         '<span class="loader" style="display: none;"></span>' +
-                                         '</button>';
-                        $box.append(buttonHtml);
-                        console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);
+                        // If not, check data attributes on the box
+                        if (!productId) {
+                            productId = $box.data('product-id') || $box.attr('data-product-id');
+                        }
+                        
+                        // Check for course ID as fallback
+                        if (!productId) {
+                            const courseId = $box.data('course-id') || $box.attr('data-course-id');
+                            if (courseId) {
+                                console.warn('[CBM Popup] Using course ID as product ID:', courseId);
+                                productId = courseId;
+                            }
+                        }
+                        
+                        if (productId) {
+                            const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
+                                             '<span class="button-text">Enroll Now</span>' +
+                                             '<span class="loading-spinner"></span>' +
+                                             '</button>';
+                            $box.append(buttonHtml);
+                            console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);
+                        } else {
+                            console.error('[CBM Popup] Could not find product ID for enroll box');
+                        }
                     }
                 }
                 
@@ -651,14 +683,22 @@
     
     function addToCart($button, productId, selectedDate) {
         const originalText = $button.find('.button-text').text();
-        $button.addClass('loading').find('.button-text').text('Adding...');
+        
+        // Add loading state
+        $button.addClass('loading');
+        
+        // Add spinner if it doesn't exist
+        if (!$button.find('.loading-spinner').length) {
+            $button.append('<span class="loading-spinner"></span>');
+        }
         
         const data = {
             action: 'woocommerce_add_to_cart',
             product_id: productId,
             quantity: 1,
             security: window.cbm_ajax.nonce || '',
-            start_date: selectedDate
+            start_date: selectedDate,
+            course_date: selectedDate
         };
         
         console.log('[CBM Popup] Adding to cart:', data);
@@ -689,18 +729,24 @@
                     $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
                     
                     setTimeout(function() {
-                        $button.removeClass('loading').find('.button-text').text(originalText);
+                        $button.removeClass('loading');
+                        $button.find('.button-text').text(originalText);
+                        $button.find('.loading-spinner').remove();
                         closePopup(); // Close popup after successful add
                     }, 1500);
                 } else {
                     alert(response.data || 'Error adding to cart');
-                    $button.removeClass('loading').find('.button-text').text(originalText);
+                    $button.removeClass('loading');
+                    $button.find('.button-text').text(originalText);
+                    $button.find('.loading-spinner').remove();
                 }
             },
             error: function(xhr, status, error) {
                 console.error('[CBM Popup] Cart error:', error);
                 alert('Error adding to cart. Please try again.');
-                $button.removeClass('loading').find('.button-text').text(originalText);
+                $button.removeClass('loading');
+                $button.find('.button-text').text(originalText);
+                $button.find('.loading-spinner').remove();
             }
         });
     }

@@ -157,6 +157,7 @@ class EnrollCourseBox extends AbstractBox {
             ?>
             <div class="<?php echo esc_attr($this->get_box_classes()); ?>" 
                  data-course-id="<?php echo esc_attr($this->course_id); ?>" 
+                 data-product-id="<?php echo esc_attr($this->course_product_id); ?>"
                  onclick="selectBox(this, 'box2', <?php echo esc_attr($this->course_id); ?>)">
                 
                 <div class="statebox">
@@ -189,6 +190,7 @@ class EnrollCourseBox extends AbstractBox {
             ?>
             <div class="<?php echo esc_attr($this->get_box_classes()); ?>" 
                  data-course-id="<?php echo esc_attr($this->course_id); ?>" 
+                 data-product-id="<?php echo esc_attr($this->course_product_id); ?>"
                  onclick="selectBox(this, 'box2', <?php echo esc_attr($this->course_id); ?>)">
                 
                 <?php echo $this->render_selection_indicator(); ?>
