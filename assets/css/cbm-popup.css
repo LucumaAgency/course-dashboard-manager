@@ -450,3 +450,36 @@ body.cbm-popup-open {
     opacity: 0.9;
     transform: translateY(-2px);
 }
+
+/* Override WordPress button styles for date buttons */
+.cbm-popup-container button.date-btn:active,
+.cbm-popup-container button.date-btn:focus,
+.cbm-popup-container button.date-btn:hover,
+.cbm-popup-container .date-btn:active,
+.cbm-popup-container .date-btn:focus,
+.cbm-popup-container .date-btn:hover,
+button.date-btn:active,
+button.date-btn:focus,
+button.date-btn:hover {
+    background-color: #DE04A4 !important;
+    border-color: #DE04A4 !important;
+    color: white !important;
+    outline: none !important;
+    text-decoration: none !important;
+}
+
+.cbm-popup-container button.date-btn.selected:active,
+.cbm-popup-container button.date-btn.selected:focus,
+.cbm-popup-container button.date-btn.selected:hover,
+.cbm-popup-container .date-btn.selected:active,
+.cbm-popup-container .date-btn.selected:focus,
+.cbm-popup-container .date-btn.selected:hover,
+button.date-btn.selected:active,
+button.date-btn.selected:focus,
+button.date-btn.selected:hover {
+    background-color: #DE04A4 !important;
+    border-color: #DE04A4 !important;
+    color: white !important;
+    outline: none !important;
+    text-decoration: none !important;
+}

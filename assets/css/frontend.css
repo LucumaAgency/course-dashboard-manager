@@ -504,3 +504,29 @@
 .box.soldout-course {
     /* Can add specific styles */
 }
+/* Override WordPress button styles for date buttons */
+button.date-btn:active,
+button.date-btn:focus,
+button.date-btn:hover,
+.date-btn:active,
+.date-btn:focus,
+.date-btn:hover {
+    background-color: #DE04A4 !important;
+    border-color: #DE04A4 !important;
+    color: white !important;
+    outline: none !important;
+    text-decoration: none !important;
+}
+
+button.date-btn.selected:active,
+button.date-btn.selected:focus,
+button.date-btn.selected:hover,
+.date-btn.selected:active,
+.date-btn.selected:focus,
+.date-btn.selected:hover {
+    background-color: #DE04A4 !important;
+    border-color: #DE04A4 !important;
+    color: white !important;
+    outline: none !important;
+    text-decoration: none !important;
+}
