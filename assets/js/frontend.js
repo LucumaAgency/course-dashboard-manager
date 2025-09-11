@@ -316,20 +316,70 @@ window.selectBox = function(element, boxType, courseId) {
         console.log('Course Box Manager frontend loaded');
         
         // Force FunnelKit cart visibility on page load
+        console.log('[CBM Debug] Starting FunnelKit cart visibility check...');
+        
+        // Check immediately
+        console.log('[CBM Debug] Checking for FunnelKit elements immediately...');
+        console.log('[CBM Debug] #fkcart-floating-toggler exists:', $('#fkcart-floating-toggler').length);
+        console.log('[CBM Debug] .fkcart-toggler exists:', $('.fkcart-toggler').length);
+        console.log('[CBM Debug] .fkcart-float-icon exists:', $('.fkcart-float-icon').length);
+        console.log('[CBM Debug] .fkcart-icon-wrap exists:', $('.fkcart-icon-wrap').length);
+        
+        // Log current styles
+        if ($('#fkcart-floating-toggler').length > 0) {
+            const elem = $('#fkcart-floating-toggler')[0];
+            console.log('[CBM Debug] Current fkcart-floating-toggler styles:', {
+                display: elem.style.display,
+                visibility: elem.style.visibility,
+                opacity: elem.style.opacity,
+                computedDisplay: window.getComputedStyle(elem).display,
+                computedVisibility: window.getComputedStyle(elem).visibility,
+                computedOpacity: window.getComputedStyle(elem).opacity,
+                computedPosition: window.getComputedStyle(elem).position,
+                computedZIndex: window.getComputedStyle(elem).zIndex
+            });
+        }
+        
         setTimeout(function() {
-            const $fkcartToggler = $('#fkcart-floating-toggler, .fkcart-toggler, .fkcart-float-icon');
+            console.log('[CBM Debug] After 1 second delay, checking FunnelKit elements...');
+            const $fkcartToggler = $('#fkcart-floating-toggler, .fkcart-toggler, .fkcart-float-icon, .fkcart-icon-wrap');
+            console.log('[CBM Debug] Found FunnelKit elements:', $fkcartToggler.length);
+            
             if ($fkcartToggler.length > 0) {
-                console.log('[CBM] Ensuring FunnelKit cart is visible');
-                $fkcartToggler.css({
-                    'display': 'block',
-                    'visibility': 'visible',
-                    'opacity': '1',
-                    'pointer-events': 'auto'
-                }).show();
+                console.log('[CBM Debug] Attempting to force visibility on', $fkcartToggler.length, 'elements');
+                
+                $fkcartToggler.each(function(index) {
+                    const $elem = $(this);
+                    console.log('[CBM Debug] Element', index, ':', {
+                        tagName: this.tagName,
+                        id: this.id,
+                        className: this.className,
+                        beforeStyles: {
+                            display: this.style.display,
+                            visibility: this.style.visibility,
+                            opacity: this.style.opacity
+                        }
+                    });
+                    
+                    $elem.css({
+                        'display': 'block',
+                        'visibility': 'visible',
+                        'opacity': '1',
+                        'pointer-events': 'auto',
+                        'z-index': '999990'
+                    }).show();
+                    
+                    console.log('[CBM Debug] After forcing styles on element', index, ':', {
+                        display: this.style.display,
+                        visibility: this.style.visibility,
+                        opacity: this.style.opacity
+                    });
+                });
                 
                 // Also ensure parent containers are visible
                 $fkcartToggler.parents().each(function() {
-                    if ($(this).hasClass('fkcart-icon-wrap') || $(this).hasClass('fkcart-float-icon')) {
+                    if ($(this).hasClass('fkcart-icon-wrap') || $(this).hasClass('fkcart-float-icon') || $(this).hasClass('fkcart-wrapper')) {
+                        console.log('[CBM Debug] Found parent container:', this.className);
                         $(this).css({
                             'display': 'block',
                             'visibility': 'visible',
@@ -337,6 +387,23 @@ window.selectBox = function(element, boxType, courseId) {
                         });
                     }
                 });
+                
+                // Final check
+                setTimeout(function() {
+                    console.log('[CBM Debug] Final check after 2 seconds:');
+                    if ($('#fkcart-floating-toggler').length > 0) {
+                        const elem = $('#fkcart-floating-toggler')[0];
+                        console.log('[CBM Debug] Final fkcart-floating-toggler styles:', {
+                            display: window.getComputedStyle(elem).display,
+                            visibility: window.getComputedStyle(elem).visibility,
+                            opacity: window.getComputedStyle(elem).opacity,
+                            position: window.getComputedStyle(elem).position,
+                            zIndex: window.getComputedStyle(elem).zIndex
+                        });
+                    }
+                }, 1000);
+            } else {
+                console.log('[CBM Debug] No FunnelKit elements found after 1 second');
             }
         }, 1000);
         
