@@ -458,17 +458,54 @@ window.selectBox = function(element, boxType, courseId) {
                             }
                         });
                         
-                        // Try to force everything visible one more time
-                        console.log('[CBM Debug] Forcing all FunnelKit elements visible with !important...');
-                        const forceStyle = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: auto !important; height: auto !important; position: fixed !important; z-index: 999999 !important;';
+                        // Check parent elements
+                        console.log('[CBM Debug] Checking parent elements for visibility issues:');
+                        let parent = elem.parentElement;
+                        let parentCount = 0;
+                        while (parent && parentCount < 5) {
+                            const parentStyles = window.getComputedStyle(parent);
+                            console.log('[CBM Debug] Parent', parentCount, ':', {
+                                tagName: parent.tagName,
+                                id: parent.id,
+                                className: parent.className,
+                                display: parentStyles.display,
+                                visibility: parentStyles.visibility,
+                                opacity: parentStyles.opacity,
+                                overflow: parentStyles.overflow,
+                                position: parentStyles.position
+                            });
+                            
+                            // Force parent to be visible too
+                            if (parentStyles.display === 'none' || parentStyles.visibility === 'hidden' || parentStyles.opacity === '0') {
+                                parent.style.display = 'block !important';
+                                parent.style.visibility = 'visible !important';
+                                parent.style.opacity = '1 !important';
+                                console.log('[CBM Debug] Fixed parent visibility');
+                            }
+                            
+                            parent = parent.parentElement;
+                            parentCount++;
+                        }
+                        
+                        // Try to force everything visible one more time with specific positioning
+                        console.log('[CBM Debug] Forcing all FunnelKit elements visible with absolute positioning...');
+                        const forceStyle = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 60px !important; height: 60px !important; position: fixed !important; bottom: 20px !important; right: 15px !important; z-index: 999999 !important; background-color: #cc3071 !important; border-radius: 50% !important;';
                         elem.setAttribute('style', forceStyle);
                         
                         // Also force children
-                        $(elem).find('*').attr('style', function(i, s) {
-                            return (s || '') + '; display: block !important; visibility: visible !important; opacity: 1 !important;';
-                        });
+                        $(elem).find('.fkcart-floating-icon').attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; height: 100% !important; align-items: center !important; justify-content: center !important;');
+                        $(elem).find('svg').attr('style', 'display: block !important; width: 30px !important; height: 30px !important; fill: white !important;');
+                        $(elem).find('.fkcart-item-count').attr('style', 'display: flex !important; position: absolute !important; top: -5px !important; right: -5px !important; background: red !important; color: white !important; border-radius: 50% !important; width: 20px !important; height: 20px !important; align-items: center !important; justify-content: center !important; font-size: 12px !important;');
                         
-                        console.log('[CBM Debug] Forced styles applied. Element should now be visible if nothing else is blocking it.');
+                        console.log('[CBM Debug] Forced inline styles applied. Final check:');
+                        const finalRect = elem.getBoundingClientRect();
+                        console.log('[CBM Debug] Final bounding rect:', {
+                            width: finalRect.width,
+                            height: finalRect.height,
+                            top: finalRect.top,
+                            left: finalRect.left,
+                            isVisible: finalRect.width > 0 && finalRect.height > 0
+                        });
                     }
                 }, 1000);
             } else {
