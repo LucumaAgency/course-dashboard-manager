@@ -199,55 +199,21 @@ window.selectBox = function(element, boxType, courseId) {
                     // Always try to show cart for enroll-buy combo
                     var isEnrollBuyCombo = $button.closest('.enroll-buy-combo').length > 0;
                     
-                    if (isEnrollBuyCombo || response.use_funnelkit || cbm_ajax.is_funnelkit_active || typeof fkcart_show_cart === 'function' || typeof FKCart !== 'undefined') {
-                        // Small delay to ensure cart is updated
+                    // For FunnelKit, just trigger a click on the cart icon after a short delay
+                    // This lets FunnelKit handle the cart display naturally
+                    if (isEnrollBuyCombo || response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
                         setTimeout(function() {
-                            console.log('[CBM] Attempting to show FunnelKit cart', {
-                                isEnrollBuyCombo: isEnrollBuyCombo,
-                                hasFkcartFunction: typeof fkcart_show_cart === 'function',
-                                hasFKCart: typeof FKCart !== 'undefined',
-                                hasWindowFKCart: window.FKCart ? true : false
-                            });
+                            console.log('[CBM] Product added, triggering FunnelKit cart');
                             
-                            if (typeof fkcart_show_cart === 'function') {
-                                console.log('[CBM] Using fkcart_show_cart()');
-                                fkcart_show_cart();
-                            } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
-                                console.log('[CBM] Using FKCart.show_cart()');
-                                FKCart.show_cart();
-                            } else if (window.FKCart && window.FKCart.show_cart) {
-                                console.log('[CBM] Using window.FKCart.show_cart()');
-                                window.FKCart.show_cart();
-                            } else if (window.wcffwc_show_cart && typeof window.wcffwc_show_cart === 'function') {
-                                console.log('[CBM] Using wcffwc_show_cart()');
-                                window.wcffwc_show_cart();
+                            // Simply click the cart icon and let FunnelKit handle it
+                            var $cartIcon = $('#fkcart-floating-toggler').first();
+                            if ($cartIcon.length > 0 && $cartIcon.is(':visible')) {
+                                console.log('[CBM] Clicking FunnelKit cart icon');
+                                $cartIcon.trigger('click');
                             } else {
-                                console.log('[CBM] Trying FunnelKit events and icon click');
-                                // Try to trigger FunnelKit by event
-                                $(document.body).trigger('fkcart_show_cart');
-                                $(document.body).trigger('fkcart_open');
-                                $(document.body).trigger('wcffwc_show_cart');
-                                
-                                // Try clicking the cart icon (including our moved cart)
-                                var $cartIcon = $('#fkcart-floating-toggler, .fkcart-icon-wrap, .fkcart-float-icon, .wcffwc-icon-wrap').first();
-                                if ($cartIcon.length > 0) {
-                                    console.log('[CBM] Found cart icon, clicking it');
-                                    $cartIcon.trigger('click');
-                                }
+                                console.log('[CBM] Cart icon not found or not visible');
                             }
-                        }, 100);
-                        
-                        // Try again after a longer delay for enroll-buy combo
-                        if (isEnrollBuyCombo) {
-                            setTimeout(function() {
-                                console.log('[CBM] Second attempt to show cart for enroll-buy combo');
-                                if (typeof fkcart_show_cart === 'function') {
-                                    fkcart_show_cart();
-                                } else if ($('.fkcart-icon-wrap, .fkcart-float-icon').length > 0) {
-                                    $('.fkcart-icon-wrap, .fkcart-float-icon').first().trigger('click');
-                                }
-                            }, 500);
-                        }
+                        }, 300);
                     }
                     
                     // Reset button text after delay and remove any "View cart" links
@@ -346,47 +312,19 @@ window.selectBox = function(element, boxType, courseId) {
                     'opacity': '1'
                 });
                 
-                // Bind click event to cart icon
-                $fkcart.off('click.cbm').on('click.cbm', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('[CBM Debug] Cart icon clicked!');
-                    
-                    // Check what FunnelKit functions are available
-                    console.log('[CBM Debug] Available functions:', {
-                        'fkcart_show_cart': typeof fkcart_show_cart,
-                        'FKCart': typeof FKCart,
-                        'window.FKCart': typeof window.FKCart
-                    });
-                    
-                    // Try to find and show the cart panel
-                    const $cartPanel = $('.fkcart-panel, .fkcart-modal, .fkcart-drawer, .fkcart-slide-cart');
-                    console.log('[CBM Debug] Cart panel found:', $cartPanel.length);
-                    
-                    if ($cartPanel.length > 0) {
-                        if ($cartPanel.hasClass('active') || $cartPanel.is(':visible')) {
-                            console.log('[CBM Debug] Hiding cart panel');
-                            $cartPanel.removeClass('active').hide();
-                        } else {
-                            console.log('[CBM Debug] Showing cart panel');
-                            $cartPanel.addClass('active').show();
-                        }
-                    } else {
-                        console.log('[CBM Debug] No cart panel found, trying FunnelKit functions...');
-                        
-                        if (typeof fkcart_show_cart === 'function') {
-                            console.log('[CBM Debug] Calling fkcart_show_cart()');
-                            fkcart_show_cart();
-                        } else if (window.FKCart && window.FKCart.show_cart) {
-                            console.log('[CBM Debug] Calling FKCart.show_cart()');
-                            window.FKCart.show_cart();
-                        } else {
-                            console.log('[CBM Debug] No FunnelKit functions available, triggering events...');
-                            $(document.body).trigger('fkcart_show_cart');
-                            $(document.body).trigger('fkcart_open');
-                        }
-                    }
-                });
+                // Bind click event to cart icon - let FunnelKit handle it naturally
+                console.log('[CBM] FunnelKit cart icon found, removing our custom handler to let FunnelKit work naturally');
+                
+                // Remove any duplicate cart panels except the first one
+                const $allPanels = $('.fkcart-panel, .fkcart-modal, .fkcart-drawer, .fkcart-slide-cart');
+                if ($allPanels.length > 1) {
+                    console.log('[CBM] Found ' + $allPanels.length + ' cart panels, removing duplicates...');
+                    $allPanels.slice(1).remove();
+                }
+                
+                // Don't override the click handler - let FunnelKit's native handler work
+                // Just ensure the cart icon is clickable
+                $fkcart.css('pointer-events', 'auto');
                 
                 console.log('[CBM] Click handler attached to cart icon');
             }
