@@ -19,6 +19,9 @@ class EnrollmentSync {
         
         // Hook to link WooCommerce products with STM courses
         add_action('save_post_course', [$this, 'link_product_to_stm_course'], 10, 1);
+        
+        // Run once to update existing products
+        add_action('init', [$this, 'maybe_update_existing_products']);
     }
     
     /**
@@ -335,22 +338,70 @@ class EnrollmentSync {
         
         foreach ($product_ids as $product_id) {
             if ($product_id) {
-                // Add STM course ID to the product meta
-                update_post_meta($product_id, '_related_stm_course_id', $stm_course_id);
+                // MasterStudy LMS expects these specific meta keys on the product
+                // This tells MasterStudy that this product is linked to a course
+                update_post_meta($product_id, 'stm_lms_course_id', $stm_course_id);
+                update_post_meta($product_id, '_stm_lms_course_id', $stm_course_id);
                 
-                // Also add product ID to STM course meta for reverse lookup
-                $stm_products = get_post_meta($stm_course_id, '_woocommerce_product_ids', true);
+                // Also mark the product as an STM LMS product
+                update_post_meta($product_id, 'stm_lms_product', 'yes');
+                
+                // Add course ID array for compatibility with different MasterStudy versions
+                $course_ids = get_post_meta($product_id, 'stm_lms_course_ids', true);
+                if (!is_array($course_ids)) {
+                    $course_ids = [];
+                }
+                if (!in_array($stm_course_id, $course_ids)) {
+                    $course_ids[] = $stm_course_id;
+                    update_post_meta($product_id, 'stm_lms_course_ids', $course_ids);
+                }
+                
+                // Update STM course to link back to the product
+                update_post_meta($stm_course_id, 'stm_lms_product_id', $product_id);
+                
+                // For MasterStudy Pro compatibility
+                $stm_products = get_post_meta($stm_course_id, 'stm_lms_product_ids', true);
                 if (!is_array($stm_products)) {
                     $stm_products = [];
                 }
                 if (!in_array($product_id, $stm_products)) {
                     $stm_products[] = $product_id;
-                    update_post_meta($stm_course_id, '_woocommerce_product_ids', $stm_products);
+                    update_post_meta($stm_course_id, 'stm_lms_product_ids', $stm_products);
                 }
                 
-                error_log('[CBM Enrollment Sync] Linked product ' . $product_id . ' to STM course ' . $stm_course_id);
+                error_log('[CBM Enrollment Sync] Linked WooCommerce product ' . $product_id . ' to STM course ' . $stm_course_id);
             }
         }
+    }
+    
+    /**
+     * Update existing products to have proper STM course links
+     */
+    public function maybe_update_existing_products() {
+        // Check if we've already run this update
+        if (get_option('cbm_products_stm_linked_v2', false)) {
+            return;
+        }
+        
+        // Get all courses with STM course links
+        $courses = get_posts([
+            'post_type' => 'course',
+            'posts_per_page' => -1,
+            'meta_query' => [
+                [
+                    'key' => 'related_stm_course_id',
+                    'compare' => 'EXISTS'
+                ]
+            ]
+        ]);
+        
+        foreach ($courses as $course) {
+            $this->link_product_to_stm_course($course->ID);
+        }
+        
+        // Mark as complete
+        update_option('cbm_products_stm_linked_v2', true);
+        error_log('[CBM Enrollment Sync] Updated all existing products with STM course links');
     }
 }
 
