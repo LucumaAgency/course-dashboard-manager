@@ -15,7 +15,7 @@ abstract class AbstractBox {
     protected $course_price;
     protected $enroll_price;
     protected $available_dates;
-    protected $available_dates_full;  // Added to fix deprecated warning
+    protected $available_dates_full;  // Added to fix PHP 8.2 deprecated warning
     protected $is_out_of_stock;
     protected $launch_date;
     protected $show_countdown;
@@ -35,10 +35,10 @@ abstract class AbstractBox {
     protected function initialize_properties() {
         $this->box_state = get_post_meta($this->course_id, 'box_state', true) ?: 'enroll-course';
         $this->course_product_id = get_post_meta($this->course_id, 'linked_product_id', true);
-        $this->course_price = \cbm_get_field('course_price', $this->course_id, 749.99);
-        $this->enroll_price = \cbm_get_field('enroll_price', $this->course_id, 1249.99);
+        $this->course_price = \CourseBoxManager\cbm_get_field('course_price', $this->course_id, 749.99);
+        $this->enroll_price = \CourseBoxManager\cbm_get_field('enroll_price', $this->course_id, 1249.99);
         
-        $available_dates_raw = \cbm_get_field('course_dates', $this->course_id, []);
+        $available_dates_raw = \CourseBoxManager\cbm_get_field('course_dates', $this->course_id, []);
         // Ensure we have an array before using array_column
         if (!is_array($available_dates_raw)) {
             $available_dates_raw = [];
@@ -123,6 +123,7 @@ abstract class AbstractBox {
         return sprintf(
             '<button class="add-to-cart-button" data-product-id="%s">
                 <span class="button-text">%s</span>
+                <span class="loader" style="display: none;"></span>
             </button>',
             esc_attr($this->course_product_id),
             esc_html($text)

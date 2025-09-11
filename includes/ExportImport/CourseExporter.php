@@ -39,17 +39,7 @@ class CourseExporter {
     public function add_export_import_interface() {
         // Only show on course-related admin pages
         $screen = get_current_screen();
-        
-        // Debug: Log the current screen ID
-        if ($screen) {
-            error_log('[CBM Export/Import] Current screen ID: ' . $screen->id);
-        }
-        
-        // Show on course-related pages or if we're on the tables page
-        $valid_screens = ['toplevel_page_course-box-tables', 'course', 'edit-course'];
-        $is_course_page = isset($_GET['page']) && $_GET['page'] === 'course-box-tables';
-        
-        if (!$is_course_page && (!$screen || !in_array($screen->id, $valid_screens))) {
+        if (!$screen || !in_array($screen->id, ['toplevel_page_course-box-tables', 'course', 'edit-course'])) {
             return;
         }
         ?>
