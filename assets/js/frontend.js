@@ -326,16 +326,17 @@ window.selectBox = function(element, boxType, courseId) {
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
         
-        // NO auto-selection of dates - let user choose
-        // Only initialize the Enroll-Buy combo box selection
-        initEnrollBuySelection();
-        
-        // Re-bind date button handlers after a short delay to ensure DOM is ready
-        setTimeout(function() {
-            console.log('[CBM] Re-binding date button handlers');
+        try {
+            // NO auto-selection of dates - let user choose
+            // Only initialize the Enroll-Buy combo box selection
+            initEnrollBuySelection();
             
-            // Direct binding to existing date buttons
-            $('.date-btn:not(.sold-out)').off('click.cbm').on('click.cbm', function(e) {
+            // Re-bind date button handlers after a short delay to ensure DOM is ready
+            setTimeout(function() {
+                console.log('[CBM] Re-binding date button handlers');
+                
+                // Direct binding to existing date buttons
+                $('.date-btn:not(.sold-out)').off('click.cbm').on('click.cbm', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 
@@ -361,6 +362,9 @@ window.selectBox = function(element, boxType, courseId) {
                 console.log('[CBM] Button has selected class:', $btn.hasClass('selected'));
             });
         }, 500);
+        } catch (error) {
+            console.error('[CBM] Error during initialization:', error);
+        }
     });
     
     // Handle Enroll-Buy combo box selection
