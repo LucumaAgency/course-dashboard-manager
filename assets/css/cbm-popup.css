@@ -325,7 +325,15 @@ body.cbm-popup-open {
 
 /* Buy course box - no min-height */
 .cbm-popup-container .buy-course {
-    /* No min-height for buy state */
+    min-height: unset !important;
+    height: auto !important;
+}
+
+/* When buy tab is active - ensure no min-height */
+.cbm-tab-pane.active[data-tab="buy"] .box,
+.cbm-tab-pane.active[data-tab="0"] .box {
+    min-height: unset !important;
+    height: auto !important;
 }
 
 /* Enroll course box - with min-height */
