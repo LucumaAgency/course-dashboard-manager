@@ -315,6 +315,31 @@ window.selectBox = function(element, boxType, courseId) {
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
         
+        // Force FunnelKit cart visibility on page load
+        setTimeout(function() {
+            const $fkcartToggler = $('#fkcart-floating-toggler, .fkcart-toggler, .fkcart-float-icon');
+            if ($fkcartToggler.length > 0) {
+                console.log('[CBM] Ensuring FunnelKit cart is visible');
+                $fkcartToggler.css({
+                    'display': 'block',
+                    'visibility': 'visible',
+                    'opacity': '1',
+                    'pointer-events': 'auto'
+                }).show();
+                
+                // Also ensure parent containers are visible
+                $fkcartToggler.parents().each(function() {
+                    if ($(this).hasClass('fkcart-icon-wrap') || $(this).hasClass('fkcart-float-icon')) {
+                        $(this).css({
+                            'display': 'block',
+                            'visibility': 'visible',
+                            'opacity': '1'
+                        });
+                    }
+                });
+            }
+        }, 1000);
+        
         // Remove any "View cart" links that appear
         $(document).on('DOMNodeInserted', function(e) {
             if ($(e.target).hasClass('added_to_cart') || $(e.target).find('.added_to_cart').length > 0) {
