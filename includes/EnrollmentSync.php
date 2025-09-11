@@ -16,6 +16,9 @@ class EnrollmentSync {
         
         // Also handle processing status for immediate enrollment
         add_action('woocommerce_order_status_processing', [$this, 'enroll_user_on_purchase'], 10, 1);
+        
+        // Hook to link WooCommerce products with STM courses
+        add_action('save_post_course', [$this, 'link_product_to_stm_course'], 10, 1);
     }
     
     /**
@@ -120,6 +123,9 @@ class EnrollmentSync {
             if ($this->enroll_user_in_course($user_id, $stm_course_id)) {
                 error_log('[CBM Enrollment Sync] Successfully enrolled user ' . $user_id . ' in course ' . $stm_course_id);
                 $enrolled_courses[] = $stm_course_id;
+                
+                // Create MasterStudy LMS order entry
+                $this->create_stm_lms_order($user_id, $stm_course_id, $order_id, $item);
             } else {
                 error_log('[CBM Enrollment Sync] Failed to enroll user ' . $user_id . ' in course ' . $stm_course_id);
             }
@@ -216,6 +222,135 @@ class EnrollmentSync {
         }
         
         return true;
+    }
+    
+    /**
+     * Create an order entry in MasterStudy LMS
+     */
+    private function create_stm_lms_order($user_id, $course_id, $wc_order_id, $item) {
+        global $wpdb;
+        
+        // Get WooCommerce order
+        $wc_order = wc_get_order($wc_order_id);
+        if (!$wc_order) {
+            error_log('[CBM Enrollment Sync] Cannot create STM order - WC order not found');
+            return;
+        }
+        
+        // Get course price from the order item
+        $item_total = $item->get_total();
+        
+        // Check if STM LMS Orders table exists
+        $table = $wpdb->prefix . 'stm_lms_order_items';
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
+            error_log('[CBM Enrollment Sync] STM LMS Order Items table does not exist');
+            
+            // Try alternative method - store in user meta
+            $this->store_order_in_meta($user_id, $course_id, $wc_order_id, $item_total);
+            return;
+        }
+        
+        // Prepare order data for STM LMS
+        $order_data = [
+            'user_id' => $user_id,
+            'course_id' => $course_id,
+            'order_id' => $wc_order_id, // Reference to WooCommerce order
+            'price' => $item_total,
+            'date' => current_time('mysql'),
+            'status' => 'completed',
+            'order_type' => 'woocommerce' // Mark as WooCommerce order
+        ];
+        
+        // Insert into STM LMS order items table
+        $result = $wpdb->insert($table, $order_data);
+        
+        if ($result === false) {
+            error_log('[CBM Enrollment Sync] Failed to insert STM order: ' . $wpdb->last_error);
+            // Fallback to meta storage
+            $this->store_order_in_meta($user_id, $course_id, $wc_order_id, $item_total);
+        } else {
+            error_log('[CBM Enrollment Sync] Created STM LMS order for user ' . $user_id . ' course ' . $course_id);
+        }
+        
+        // Also try to create entry in main orders table if it exists
+        $orders_table = $wpdb->prefix . 'stm_lms_orders';
+        if ($wpdb->get_var("SHOW TABLES LIKE '$orders_table'") == $orders_table) {
+            $order_hash = md5($user_id . $course_id . $wc_order_id . time());
+            
+            $main_order_data = [
+                'user_id' => $user_id,
+                'order_id' => $wc_order_id,
+                'hash' => $order_hash,
+                'date' => current_time('mysql'),
+                'status' => 'completed',
+                'payment_type' => 'woocommerce',
+                'total' => $item_total,
+                'currency' => get_woocommerce_currency()
+            ];
+            
+            $wpdb->insert($orders_table, $main_order_data);
+        }
+    }
+    
+    /**
+     * Store order information in user meta as fallback
+     */
+    private function store_order_in_meta($user_id, $course_id, $wc_order_id, $price) {
+        // Get existing orders from user meta
+        $user_orders = get_user_meta($user_id, 'stm_lms_user_orders', true);
+        if (!is_array($user_orders)) {
+            $user_orders = [];
+        }
+        
+        // Add new order
+        $user_orders[] = [
+            'course_id' => $course_id,
+            'order_id' => $wc_order_id,
+            'date' => current_time('mysql'),
+            'price' => $price,
+            'status' => 'completed',
+            'source' => 'woocommerce'
+        ];
+        
+        update_user_meta($user_id, 'stm_lms_user_orders', $user_orders);
+        error_log('[CBM Enrollment Sync] Stored order in user meta for user ' . $user_id);
+    }
+    
+    /**
+     * Link WooCommerce product to STM course when course is saved
+     */
+    public function link_product_to_stm_course($course_id) {
+        // Get the related STM course ID
+        $stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
+        if (!$stm_course_id) {
+            return;
+        }
+        
+        // Get all product IDs linked to this course
+        $linked_product_id = get_post_meta($course_id, 'linked_product_id', true);
+        $buy_product_id = get_post_meta($course_id, 'buy_product_id', true);
+        $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
+        
+        $product_ids = array_filter([$linked_product_id, $buy_product_id, $enroll_product_id]);
+        
+        foreach ($product_ids as $product_id) {
+            if ($product_id) {
+                // Add STM course ID to the product meta
+                update_post_meta($product_id, '_related_stm_course_id', $stm_course_id);
+                
+                // Also add product ID to STM course meta for reverse lookup
+                $stm_products = get_post_meta($stm_course_id, '_woocommerce_product_ids', true);
+                if (!is_array($stm_products)) {
+                    $stm_products = [];
+                }
+                if (!in_array($product_id, $stm_products)) {
+                    $stm_products[] = $product_id;
+                    update_post_meta($stm_course_id, '_woocommerce_product_ids', $stm_products);
+                }
+                
+                error_log('[CBM Enrollment Sync] Linked product ' . $product_id . ' to STM course ' . $stm_course_id);
+            }
+        }
     }
 }
 
