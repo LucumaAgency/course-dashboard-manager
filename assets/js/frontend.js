@@ -315,201 +315,52 @@ window.selectBox = function(element, boxType, courseId) {
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
         
-        // Force FunnelKit cart visibility on page load
-        console.log('[CBM Debug] Starting FunnelKit cart visibility check...');
-        
-        // Check immediately
-        console.log('[CBM Debug] Checking for FunnelKit elements immediately...');
-        console.log('[CBM Debug] #fkcart-floating-toggler exists:', $('#fkcart-floating-toggler').length);
-        console.log('[CBM Debug] .fkcart-toggler exists:', $('.fkcart-toggler').length);
-        console.log('[CBM Debug] .fkcart-float-icon exists:', $('.fkcart-float-icon').length);
-        console.log('[CBM Debug] .fkcart-icon-wrap exists:', $('.fkcart-icon-wrap').length);
-        
-        // Log current styles
-        if ($('#fkcart-floating-toggler').length > 0) {
-            const elem = $('#fkcart-floating-toggler')[0];
-            console.log('[CBM Debug] Current fkcart-floating-toggler styles:', {
-                display: elem.style.display,
-                visibility: elem.style.visibility,
-                opacity: elem.style.opacity,
-                computedDisplay: window.getComputedStyle(elem).display,
-                computedVisibility: window.getComputedStyle(elem).visibility,
-                computedOpacity: window.getComputedStyle(elem).opacity,
-                computedPosition: window.getComputedStyle(elem).position,
-                computedZIndex: window.getComputedStyle(elem).zIndex
-            });
+        // CRITICAL FIX: Move FunnelKit cart out of popup to body
+        const $fkcartInPopup = $('#cbm-popup-overlay #fkcart-floating-toggler, #cbm-popup-content #fkcart-floating-toggler');
+        if ($fkcartInPopup.length > 0) {
+            console.log('[CBM CRITICAL] FunnelKit cart found inside popup! Moving to body...');
+            $fkcartInPopup.appendTo('body');
+            console.log('[CBM CRITICAL] FunnelKit cart moved to body');
         }
         
+        // Check if FunnelKit cart exists and ensure it's visible
+        console.log('[CBM] Checking FunnelKit cart status...');
+        const $fkcart = $('#fkcart-floating-toggler');
+        if ($fkcart.length > 0) {
+            console.log('[CBM] FunnelKit cart found, ensuring visibility...');
+            // Apply visibility styles
+            $fkcart.css({
+                'display': 'block',
+                'visibility': 'visible',
+                'opacity': '1'
+            });
+        } else {
+            console.log('[CBM] FunnelKit cart not found on initial check');
+        }
+        
+        // Check again after delay in case FunnelKit loads late
         setTimeout(function() {
-            console.log('[CBM Debug] After 1 second delay, checking FunnelKit elements...');
-            const $fkcartToggler = $('#fkcart-floating-toggler, .fkcart-toggler, .fkcart-float-icon, .fkcart-icon-wrap');
-            console.log('[CBM Debug] Found FunnelKit elements:', $fkcartToggler.length);
+            // Check if cart is still inside popup
+            const $fkcartStillInPopup = $('#cbm-popup-overlay #fkcart-floating-toggler, #cbm-popup-content #fkcart-floating-toggler');
+            if ($fkcartStillInPopup.length > 0) {
+                console.log('[CBM] FunnelKit cart still in popup after delay, moving to body...');
+                $fkcartStillInPopup.appendTo('body');
+            }
+            
+            const $fkcartToggler = $('#fkcart-floating-toggler');
+            console.log('[CBM] Final FunnelKit cart check, found:', $fkcartToggler.length);
             
             if ($fkcartToggler.length > 0) {
-                console.log('[CBM Debug] Attempting to force visibility on', $fkcartToggler.length, 'elements');
-                
-                $fkcartToggler.each(function(index) {
-                    const $elem = $(this);
-                    console.log('[CBM Debug] Element', index, ':', {
-                        tagName: this.tagName,
-                        id: this.id,
-                        className: this.className,
-                        beforeStyles: {
-                            display: this.style.display,
-                            visibility: this.style.visibility,
-                            opacity: this.style.opacity
-                        }
-                    });
-                    
-                    $elem.css({
-                        'display': 'block',
-                        'visibility': 'visible',
-                        'opacity': '1',
-                        'pointer-events': 'auto',
-                        'z-index': '999990'
-                    }).show();
-                    
-                    console.log('[CBM Debug] After forcing styles on element', index, ':', {
-                        display: this.style.display,
-                        visibility: this.style.visibility,
-                        opacity: this.style.opacity
-                    });
+                console.log('[CBM] Ensuring FunnelKit cart visibility...');
+                $fkcartToggler.css({
+                    'display': 'block',
+                    'visibility': 'visible',
+                    'opacity': '1',
+                    'pointer-events': 'auto',
+                    'z-index': '999990'
                 });
-                
-                // Also ensure parent containers are visible
-                $fkcartToggler.parents().each(function() {
-                    if ($(this).hasClass('fkcart-icon-wrap') || $(this).hasClass('fkcart-float-icon') || $(this).hasClass('fkcart-wrapper')) {
-                        console.log('[CBM Debug] Found parent container:', this.className);
-                        $(this).css({
-                            'display': 'block',
-                            'visibility': 'visible',
-                            'opacity': '1'
-                        });
-                    }
-                });
-                
-                // Final check
-                setTimeout(function() {
-                    console.log('[CBM Debug] Final check after 2 seconds:');
-                    if ($('#fkcart-floating-toggler').length > 0) {
-                        const elem = $('#fkcart-floating-toggler')[0];
-                        const rect = elem.getBoundingClientRect();
-                        const styles = window.getComputedStyle(elem);
-                        
-                        console.log('[CBM Debug] Final fkcart-floating-toggler complete analysis:', {
-                            // Visibility
-                            display: styles.display,
-                            visibility: styles.visibility,
-                            opacity: styles.opacity,
-                            
-                            // Positioning
-                            position: styles.position,
-                            top: styles.top,
-                            right: styles.right,
-                            bottom: styles.bottom,
-                            left: styles.left,
-                            zIndex: styles.zIndex,
-                            
-                            // Dimensions
-                            width: styles.width,
-                            height: styles.height,
-                            actualWidth: rect.width,
-                            actualHeight: rect.height,
-                            
-                            // Location on screen
-                            boundingRect: {
-                                top: rect.top,
-                                right: rect.right,
-                                bottom: rect.bottom,
-                                left: rect.left,
-                                x: rect.x,
-                                y: rect.y
-                            },
-                            
-                            // Colors
-                            backgroundColor: styles.backgroundColor,
-                            color: styles.color,
-                            
-                            // Overflow
-                            overflow: styles.overflow,
-                            
-                            // Transform
-                            transform: styles.transform,
-                            
-                            // Children count
-                            childrenCount: elem.children.length,
-                            innerHTML: elem.innerHTML.substring(0, 200) // First 200 chars
-                        });
-                        
-                        // Check children visibility
-                        console.log('[CBM Debug] Checking children elements:');
-                        $(elem).find('*').each(function(i) {
-                            if (i < 5) { // Check first 5 children
-                                const childStyles = window.getComputedStyle(this);
-                                console.log('[CBM Debug] Child', i, ':', {
-                                    tagName: this.tagName,
-                                    className: this.className,
-                                    display: childStyles.display,
-                                    visibility: childStyles.visibility,
-                                    opacity: childStyles.opacity,
-                                    width: childStyles.width,
-                                    height: childStyles.height
-                                });
-                            }
-                        });
-                        
-                        // Check parent elements
-                        console.log('[CBM Debug] Checking parent elements for visibility issues:');
-                        let parent = elem.parentElement;
-                        let parentCount = 0;
-                        while (parent && parentCount < 5) {
-                            const parentStyles = window.getComputedStyle(parent);
-                            console.log('[CBM Debug] Parent', parentCount, ':', {
-                                tagName: parent.tagName,
-                                id: parent.id,
-                                className: parent.className,
-                                display: parentStyles.display,
-                                visibility: parentStyles.visibility,
-                                opacity: parentStyles.opacity,
-                                overflow: parentStyles.overflow,
-                                position: parentStyles.position
-                            });
-                            
-                            // Force parent to be visible too
-                            if (parentStyles.display === 'none' || parentStyles.visibility === 'hidden' || parentStyles.opacity === '0') {
-                                parent.style.display = 'block !important';
-                                parent.style.visibility = 'visible !important';
-                                parent.style.opacity = '1 !important';
-                                console.log('[CBM Debug] Fixed parent visibility');
-                            }
-                            
-                            parent = parent.parentElement;
-                            parentCount++;
-                        }
-                        
-                        // Try to force everything visible one more time with specific positioning
-                        console.log('[CBM Debug] Forcing all FunnelKit elements visible with absolute positioning...');
-                        const forceStyle = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 60px !important; height: 60px !important; position: fixed !important; bottom: 20px !important; right: 15px !important; z-index: 999999 !important; background-color: #cc3071 !important; border-radius: 50% !important;';
-                        elem.setAttribute('style', forceStyle);
-                        
-                        // Also force children
-                        $(elem).find('.fkcart-floating-icon').attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; height: 100% !important; align-items: center !important; justify-content: center !important;');
-                        $(elem).find('svg').attr('style', 'display: block !important; width: 30px !important; height: 30px !important; fill: white !important;');
-                        $(elem).find('.fkcart-item-count').attr('style', 'display: flex !important; position: absolute !important; top: -5px !important; right: -5px !important; background: red !important; color: white !important; border-radius: 50% !important; width: 20px !important; height: 20px !important; align-items: center !important; justify-content: center !important; font-size: 12px !important;');
-                        
-                        console.log('[CBM Debug] Forced inline styles applied. Final check:');
-                        const finalRect = elem.getBoundingClientRect();
-                        console.log('[CBM Debug] Final bounding rect:', {
-                            width: finalRect.width,
-                            height: finalRect.height,
-                            top: finalRect.top,
-                            left: finalRect.left,
-                            isVisible: finalRect.width > 0 && finalRect.height > 0
-                        });
-                    }
-                }, 1000);
             } else {
-                console.log('[CBM Debug] No FunnelKit elements found after 1 second');
+                console.log('[CBM] No FunnelKit cart found after delay');
             }
         }, 1000);
         
