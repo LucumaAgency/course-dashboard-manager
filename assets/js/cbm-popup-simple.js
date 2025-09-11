@@ -472,6 +472,30 @@
     
     function bindTabEvents() {
         console.log('[CBM Popup] Binding tab events');
+        
+        // Set Buy tab as active by default
+        const $buyTab = $('#cbm-popup-content').find('.cbm-tab-btn[data-tab="buy"]');
+        const $enrollTab = $('#cbm-popup-content').find('.cbm-tab-btn[data-tab="enroll"]');
+        
+        if ($buyTab.length > 0) {
+            $buyTab.addClass('active');
+            $enrollTab.removeClass('active');
+            
+            // Show buy pane, hide enroll pane
+            $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="buy"]').addClass('active');
+            $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="enroll"]').removeClass('active');
+            
+            // Select the buy box
+            const $buyBox = $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="buy"] .box');
+            if ($buyBox.length > 0) {
+                $buyBox.addClass('selected');
+                $buyBox.find('.circlecontainer').show();
+                $buyBox.find('.circle-container').hide();
+            }
+            
+            console.log('[CBM Popup] Buy tab selected by default');
+        }
+        
         $('#cbm-popup-content').find('.cbm-tab-btn').off('click').on('click', function() {
             const $btn = $(this);
             const tabIndex = $btn.data('tab');
@@ -536,28 +560,46 @@
         console.log('[CBM Popup] Initializing box interactions');
         
         // Re-initialize date selection
-        $('#cbm-popup-content').find('.date-btn:not(.sold-out)').off('click').on('click', function() {
-            const $btn = $(this);
-            const $container = $btn.closest('.box, .cbm-tab-pane');
+        $('#cbm-popup-content').find('.date-btn:not(.sold-out)').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation(); // Prevent event from bubbling to box
             
+            const $btn = $(this);
+            const $box = $btn.closest('.box');
+            
+            // Keep the box selected
+            $box.addClass('selected');
+            $box.find('.circlecontainer').show();
+            $box.find('.circle-container').hide();
+            
+            // Handle date selection
             $btn.siblings().removeClass('selected');
             $btn.addClass('selected');
             
             const buttonText = $btn.data('button-text');
             if (buttonText) {
-                $container.find('.add-to-cart-button .button-text').text(buttonText);
+                $box.find('.add-to-cart-button .button-text').text(buttonText);
             }
             
-            $container.data('selected-date', $btn.data('date'));
+            $box.data('selected-date', $btn.data('date'));
+            $box.attr('data-selected-date', $btn.data('date'));
+            
             console.log('[CBM Popup] Date selected:', $btn.data('date'));
         });
         
         // Re-initialize add to cart
         $('#cbm-popup-content').find('.add-to-cart-button').off('click').on('click', function(e) {
             e.preventDefault();
+            e.stopPropagation(); // Prevent event from bubbling to box
             
             const $button = $(this);
-            const $box = $button.closest('.box, .cbm-tab-pane');
+            const $box = $button.closest('.box');
+            
+            // Keep the box selected
+            $box.addClass('selected');
+            $box.find('.circlecontainer').show();
+            $box.find('.circle-container').hide();
+            
             const productId = $button.data('product-id');
             const selectedDate = $box.data('selected-date') || $box.find('.date-btn.selected').data('date') || '';
             
