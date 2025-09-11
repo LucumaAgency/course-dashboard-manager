@@ -288,10 +288,12 @@
     transform: translate(-50%, -50%);
     width: 16px;
     height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.2); /* Very light transparent white */
+    border-top: 2px solid #fff; /* Solid white on top */
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    background: transparent;
+    box-sizing: border-box;
 }
 
 /* Hide text when loading */
