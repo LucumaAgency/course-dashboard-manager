@@ -52,11 +52,45 @@ class EnrollmentSync {
             $product_id = $item->get_product_id();
             error_log('[CBM Enrollment Sync] Checking product ID: ' . $product_id);
             
-            // Get related STM Course ID from product meta
-            $stm_course_id = get_post_meta($product_id, 'related_stm_course_id', true);
+            // First, find the course that has this product linked
+            // Check both linked_product_id, buy_product_id, and enroll_product_id
+            $args = array(
+                'post_type' => 'course',
+                'meta_query' => array(
+                    'relation' => 'OR',
+                    array(
+                        'key' => 'linked_product_id',
+                        'value' => $product_id,
+                        'compare' => '='
+                    ),
+                    array(
+                        'key' => 'buy_product_id',
+                        'value' => $product_id,
+                        'compare' => '='
+                    ),
+                    array(
+                        'key' => 'enroll_product_id',
+                        'value' => $product_id,
+                        'compare' => '='
+                    )
+                ),
+                'posts_per_page' => 1
+            );
+            $courses = get_posts($args);
+            
+            if (empty($courses)) {
+                error_log('[CBM Enrollment Sync] No course found with linked_product_id: ' . $product_id);
+                continue;
+            }
+            
+            $course_id = $courses[0]->ID;
+            error_log('[CBM Enrollment Sync] Found course ID: ' . $course_id . ' for product ID: ' . $product_id);
+            
+            // Now get the related STM Course ID from the course meta
+            $stm_course_id = get_post_meta($course_id, 'related_stm_course_id', true);
             
             if (!$stm_course_id) {
-                error_log('[CBM Enrollment Sync] No STM Course linked to product ID: ' . $product_id);
+                error_log('[CBM Enrollment Sync] No STM Course linked to course ID: ' . $course_id);
                 continue;
             }
             
