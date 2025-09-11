@@ -46,8 +46,11 @@ window.selectBox = function(element, boxType, courseId) {
 
     console.log('[CBM] Frontend jQuery code initializing...');
 
-    // Date selection handler
-    $(document).on('click', '.date-btn:not(.sold-out)', function() {
+    // Date selection handler - use event delegation with document
+    $(document).on('click', '.date-btn:not(.sold-out)', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const $btn = $(this);
         const $container = $btn.closest('.box');
         
@@ -55,13 +58,16 @@ window.selectBox = function(element, boxType, courseId) {
         let dateValue = $btn.data('date') || $btn.attr('data-date') || $btn.text().trim();
         
         console.log('[CBM] Date button clicked:', dateValue);
-        console.log('[CBM] Date button element:', $btn[0]);
+        console.log('[CBM] Current button classes:', $btn.attr('class'));
         
-        // Remove selected class from siblings (other date buttons)
-        $btn.siblings('.date-btn').removeClass('selected');
+        // Remove selected class from ALL date buttons in this container
+        $container.find('.date-btn').removeClass('selected');
+        
+        // Add selected class to clicked button
         $btn.addClass('selected');
         
-        console.log('[CBM] Date button selected state:', $btn.hasClass('selected'));
+        console.log('[CBM] Date button selected state after click:', $btn.hasClass('selected'));
+        console.log('[CBM] Total selected dates in container:', $container.find('.date-btn.selected').length);
         
         // Update button text if data attribute exists
         const buttonText = $btn.data('button-text');
@@ -74,7 +80,6 @@ window.selectBox = function(element, boxType, courseId) {
         $container.attr('data-selected-date', dateValue); // Also set as attribute for debugging
         
         console.log('[CBM] Date stored on container:', $container.data('selected-date'));
-        console.log('[CBM] Container element:', $container[0]);
         
         // Store STM Course ID if available (for enroll courses)
         const stmCourseId = $btn.data('stm-course-id');
@@ -84,6 +89,9 @@ window.selectBox = function(element, boxType, courseId) {
             $container.find('.add-to-cart-button').attr('data-product-id', stmCourseId);
             console.log('[CBM] Updated product ID to STM Course:', stmCourseId);
         }
+        
+        // Trigger custom event for other scripts that might be listening
+        $container.trigger('dateSelected', [dateValue]);
     });
 
     // Add to cart handler
