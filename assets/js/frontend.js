@@ -393,13 +393,82 @@ window.selectBox = function(element, boxType, courseId) {
                     console.log('[CBM Debug] Final check after 2 seconds:');
                     if ($('#fkcart-floating-toggler').length > 0) {
                         const elem = $('#fkcart-floating-toggler')[0];
-                        console.log('[CBM Debug] Final fkcart-floating-toggler styles:', {
-                            display: window.getComputedStyle(elem).display,
-                            visibility: window.getComputedStyle(elem).visibility,
-                            opacity: window.getComputedStyle(elem).opacity,
-                            position: window.getComputedStyle(elem).position,
-                            zIndex: window.getComputedStyle(elem).zIndex
+                        const rect = elem.getBoundingClientRect();
+                        const styles = window.getComputedStyle(elem);
+                        
+                        console.log('[CBM Debug] Final fkcart-floating-toggler complete analysis:', {
+                            // Visibility
+                            display: styles.display,
+                            visibility: styles.visibility,
+                            opacity: styles.opacity,
+                            
+                            // Positioning
+                            position: styles.position,
+                            top: styles.top,
+                            right: styles.right,
+                            bottom: styles.bottom,
+                            left: styles.left,
+                            zIndex: styles.zIndex,
+                            
+                            // Dimensions
+                            width: styles.width,
+                            height: styles.height,
+                            actualWidth: rect.width,
+                            actualHeight: rect.height,
+                            
+                            // Location on screen
+                            boundingRect: {
+                                top: rect.top,
+                                right: rect.right,
+                                bottom: rect.bottom,
+                                left: rect.left,
+                                x: rect.x,
+                                y: rect.y
+                            },
+                            
+                            // Colors
+                            backgroundColor: styles.backgroundColor,
+                            color: styles.color,
+                            
+                            // Overflow
+                            overflow: styles.overflow,
+                            
+                            // Transform
+                            transform: styles.transform,
+                            
+                            // Children count
+                            childrenCount: elem.children.length,
+                            innerHTML: elem.innerHTML.substring(0, 200) // First 200 chars
                         });
+                        
+                        // Check children visibility
+                        console.log('[CBM Debug] Checking children elements:');
+                        $(elem).find('*').each(function(i) {
+                            if (i < 5) { // Check first 5 children
+                                const childStyles = window.getComputedStyle(this);
+                                console.log('[CBM Debug] Child', i, ':', {
+                                    tagName: this.tagName,
+                                    className: this.className,
+                                    display: childStyles.display,
+                                    visibility: childStyles.visibility,
+                                    opacity: childStyles.opacity,
+                                    width: childStyles.width,
+                                    height: childStyles.height
+                                });
+                            }
+                        });
+                        
+                        // Try to force everything visible one more time
+                        console.log('[CBM Debug] Forcing all FunnelKit elements visible with !important...');
+                        const forceStyle = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: auto !important; height: auto !important; position: fixed !important; z-index: 999999 !important;';
+                        elem.setAttribute('style', forceStyle);
+                        
+                        // Also force children
+                        $(elem).find('*').attr('style', function(i, s) {
+                            return (s || '') + '; display: block !important; visibility: visible !important; opacity: 1 !important;';
+                        });
+                        
+                        console.log('[CBM Debug] Forced styles applied. Element should now be visible if nothing else is blocking it.');
                     }
                 }, 1000);
             } else {
