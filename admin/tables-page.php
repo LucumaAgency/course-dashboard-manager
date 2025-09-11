@@ -1211,12 +1211,14 @@ if (!defined('ABSPATH')) {
                 }
                 
                 // Box state change handler
-                document.getElementById('group-box-state').addEventListener('change', function() {
-                    currentBoxState = this.value;
-                    renderTable(currentBoxState);
-                    
-                    // Auto-set stock to 0 for sold out
-                    if (currentBoxState === 'soldout') {
+                const boxStateElement = document.getElementById('group-box-state');
+                if (boxStateElement) {
+                    boxStateElement.addEventListener('change', function() {
+                        currentBoxState = this.value;
+                        renderTable(currentBoxState);
+                        
+                        // Auto-set stock to 0 for sold out
+                        if (currentBoxState === 'soldout') {
                         document.querySelectorAll('.inline-edit-stock').forEach(input => {
                             input.value = 0;
                             input.readOnly = true;
@@ -1224,6 +1226,7 @@ if (!defined('ABSPATH')) {
                         });
                     }
                 });
+                }
                 
                 // Selling page change handler - auto-save when changed
                 const sellingPageDropdown = document.getElementById('group-selling-page');
