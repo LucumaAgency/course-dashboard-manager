@@ -239,6 +239,7 @@
     justify-content: center;
     width: 100%;
     height: 40px;
+    min-height: 40px; /* Prevent height change */
     padding: 5px 12px;
     background-color: rgba(255, 255, 255, 0.08);
     border: none;
@@ -247,6 +248,7 @@
     font-size: 12px;
     cursor: pointer;
     transition: all 0.3s;
+    overflow: hidden; /* Prevent content overflow */
 }
 
 .box:not(.selected) .add-to-cart-button {
@@ -289,19 +291,22 @@
 
 /* Loading spinner for add to cart button */
 .loading-spinner {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-top-color: #fff;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-left: 8px;
-    vertical-align: middle;
 }
 
+/* Hide text when loading */
 .add-to-cart-button.loading .button-text {
-    margin-right: 5px;
+    opacity: 0;
+    visibility: hidden;
 }
 
 /* Sold out box */
