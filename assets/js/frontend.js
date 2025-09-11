@@ -90,6 +90,7 @@ window.selectBox = function(element, boxType, courseId) {
     // Add to cart handler
     $(document).on('click', '.add-to-cart-button:not(.sold-out):not(.loading)', function(e) {
         e.preventDefault();
+        console.log('[CBM Debug] Add to cart button clicked');
         
         const $button = $(this);
         const $box = $button.closest('.box');
@@ -97,13 +98,22 @@ window.selectBox = function(element, boxType, courseId) {
         const quantity = $button.data('quantity') || 1;
         const selectedDate = $box.data('selected-date') || $box.find('.date-btn.selected').data('date') || '';
         
+        console.log('[CBM Debug] Add to cart data:', {
+            productId: productId,
+            quantity: quantity,
+            selectedDate: selectedDate,
+            boxClasses: $box.attr('class'),
+            buttonText: $button.text()
+        });
+        
         if (!productId) {
-            console.error('No product ID found');
+            console.error('[CBM Debug] No product ID found');
             return;
         }
         
         // Check if date selection is required
         if ($box.find('.date-options').length > 0 && !selectedDate) {
+            console.log('[CBM Debug] Date selection required but no date selected');
             alert('Please select a date');
             return;
         }
@@ -111,6 +121,7 @@ window.selectBox = function(element, boxType, courseId) {
         // Add loading state
         $button.addClass('loading');
         const originalText = $button.find('.button-text').text();
+        console.log('[CBM Debug] Starting add to cart request...');
         
         // Add spinner if it doesn't exist
         if (!$button.find('.loading-spinner').length) {
@@ -151,7 +162,8 @@ window.selectBox = function(element, boxType, courseId) {
             data.course_date = selectedDate;
         }
         
-        console.log('Adding to cart:', data);
+        console.log('[CBM Debug] Sending AJAX request:', data);
+        console.log('[CBM Debug] AJAX URL:', cbm_ajax.ajax_url);
         
         // Make AJAX request
         $.ajax({
@@ -160,7 +172,7 @@ window.selectBox = function(element, boxType, courseId) {
             data: data,
             dataType: 'json',
             success: function(response) {
-                console.log('Cart response:', response);
+                console.log('[CBM Debug] Cart response received:', response);
                 
                 // Check for success - handle both response.success and response.fragments
                 if (response.success || response.fragments) {
@@ -333,6 +345,50 @@ window.selectBox = function(element, boxType, courseId) {
                     'visibility': 'visible',
                     'opacity': '1'
                 });
+                
+                // Bind click event to cart icon
+                $fkcart.off('click.cbm').on('click.cbm', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[CBM Debug] Cart icon clicked!');
+                    
+                    // Check what FunnelKit functions are available
+                    console.log('[CBM Debug] Available functions:', {
+                        'fkcart_show_cart': typeof fkcart_show_cart,
+                        'FKCart': typeof FKCart,
+                        'window.FKCart': typeof window.FKCart
+                    });
+                    
+                    // Try to find and show the cart panel
+                    const $cartPanel = $('.fkcart-panel, .fkcart-modal, .fkcart-drawer, .fkcart-slide-cart');
+                    console.log('[CBM Debug] Cart panel found:', $cartPanel.length);
+                    
+                    if ($cartPanel.length > 0) {
+                        if ($cartPanel.hasClass('active') || $cartPanel.is(':visible')) {
+                            console.log('[CBM Debug] Hiding cart panel');
+                            $cartPanel.removeClass('active').hide();
+                        } else {
+                            console.log('[CBM Debug] Showing cart panel');
+                            $cartPanel.addClass('active').show();
+                        }
+                    } else {
+                        console.log('[CBM Debug] No cart panel found, trying FunnelKit functions...');
+                        
+                        if (typeof fkcart_show_cart === 'function') {
+                            console.log('[CBM Debug] Calling fkcart_show_cart()');
+                            fkcart_show_cart();
+                        } else if (window.FKCart && window.FKCart.show_cart) {
+                            console.log('[CBM Debug] Calling FKCart.show_cart()');
+                            window.FKCart.show_cart();
+                        } else {
+                            console.log('[CBM Debug] No FunnelKit functions available, triggering events...');
+                            $(document.body).trigger('fkcart_show_cart');
+                            $(document.body).trigger('fkcart_open');
+                        }
+                    }
+                });
+                
+                console.log('[CBM] Click handler attached to cart icon');
             }
         }, 500);
         
