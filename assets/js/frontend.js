@@ -47,23 +47,13 @@ window.selectBox = function(element, boxType, courseId) {
     console.log('[CBM] Frontend jQuery code initializing...');
 
     // Date selection handler
-    $(document).on('click', '.date-btn:not(.sold-out)', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
+    $(document).on('click', '.date-btn:not(.sold-out)', function() {
         const $btn = $(this);
         const $container = $btn.closest('.box');
         
-        // Remove selected class from all date buttons in this container
-        $container.find('.date-btn').removeClass('selected');
-        
-        // Add selected class to clicked button
+        // Remove selected class from siblings
+        $btn.siblings().removeClass('selected');
         $btn.addClass('selected');
-        
-        // Force style update to ensure color is applied
-        $btn.css('background-color', '#cc3071');
-        
-        console.log('[CBM] Date selected:', $btn.text(), 'Has selected class:', $btn.hasClass('selected'));
         
         // Update button text if data attribute exists
         const buttonText = $btn.data('button-text');
@@ -82,15 +72,11 @@ window.selectBox = function(element, boxType, courseId) {
             $container.find('.add-to-cart-button').attr('data-product-id', stmCourseId);
             console.log('[CBM] Updated product ID to STM Course:', stmCourseId);
         }
-        
-        // Force re-render to ensure styles are applied
-        $btn.hide().show(0);
     });
 
     // Add to cart handler
     $(document).on('click', '.add-to-cart-button:not(.sold-out):not(.loading)', function(e) {
         e.preventDefault();
-        console.log('[CBM Debug] Add to cart button clicked');
         
         const $button = $(this);
         const $box = $button.closest('.box');
@@ -98,22 +84,13 @@ window.selectBox = function(element, boxType, courseId) {
         const quantity = $button.data('quantity') || 1;
         const selectedDate = $box.data('selected-date') || $box.find('.date-btn.selected').data('date') || '';
         
-        console.log('[CBM Debug] Add to cart data:', {
-            productId: productId,
-            quantity: quantity,
-            selectedDate: selectedDate,
-            boxClasses: $box.attr('class'),
-            buttonText: $button.text()
-        });
-        
         if (!productId) {
-            console.error('[CBM Debug] No product ID found');
+            console.error('No product ID found');
             return;
         }
         
         // Check if date selection is required
         if ($box.find('.date-options').length > 0 && !selectedDate) {
-            console.log('[CBM Debug] Date selection required but no date selected');
             alert('Please select a date');
             return;
         }
@@ -121,7 +98,6 @@ window.selectBox = function(element, boxType, courseId) {
         // Add loading state
         $button.addClass('loading');
         const originalText = $button.find('.button-text').text();
-        console.log('[CBM Debug] Starting add to cart request...');
         
         // Add spinner if it doesn't exist
         if (!$button.find('.loading-spinner').length) {
@@ -162,8 +138,7 @@ window.selectBox = function(element, boxType, courseId) {
             data.course_date = selectedDate;
         }
         
-        console.log('[CBM Debug] Sending AJAX request:', data);
-        console.log('[CBM Debug] AJAX URL:', cbm_ajax.ajax_url);
+        console.log('Adding to cart:', data);
         
         // Make AJAX request
         $.ajax({
@@ -172,9 +147,9 @@ window.selectBox = function(element, boxType, courseId) {
             data: data,
             dataType: 'json',
             success: function(response) {
-                console.log('[CBM Debug] Cart response received:', response);
+                console.log('Cart response:', response);
                 
-                // Check for success - handle both response.success and response.fragments
+                // Handle both response.success and response.fragments (FunnelKit returns fragments)
                 if (response.success || response.fragments) {
                     // Remove loading state immediately
                     $button.removeClass('loading');
@@ -182,10 +157,7 @@ window.selectBox = function(element, boxType, courseId) {
                     // Update button text briefly to show success
                     $button.find('.button-text').text('Added!');
                     
-                    // Mark button to prevent WooCommerce from adding "View cart" link
-                    $button.addClass('cbm-processed');
-                    
-                    // Update cart fragments first
+                    // Update cart fragments if available
                     if (response.fragments) {
                         $.each(response.fragments, function(key, value) {
                             $(key).replaceWith(value);
@@ -196,76 +168,31 @@ window.selectBox = function(element, boxType, courseId) {
                     $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
                     
                     // Check if FunnelKit Cart should be triggered
-                    // Always try to show cart for enroll-buy combo
-                    var isEnrollBuyCombo = $button.closest('.enroll-buy-combo').length > 0;
-                    
-                    // For FunnelKit, just trigger a click on the cart icon after a short delay
-                    // This lets FunnelKit handle the cart display naturally
-                    if (isEnrollBuyCombo || response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
+                    if (response.use_funnelkit || cbm_ajax.is_funnelkit_active || typeof fkcart_show_cart === 'function') {
+                        // Small delay to ensure cart is updated
                         setTimeout(function() {
-                            console.log('[CBM] Product added, triggering FunnelKit cart');
-                            
-                            // Simply click the cart icon and let FunnelKit handle it
-                            var $cartIcon = $('#fkcart-floating-toggler').first();
-                            if ($cartIcon.length > 0 && $cartIcon.is(':visible')) {
-                                console.log('[CBM] Clicking FunnelKit cart icon');
+                            // Simply click the FunnelKit cart icon to open it
+                            var $cartIcon = $('#fkcart-floating-toggler');
+                            if ($cartIcon.length > 0) {
+                                console.log('[CBM] Triggering FunnelKit cart');
                                 $cartIcon.trigger('click');
-                            } else {
-                                console.log('[CBM] Cart icon not found or not visible');
                             }
                         }, 300);
                     }
                     
-                    // Reset button text after delay and remove any "View cart" links
+                    // Reset button text after delay (loading already removed)
                     setTimeout(function() {
-                        // Remove any "View cart" link that WooCommerce might have added
-                        $button.siblings('a.added_to_cart').remove();
-                        $button.parent().find('a.added_to_cart').remove();
-                        
-                        // Reset button text
                         $button.find('.button-text').text(originalText);
-                        $button.removeClass('cbm-processed');
                     }, 1500);
                     
-                } else if (response.error) {
+                } else {
                     // Error handling
                     $button.removeClass('loading');
                     $button.find('.button-text').text(originalText);
+                    alert('Error adding to cart. Please try again.');
                     
-                    // Don't show alert if product was actually added (check cart count)
-                    var currentCount = parseInt($('.hfe-cart-count').text()) || 0;
-                    if (currentCount > 0) {
-                        // Product was added, just trigger cart
-                        $button.find('.button-text').text('Added!');
-                        setTimeout(function() {
-                            if (typeof fkcart_show_cart === 'function') {
-                                fkcart_show_cart();
-                            }
-                            $button.find('.button-text').text(originalText);
-                        }, 500);
-                    } else {
-                        alert('Error adding to cart. Please try again.');
-                        if (response.product_url) {
-                            window.location.href = response.product_url;
-                        }
-                    }
-                } else {
-                    // Unexpected response format but might still be successful
-                    $button.removeClass('loading');
-                    
-                    // Check if cart was updated by looking at fragments
-                    if (response.cart_hash || response.fragments) {
-                        $button.find('.button-text').text('Added!');
-                        $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
-                        
-                        setTimeout(function() {
-                            if (typeof fkcart_show_cart === 'function') {
-                                fkcart_show_cart();
-                            }
-                            $button.find('.button-text').text(originalText);
-                        }, 1500);
-                    } else {
-                        $button.find('.button-text').text(originalText);
+                    if (response.product_url) {
+                        window.location.href = response.product_url;
                     }
                 }
             },
@@ -293,50 +220,19 @@ window.selectBox = function(element, boxType, courseId) {
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
         
-        // CRITICAL FIX: Move FunnelKit cart out of popup to body
-        const $fkcartInPopup = $('#cbm-popup-overlay #fkcart-floating-toggler, #cbm-popup-content #fkcart-floating-toggler');
-        if ($fkcartInPopup.length > 0) {
-            console.log('[CBM CRITICAL] FunnelKit cart found inside popup! Moving to body...');
-            $fkcartInPopup.appendTo('body');
-            console.log('[CBM CRITICAL] FunnelKit cart moved to body');
-        }
-        
-        // Check if FunnelKit cart exists and ensure it's visible
+        // Ensure FunnelKit cart is visible
         setTimeout(function() {
             const $fkcart = $('#fkcart-floating-toggler');
             if ($fkcart.length > 0) {
-                console.log('[CBM] Ensuring FunnelKit cart visibility...');
+                console.log('[CBM] Ensuring FunnelKit cart visibility');
                 $fkcart.css({
                     'display': 'block',
                     'visibility': 'visible',
-                    'opacity': '1'
+                    'opacity': '1',
+                    'pointer-events': 'auto'
                 });
-                
-                // Bind click event to cart icon - let FunnelKit handle it naturally
-                console.log('[CBM] FunnelKit cart icon found, removing our custom handler to let FunnelKit work naturally');
-                
-                // Remove any duplicate cart panels except the first one
-                const $allPanels = $('.fkcart-panel, .fkcart-modal, .fkcart-drawer, .fkcart-slide-cart');
-                if ($allPanels.length > 1) {
-                    console.log('[CBM] Found ' + $allPanels.length + ' cart panels, removing duplicates...');
-                    $allPanels.slice(1).remove();
-                }
-                
-                // Don't override the click handler - let FunnelKit's native handler work
-                // Just ensure the cart icon is clickable
-                $fkcart.css('pointer-events', 'auto');
-                
-                console.log('[CBM] Click handler attached to cart icon');
             }
         }, 500);
-        
-        // Remove any "View cart" links that appear
-        $(document).on('DOMNodeInserted', function(e) {
-            if ($(e.target).hasClass('added_to_cart') || $(e.target).find('.added_to_cart').length > 0) {
-                $('.add-to-cart-button').siblings('a.added_to_cart').remove();
-                $('.add-to-cart-button').parent().find('a.added_to_cart').remove();
-            }
-        });
         
         // Auto-select first available date if only one option
         $('.box').each(function() {
