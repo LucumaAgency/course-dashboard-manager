@@ -173,6 +173,16 @@ function course_box_manager_menu() {
         'course_box_tables_page'
     );
     
+    // Add diagnostic page
+    add_submenu_page(
+        'course-box-tables',
+        'Diagnostic',
+        'Diagnostic',
+        'manage_options',
+        'course-box-diagnostic',
+        'course_box_diagnostic_page'
+    );
+    
     // Course Boxes submenu - disabled (commented out)
     /*
     add_submenu_page(
@@ -325,6 +335,11 @@ function handle_course_group_actions() {
         wp_redirect(admin_url('admin.php?page=course-box-tables&group_created=1'));
         exit;
     }
+}
+
+// Diagnostic page content
+function course_box_diagnostic_page() {
+    require_once plugin_dir_path(__FILE__) . 'admin/diagnostic.php';
 }
 
 // Tables page content
