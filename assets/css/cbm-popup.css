@@ -3,7 +3,7 @@
  * Responsive popup with automatic tab conversion for mobile
  */
 
-/* Overlay - Higher z-index than FunnelKit cart */
+/* Overlay */
 .cbm-popup-overlay {
     position: fixed;
     top: 0;
@@ -11,12 +11,12 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-    z-index: 999998 !important; /* Higher than FunnelKit which uses 999999 */
+    z-index: 99998;
     display: none;
     animation: fadeIn 0.1s ease;
 }
 
-/* Container - Ensure it's above FunnelKit */
+/* Container */
 .cbm-popup-container {
     position: fixed;
     top: 50%;
@@ -32,13 +32,11 @@
     max-height: 90vh;
     overflow-y: auto;
     overflow-x: hidden;
-    z-index: 999999 !important; /* Same as FunnelKit to ensure it's on top */
+    z-index: 99999;
     animation: slideIn 0.15s ease;
     padding: 40px;
     box-sizing: border-box;
 }
-
-/* FunnelKit cart should show normally - popup will appear on top with higher z-index */
 
 /* ID selector for more specificity */
 #cbm-popup-container {
@@ -326,8 +324,10 @@
     outline-offset: 2px;
 }
 
-/* Ensure proper scrolling when popup is open */
-/* Note: cbm-popup-open class is no longer used */
+/* Ensure proper scrolling */
+body.cbm-popup-open {
+    overflow: hidden;
+}
 
 /* Box specific adjustments in popup */
 .cbm-popup-container .box {
@@ -381,21 +381,8 @@
 }
 
 .cbm-popup-container .date-btn:hover:not(:disabled),
-.cbm-popup-container .date-btn.selected:not(:disabled),
-.cbm-popup-container .date-btn:active:not(:disabled),
-.cbm-popup-container .date-btn:focus:not(:disabled) {
-    background-color: #cc3071 !important;
-    background: #cc3071 !important;
-    color: white !important;
-}
-
-/* Override any theme or WooCommerce styles in popup */
-.cbm-popup-container .box .date-btn.selected,
-.cbm-popup-container .date-options .date-btn.selected,
-.cbm-popup-container .start-dates .date-btn.selected {
-    background-color: #cc3071 !important;
-    background: #cc3071 !important;
-    color: white !important;
+.cbm-popup-container .date-btn.selected:not(:disabled) {
+    background-color: #cc3071;
 }
 
 .cbm-popup-container .date-btn.sold-out,

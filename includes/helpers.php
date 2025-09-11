@@ -5,7 +5,7 @@
  * Common utility functions used throughout the plugin
  */
 
-namespace CourseBoxManager {
+namespace CourseBoxManager;
 
 /**
  * Helper function to calculate seats sold for a course
@@ -46,6 +46,30 @@ function calculate_seats_sold($product_id, $date_text = null) {
 }
 
 /**
+ * Helper function to safely get ACF field
+ */
+function cbm_get_field($field, $post_id = false, $default = null) {
+    if (function_exists('get_field')) {
+        $value = get_field($field, $post_id);
+        return $value !== false ? $value : $default;
+    }
+    // Fallback to post meta
+    $value = get_post_meta($post_id, $field, true);
+    return $value !== '' ? $value : $default;
+}
+
+/**
+ * Helper function to safely update ACF field
+ */
+function cbm_update_field($field, $value, $post_id = false) {
+    if (function_exists('update_field')) {
+        return update_field($field, $value, $post_id);
+    }
+    // Fallback to post meta
+    return update_post_meta($post_id, $field, $value);
+}
+
+/**
  * Get all course groups
  */
 function get_course_groups() {
@@ -71,42 +95,7 @@ function get_courses_in_group($group_id) {
                 'terms' => $group_id,
             ],
         ],
-        'orderby' => 'menu_order',
+        'orderby' => 'title',
         'order' => 'ASC'
     ]);
 }
-
-} // End of CourseBoxManager namespace
-
-// Global namespace functions
-namespace {
-    
-    if (!function_exists('cbm_get_field')) {
-        /**
-         * Helper function to safely get ACF field
-         */
-        function cbm_get_field($field, $post_id = false, $default = null) {
-            if (function_exists('get_field')) {
-                $value = get_field($field, $post_id);
-                return $value !== false ? $value : $default;
-            }
-            // Fallback to post meta
-            $value = get_post_meta($post_id, $field, true);
-            return $value !== '' ? $value : $default;
-        }
-    }
-
-    if (!function_exists('cbm_update_field')) {
-        /**
-         * Helper function to safely update ACF field
-         */
-        function cbm_update_field($field, $value, $post_id = false) {
-            if (function_exists('update_field')) {
-                return update_field($field, $value, $post_id);
-            }
-            // Fallback to post meta
-            return update_post_meta($post_id, $field, $value);
-        }
-    }
-    
-} // End of global namespace
