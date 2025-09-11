@@ -1097,6 +1097,59 @@ if (!defined('ABSPATH')) {
                     }
                 });
                 
+                // Selling page change handler - auto-save when changed
+                document.getElementById('group-selling-page').addEventListener('change', function() {
+                    const sellingPageId = this.value;
+                    const groupId = <?php echo $group_id; ?>;
+                    
+                    console.log('[CBM Debug] Selling page changed to:', sellingPageId);
+                    
+                    // Update all courses in the group with the selling page
+                    if (coursesData && coursesData.length > 0) {
+                        // Clear previous selling page flags
+                        coursesData.forEach(course => {
+                            delete course.is_selling_page;
+                        });
+                        
+                        // Set new selling page flag
+                        if (sellingPageId) {
+                            const selectedCourse = coursesData.find(c => c.id == sellingPageId);
+                            if (selectedCourse) {
+                                selectedCourse.is_selling_page = '1';
+                            }
+                        }
+                    }
+                    
+                    // Save selling page immediately
+                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'action=update_group_selling_page' +
+                              '&group_id=' + groupId + 
+                              '&selling_page_id=' + sellingPageId +
+                              '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            console.log('[CBM Debug] Selling page updated successfully');
+                            // Show brief success message
+                            const selectEl = document.getElementById('group-selling-page');
+                            const originalBg = selectEl.style.backgroundColor;
+                            selectEl.style.backgroundColor = '#d4edda';
+                            setTimeout(() => {
+                                selectEl.style.backgroundColor = originalBg;
+                            }, 1000);
+                        } else {
+                            console.error('[CBM Debug] Failed to update selling page:', result);
+                            alert('Failed to update selling page');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('[CBM Debug] Error updating selling page:', error);
+                    });
+                });
+                
                 // Save all changes button
                 const saveAllBtn = document.getElementById('save-all-changes');
                 console.log('[CBM Debug] Save all button element:', saveAllBtn);
@@ -1105,8 +1158,34 @@ if (!defined('ABSPATH')) {
                     saveAllBtn.addEventListener('click', function() {
                         console.log('[CBM Debug] Save all changes button clicked!');
                         
-                        const boxState = document.getElementById('group-box-state').value;
+                        // First save the selling page if it exists
                         const sellingPageId = document.getElementById('group-selling-page').value;
+                        
+                        // Then save all rows with changes
+                        const rowsWithChanges = document.querySelectorAll('tr.has-changes');
+                        if (rowsWithChanges.length > 0) {
+                            console.log('[CBM Debug] Saving ' + rowsWithChanges.length + ' rows with changes');
+                            let savedCount = 0;
+                            rowsWithChanges.forEach(row => {
+                                saveRow(row);
+                                savedCount++;
+                            });
+                            
+                            // Show success message
+                            const button = document.getElementById('save-all-changes');
+                            const originalText = button.textContent;
+                            button.textContent = '✓ Saved ' + savedCount + ' rows!';
+                            button.style.backgroundColor = '#46b450';
+                            
+                            setTimeout(() => {
+                                button.textContent = originalText;
+                                button.style.backgroundColor = '';
+                            }, 2000);
+                            
+                            return; // Exit early - we've saved individual rows
+                        }
+                        
+                        const boxState = document.getElementById('group-box-state').value;
                         
                         // Collect data based on current state
                         let saveData = {
@@ -1233,7 +1312,75 @@ if (!defined('ABSPATH')) {
                     });
                 }
                 
-                // Save STM Course button (for enroll states)
+                // Global STM Course change handler - auto-save when changed
+                const globalSTMCourse = document.getElementById('global-stm-course');
+                if (globalSTMCourse) {
+                    globalSTMCourse.addEventListener('change', function() {
+                        const stmCourseId = this.value;
+                        const statusSpan = document.getElementById('stm-save-status');
+                        
+                        console.log('[CBM Debug] Global STM course changed to:', stmCourseId);
+                        
+                        if (!coursesData || coursesData.length === 0) {
+                            console.error('[CBM Debug] No course data available');
+                            return;
+                        }
+                        
+                        const courseId = coursesData[0].id;
+                        
+                        statusSpan.textContent = 'Saving...';
+                        statusSpan.style.color = '#f0ad4e';
+                        
+                        // Update all rows with the new STM course ID
+                        document.querySelectorAll('.inline-edit-stm-course').forEach(select => {
+                            select.value = stmCourseId;
+                            // Mark row as changed
+                            const row = select.closest('tr');
+                            if (row) {
+                                row.classList.add('has-changes');
+                            }
+                        });
+                        
+                        // Save STM course for this course
+                        fetch(ajaxurl + '?action=save_course_settings', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: 'course_id=' + courseId + 
+                                  '&related_stm_course_id=' + stmCourseId +
+                                  '&group_id=' + groupId +
+                                  '&box_state=' + currentBoxState +
+                                  '&instructors=' + JSON.stringify([]) +
+                                  '&stock=0&dates=[]&selling_page_id=0&linked_product_id=0' +
+                                  '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                statusSpan.textContent = '✓ Saved';
+                                statusSpan.style.color = '#46b450';
+                                
+                                // Update course data
+                                if (coursesData[0]) {
+                                    coursesData[0].related_stm_course_id = stmCourseId;
+                                }
+                                
+                                setTimeout(() => {
+                                    statusSpan.textContent = '';
+                                }, 3000);
+                            } else {
+                                statusSpan.textContent = '✗ Error';
+                                statusSpan.style.color = '#d54e21';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('[CBM Debug] Error saving STM course:', error);
+                            statusSpan.textContent = '✗ Error';
+                            statusSpan.style.color = '#d54e21';
+                        });
+                    });
+                }
+                
+                // Save STM Course button (for enroll states) - Keep for manual save if needed
                 const saveSTMBtn = document.getElementById('save-stm-course');
                 if (saveSTMBtn) {
                     saveSTMBtn.addEventListener('click', function() {

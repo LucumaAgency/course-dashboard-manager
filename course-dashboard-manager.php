@@ -4076,6 +4076,46 @@ function delete_table_row() {
     }
 }
 
+// AJAX Handler for updating selling page only
+add_action('wp_ajax_update_group_selling_page', 'update_group_selling_page');
+function update_group_selling_page() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    
+    $group_id = intval($_POST['group_id']);
+    $selling_page_id = intval($_POST['selling_page_id']);
+    
+    if (!$group_id) {
+        wp_send_json_error('Invalid group ID');
+    }
+    
+    // Get all courses in the group
+    $courses = get_posts([
+        'post_type' => 'course',
+        'posts_per_page' => -1,
+        'fields' => 'ids',
+        'tax_query' => [
+            [
+                'taxonomy' => 'course_group',
+                'field' => 'term_id',
+                'terms' => $group_id,
+            ],
+        ],
+    ]);
+    
+    // Clear all selling page flags in this group
+    foreach ($courses as $course_id) {
+        delete_post_meta($course_id, 'is_selling_page');
+    }
+    
+    // Set the new selling page flag
+    if ($selling_page_id && in_array($selling_page_id, $courses)) {
+        update_post_meta($selling_page_id, 'is_selling_page', '1');
+        error_log('[CBM Debug] Set selling page flag for course ID: ' . $selling_page_id);
+    }
+    
+    wp_send_json_success(['message' => 'Selling page updated', 'selling_page_id' => $selling_page_id]);
+}
+
 // AJAX Handler for applying group settings
 add_action('wp_ajax_apply_group_settings', 'apply_group_settings');
 function apply_group_settings() {
