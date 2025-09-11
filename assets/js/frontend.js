@@ -119,6 +119,7 @@ window.selectBox = function(element, boxType, courseId) {
     // Add to cart handler
     $(document).on('click', '.add-to-cart-button:not(.sold-out):not(.loading)', function(e) {
         e.preventDefault();
+        // Don't stop propagation - let other handlers work
         
         const $button = $(this);
         let $box = $button.closest('.box');

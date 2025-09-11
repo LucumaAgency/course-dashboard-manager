@@ -3428,10 +3428,32 @@ function assign_course_to_group() {
 }
 
 // AJAX handler for adding products to cart (compatible with FunnelKit)
-add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart');
-add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart');
+// Priority 20 to run after FunnelKit's handlers (usually at priority 10)
+add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 20);
+add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 20);
 
 function cbm_ajax_add_to_cart() {
+    // Check if this is a FunnelKit cart action that we shouldn't handle
+    if (isset($_POST['action']) && $_POST['action'] === 'woocommerce_add_to_cart') {
+        // Check for FunnelKit-specific actions
+        if (isset($_POST['fkcart_apply_coupon']) || 
+            isset($_POST['apply_coupon']) || 
+            isset($_POST['remove_coupon']) || 
+            isset($_POST['update_cart']) ||
+            isset($_POST['coupon_code']) ||
+            (isset($_POST['cart_item_key']) && !isset($_POST['product_id']))) {
+            // This is likely a FunnelKit coupon or cart update action
+            error_log('[CBM Cart] Skipping - FunnelKit coupon/cart action detected');
+            return;
+        }
+        
+        // Only handle if we have a product_id (our add to cart action)
+        if (!isset($_POST['product_id'])) {
+            error_log('[CBM Cart] Skipping - No product_id, likely not our action');
+            return;
+        }
+    }
+    
     // Verify nonce - check both 'security' and 'nonce' fields for compatibility
     $nonce = isset($_POST['security']) ? $_POST['security'] : (isset($_POST['nonce']) ? $_POST['nonce'] : '');
     

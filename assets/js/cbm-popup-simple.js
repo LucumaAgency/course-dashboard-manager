@@ -612,7 +612,7 @@
         $('#cbm-popup-content').find('.date-btn:not(.sold-out)').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation(); // Prevent event from bubbling
-            e.stopImmediatePropagation(); // Stop ALL event handlers
+            // e.stopImmediatePropagation(); // Removed to prevent blocking FunnelKit coupon handlers
             
             const $btn = $(this);
             const $box = $btn.closest('.box');
@@ -641,7 +641,7 @@
         $('#cbm-popup-content').find('.add-to-cart-button').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation(); // Prevent event from bubbling
-            e.stopImmediatePropagation(); // Stop ALL event handlers
+            // e.stopImmediatePropagation(); // Removed to prevent blocking FunnelKit coupon handlers
             
             const $button = $(this);
             const $box = $button.closest('.box');
