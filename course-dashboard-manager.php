@@ -3979,6 +3979,38 @@ function save_table_row_data() {
     if ($related_stm_course_id) {
         update_post_meta($course_id, 'related_stm_course_id', $related_stm_course_id);
         error_log('[CBM Debug] Updated STM course ID ' . $related_stm_course_id . ' for course ' . $course_id);
+        
+        // Also update the product-to-STM links
+        if ($product_id && function_exists('wc_get_product')) {
+            // Link product to STM course
+            update_post_meta($product_id, 'stm_lms_course_id', $related_stm_course_id);
+            update_post_meta($product_id, '_stm_lms_course_id', $related_stm_course_id);
+            update_post_meta($product_id, 'stm_lms_product', 'yes');
+            
+            // Add to course IDs array
+            $course_ids = get_post_meta($product_id, 'stm_lms_course_ids', true);
+            if (!is_array($course_ids)) {
+                $course_ids = [];
+            }
+            if (!in_array($related_stm_course_id, $course_ids)) {
+                $course_ids[] = $related_stm_course_id;
+                update_post_meta($product_id, 'stm_lms_course_ids', $course_ids);
+            }
+            
+            // Link STM course back to product
+            update_post_meta($related_stm_course_id, 'stm_lms_product_id', $product_id);
+            
+            $product_ids = get_post_meta($related_stm_course_id, 'stm_lms_product_ids', true);
+            if (!is_array($product_ids)) {
+                $product_ids = [];
+            }
+            if (!in_array($product_id, $product_ids)) {
+                $product_ids[] = $product_id;
+                update_post_meta($related_stm_course_id, 'stm_lms_product_ids', $product_ids);
+            }
+            
+            error_log('[CBM Debug] Linked product ' . $product_id . ' to STM course ' . $related_stm_course_id);
+        }
     } else {
         delete_post_meta($course_id, 'related_stm_course_id');
     }

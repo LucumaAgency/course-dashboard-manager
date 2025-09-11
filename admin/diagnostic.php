@@ -406,5 +406,81 @@ if (!current_user_can('manage_options')) {
             <a href="<?php echo admin_url('edit.php?post_type=product'); ?>" class="button">WooCommerce Products</a>
             <?php endif; ?>
         </p>
+        
+        <?php if (isset($_GET['repair_links']) && $_GET['repair_links'] == '1'): ?>
+            <?php
+            // Repair STM course links
+            $repair_count = 0;
+            $courses_repaired = [];
+            
+            foreach ($courses as $course) {
+                $stm_course_id = get_post_meta($course->ID, 'related_stm_course_id', true);
+                if ($stm_course_id) {
+                    // Get all products linked to this course
+                    $linked_product = get_post_meta($course->ID, 'linked_product_id', true);
+                    $buy_product = get_post_meta($course->ID, 'buy_product_id', true);
+                    $enroll_product = get_post_meta($course->ID, 'enroll_product_id', true);
+                    
+                    $products = array_filter([$linked_product, $buy_product, $enroll_product]);
+                    
+                    foreach ($products as $product_id) {
+                        if ($product_id) {
+                            // Update product meta to link to STM course
+                            update_post_meta($product_id, 'stm_lms_course_id', $stm_course_id);
+                            update_post_meta($product_id, '_stm_lms_course_id', $stm_course_id);
+                            update_post_meta($product_id, 'stm_lms_product', 'yes');
+                            
+                            // Add to course IDs array
+                            $course_ids = get_post_meta($product_id, 'stm_lms_course_ids', true);
+                            if (!is_array($course_ids)) {
+                                $course_ids = [];
+                            }
+                            if (!in_array($stm_course_id, $course_ids)) {
+                                $course_ids[] = $stm_course_id;
+                                update_post_meta($product_id, 'stm_lms_course_ids', $course_ids);
+                            }
+                            
+                            // Update STM course to link back to product
+                            update_post_meta($stm_course_id, 'stm_lms_product_id', $product_id);
+                            
+                            $product_ids = get_post_meta($stm_course_id, 'stm_lms_product_ids', true);
+                            if (!is_array($product_ids)) {
+                                $product_ids = [];
+                            }
+                            if (!in_array($product_id, $product_ids)) {
+                                $product_ids[] = $product_id;
+                                update_post_meta($stm_course_id, 'stm_lms_product_ids', $product_ids);
+                            }
+                            
+                            $repair_count++;
+                            $courses_repaired[] = $course->post_title . ' (Product: ' . $product_id . ' → STM: ' . $stm_course_id . ')';
+                        }
+                    }
+                }
+            }
+            
+            if ($repair_count > 0) {
+                echo '<div class="notice notice-success"><p>';
+                echo '<strong>✓ Repaired ' . $repair_count . ' product-to-STM-course links:</strong><br>';
+                echo implode('<br>', $courses_repaired);
+                echo '</p></div>';
+            } else {
+                echo '<div class="notice notice-info"><p>No links needed repair.</p></div>';
+            }
+            
+            // Force the enrollment sync to update
+            delete_option('cbm_products_stm_linked_v2');
+            ?>
+        <?php endif; ?>
+        
+        <h3>Repair Tools</h3>
+        <p>
+            <a href="<?php echo admin_url('admin.php?page=course-box-diagnostic&repair_links=1'); ?>" 
+               class="button button-primary" 
+               onclick="return confirm('This will repair all STM course to WooCommerce product links. Continue?');">
+                Repair STM Course Links
+            </a>
+            <br><small>This will sync all product-to-STM-course connections based on your current configuration.</small>
+        </p>
     </div>
 </div>
