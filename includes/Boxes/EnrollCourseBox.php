@@ -155,7 +155,7 @@ class EnrollCourseBox extends AbstractBox {
             // Use default layout if no custom text
             ob_start();
             ?>
-            <div class="<?php echo esc_attr($this->get_box_classes()); ?>" 
+            <div class="<?php echo esc_attr($this->get_box_classes()); ?> selected" 
                  data-course-id="<?php echo esc_attr($this->course_id); ?>" 
                  data-product-id="<?php echo esc_attr($this->course_product_id); ?>"
                  onclick="selectBox(this, 'box2', <?php echo esc_attr($this->course_id); ?>)">
@@ -188,7 +188,7 @@ class EnrollCourseBox extends AbstractBox {
             // Use custom text layout
             ob_start();
             ?>
-            <div class="<?php echo esc_attr($this->get_box_classes()); ?>" 
+            <div class="<?php echo esc_attr($this->get_box_classes()); ?> selected" 
                  data-course-id="<?php echo esc_attr($this->course_id); ?>" 
                  data-product-id="<?php echo esc_attr($this->course_product_id); ?>"
                  onclick="selectBox(this, 'box2', <?php echo esc_attr($this->course_id); ?>)">
@@ -207,14 +207,14 @@ class EnrollCourseBox extends AbstractBox {
     protected function render_selection_indicator() {
         ob_start();
         ?>
-        <div class="circlecontainer" style="display: none;">
+        <div class="circlecontainer">
             <div class="outer-circle">
                 <div class="middle-circle">
                     <div class="inner-circle"></div>
                 </div>
             </div>
         </div>
-        <div class="circle-container">
+        <div class="circle-container" style="display: none;">
             <div class="circle"></div>
         </div>
         <?php

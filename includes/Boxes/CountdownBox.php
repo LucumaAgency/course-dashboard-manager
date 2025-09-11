@@ -21,7 +21,7 @@ class CountdownBox extends AbstractBox {
     public function render() {
         ob_start();
         ?>
-        <div class="<?php echo esc_attr($this->get_box_classes()); ?>">
+        <div class="<?php echo esc_attr($this->get_box_classes()); ?> selected">
             <div class="countdown">
                 <span>COURSE LAUNCH IN:</span>
                 <div class="countdown-timer" 
