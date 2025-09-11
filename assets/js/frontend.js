@@ -216,8 +216,8 @@ window.selectBox = function(element, boxType, courseId) {
                                 $(document.body).trigger('fkcart_open');
                                 $(document.body).trigger('wcffwc_show_cart');
                                 
-                                // Try clicking the cart icon
-                                var $cartIcon = $('.fkcart-icon-wrap, .fkcart-float-icon, .wcffwc-icon-wrap').first();
+                                // Try clicking the cart icon (including our moved cart)
+                                var $cartIcon = $('#fkcart-floating-toggler, .fkcart-icon-wrap, .fkcart-float-icon, .wcffwc-icon-wrap').first();
                                 if ($cartIcon.length > 0) {
                                     console.log('[CBM] Found cart icon, clicking it');
                                     $cartIcon.trigger('click');
@@ -319,8 +319,42 @@ window.selectBox = function(element, boxType, courseId) {
         const $fkcartInPopup = $('#cbm-popup-overlay #fkcart-floating-toggler, #cbm-popup-content #fkcart-floating-toggler');
         if ($fkcartInPopup.length > 0) {
             console.log('[CBM CRITICAL] FunnelKit cart found inside popup! Moving to body...');
-            $fkcartInPopup.appendTo('body');
+            
+            // Clone with events to preserve functionality
+            const $clonedCart = $fkcartInPopup.clone(true, true);
+            $fkcartInPopup.remove();
+            $clonedCart.appendTo('body');
+            
             console.log('[CBM CRITICAL] FunnelKit cart moved to body');
+            
+            // Re-initialize FunnelKit cart events
+            setTimeout(function() {
+                // Trigger FunnelKit re-initialization if available
+                if (typeof window.FKCart !== 'undefined' && window.FKCart.init) {
+                    console.log('[CBM] Re-initializing FunnelKit cart...');
+                    window.FKCart.init();
+                } else if (typeof window.fkcart_init === 'function') {
+                    console.log('[CBM] Re-initializing FunnelKit cart with fkcart_init...');
+                    window.fkcart_init();
+                }
+                
+                // Manually bind click event if needed
+                $('#fkcart-floating-toggler').off('click.cbm').on('click.cbm', function(e) {
+                    e.preventDefault();
+                    console.log('[CBM] Cart icon clicked, triggering FunnelKit...');
+                    
+                    // Try various methods to open the cart
+                    if (typeof fkcart_show_cart === 'function') {
+                        fkcart_show_cart();
+                    } else if (window.FKCart && window.FKCart.show_cart) {
+                        window.FKCart.show_cart();
+                    } else {
+                        // Trigger FunnelKit events
+                        $(document.body).trigger('fkcart_show_cart');
+                        $(document.body).trigger('fkcart_open');
+                    }
+                });
+            }, 100);
         }
         
         // Check if FunnelKit cart exists and ensure it's visible
