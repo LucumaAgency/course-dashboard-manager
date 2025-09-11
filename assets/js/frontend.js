@@ -356,17 +356,7 @@ window.selectBox = function(element, boxType, courseId) {
                 $clickedBox.find('.circlecontainer').show();
                 $clickedBox.find('.circle-container').hide();
                 
-                // If this is an enroll box with dates, auto-select the first available date
-                const $availableDates = $clickedBox.find('.date-btn:not(.sold-out)');
-                if ($availableDates.length > 0) {
-                    // Check if any date is already selected
-                    const $selectedDate = $availableDates.filter('.selected');
-                    if ($selectedDate.length === 0) {
-                        // No date selected, auto-select the first one
-                        $availableDates.first().click();
-                        console.log('[CBM] Auto-selected first available date');
-                    }
-                }
+                // Don't auto-select any dates - let the user choose
                 
                 console.log('[CBM] Box selected:', $clickedBox.closest('.buy-box-wrapper, .enroll-box-wrapper').attr('class'));
             });
