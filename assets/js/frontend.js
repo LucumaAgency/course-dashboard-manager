@@ -395,12 +395,39 @@ window.selectBox = function(element, boxType, courseId) {
             });
             
             // Set initial state: Buy box selected by default
-            const $buyBox = $container.find('.buy-box-wrapper .box, [data-tab="buy"] .box').first();
-            if ($buyBox.length) {
-                $buyBox.addClass('selected');
-                $buyBox.find('.circlecontainer').show();
-                $buyBox.find('.circle-container').hide();
+            // Find buy boxes in both desktop and mobile layouts
+            const $buyBoxDesktop = $container.find('.buy-box-wrapper .box.buy-course');
+            const $buyBoxMobile = $container.find('[data-tab="buy"] .box.buy-course');
+            const $enrollBoxDesktop = $container.find('.enroll-box-wrapper .box.enroll-course');
+            const $enrollBoxMobile = $container.find('[data-tab="enroll"] .box.enroll-course');
+            
+            // Select buy boxes by default
+            if ($buyBoxDesktop.length) {
+                $buyBoxDesktop.addClass('selected');
+                $buyBoxDesktop.find('.circlecontainer').show();
+                $buyBoxDesktop.find('.circle-container').hide();
             }
+            
+            if ($buyBoxMobile.length) {
+                $buyBoxMobile.addClass('selected');
+                $buyBoxMobile.find('.circlecontainer').show();
+                $buyBoxMobile.find('.circle-container').hide();
+            }
+            
+            // Make sure enroll boxes are not selected
+            if ($enrollBoxDesktop.length) {
+                $enrollBoxDesktop.removeClass('selected');
+                $enrollBoxDesktop.find('.circlecontainer').hide();
+                $enrollBoxDesktop.find('.circle-container').show();
+            }
+            
+            if ($enrollBoxMobile.length) {
+                $enrollBoxMobile.removeClass('selected');
+                $enrollBoxMobile.find('.circlecontainer').hide();
+                $enrollBoxMobile.find('.circle-container').show();
+            }
+            
+            console.log('[CBM] Buy box selected by default');
         });
     }
 
