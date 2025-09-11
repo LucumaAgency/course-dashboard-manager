@@ -49,9 +49,12 @@ window.selectBox = function(element, boxType, courseId) {
     console.log('[CBM] Frontend jQuery code initializing...');
 
     // Date selection handler - use event delegation with document
-    $(document).on('click', '.date-btn:not(.sold-out)', function(e) {
+    // Using body instead of document for better compatibility
+    $('body').on('click', '.date-btn:not(.sold-out)', function(e) {
         e.preventDefault();
         e.stopPropagation();
+        
+        console.log('[CBM] Date button click event triggered!');
         
         const $btn = $(this);
         let $container = $btn.closest('.box');
@@ -321,6 +324,38 @@ window.selectBox = function(element, boxType, courseId) {
         // NO auto-selection of dates - let user choose
         // Only initialize the Enroll-Buy combo box selection
         initEnrollBuySelection();
+        
+        // Re-bind date button handlers after a short delay to ensure DOM is ready
+        setTimeout(function() {
+            console.log('[CBM] Re-binding date button handlers');
+            
+            // Direct binding to existing date buttons
+            $('.date-btn:not(.sold-out)').off('click.cbm').on('click.cbm', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('[CBM] Direct date button clicked!');
+                
+                const $btn = $(this);
+                const $container = $btn.closest('.box');
+                const dateValue = $btn.data('date') || $btn.attr('data-date') || $btn.text().trim();
+                
+                console.log('[CBM] Processing date selection:', dateValue);
+                
+                // Remove selected from all dates in this box
+                $container.find('.date-btn').removeClass('selected');
+                
+                // Add selected to clicked button
+                $btn.addClass('selected');
+                
+                // Store the date
+                $container.data('selected-date', dateValue);
+                $container.attr('data-selected-date', dateValue);
+                
+                console.log('[CBM] Date selection complete:', dateValue);
+                console.log('[CBM] Button has selected class:', $btn.hasClass('selected'));
+            });
+        }, 500);
     });
     
     // Handle Enroll-Buy combo box selection
