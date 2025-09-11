@@ -51,7 +51,11 @@ window.selectBox = function(element, boxType, courseId) {
         const $btn = $(this);
         const $container = $btn.closest('.box');
         
-        console.log('[CBM] Date button clicked:', $btn.data('date'));
+        // Get the date value - try multiple sources
+        let dateValue = $btn.data('date') || $btn.attr('data-date') || $btn.text().trim();
+        
+        console.log('[CBM] Date button clicked:', dateValue);
+        console.log('[CBM] Date button element:', $btn[0]);
         
         // Remove selected class from siblings (other date buttons)
         $btn.siblings('.date-btn').removeClass('selected');
@@ -65,8 +69,12 @@ window.selectBox = function(element, boxType, courseId) {
             $container.find('.add-to-cart-button .button-text').text(buttonText);
         }
         
-        // Store selected date
-        $container.data('selected-date', $btn.data('date'));
+        // Store selected date - ensure we're storing the value
+        $container.data('selected-date', dateValue);
+        $container.attr('data-selected-date', dateValue); // Also set as attribute for debugging
+        
+        console.log('[CBM] Date stored on container:', $container.data('selected-date'));
+        console.log('[CBM] Container element:', $container[0]);
         
         // Store STM Course ID if available (for enroll courses)
         const stmCourseId = $btn.data('stm-course-id');
@@ -86,15 +94,43 @@ window.selectBox = function(element, boxType, courseId) {
         const $box = $button.closest('.box');
         const productId = $button.data('product-id');
         const quantity = $button.data('quantity') || 1;
-        const selectedDate = $box.data('selected-date') || $box.find('.date-btn.selected').data('date') || '';
+        
+        // Try multiple ways to get the selected date
+        let selectedDate = '';
+        
+        // Method 1: Check data attribute on box
+        selectedDate = $box.data('selected-date');
+        console.log('[CBM] Method 1 - Box data selected-date:', selectedDate);
+        
+        // Method 2: Find selected date button
+        if (!selectedDate) {
+            const $selectedDateBtn = $box.find('.date-btn.selected');
+            if ($selectedDateBtn.length > 0) {
+                selectedDate = $selectedDateBtn.data('date') || $selectedDateBtn.text().trim();
+                console.log('[CBM] Method 2 - Selected date button:', selectedDate);
+            }
+        }
+        
+        // Method 3: Check if there's only one date and auto-select it
+        if (!selectedDate) {
+            const $allDates = $box.find('.date-btn:not(.sold-out)');
+            if ($allDates.length === 1) {
+                selectedDate = $allDates.first().data('date') || $allDates.first().text().trim();
+                console.log('[CBM] Method 3 - Single date auto-selected:', selectedDate);
+            }
+        }
+        
+        console.log('[CBM] Final selected date:', selectedDate);
+        console.log('[CBM] Date options found:', $box.find('.date-options').length);
         
         if (!productId) {
             console.error('No product ID found');
             return;
         }
         
-        // Check if date selection is required
+        // Check if date selection is required (only if date options exist and no date selected)
         if ($box.find('.date-options').length > 0 && !selectedDate) {
+            console.error('[CBM] Date validation failed - date options exist but no date selected');
             alert('Please select a date');
             return;
         }
