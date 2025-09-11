@@ -259,18 +259,32 @@ window.selectBox = function(element, boxType, courseId) {
                     // Update button
                     $button.find('.button-text').text('Added!');
                     
+                    // Debug FunnelKit
+                    console.log('[CBM] FunnelKit check - response.use_funnelkit:', response.use_funnelkit);
+                    console.log('[CBM] FunnelKit check - cbm_ajax.is_funnelkit_active:', cbm_ajax.is_funnelkit_active);
+                    console.log('[CBM] FunnelKit check - typeof fkcart_show_cart:', typeof fkcart_show_cart);
+                    console.log('[CBM] FunnelKit check - typeof FKCart:', typeof FKCart);
+                    console.log('[CBM] FunnelKit check - window.FKCart:', window.FKCart);
+                    
+                    // Always trigger the WooCommerce added_to_cart event first
+                    $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
+                    
                     // Check if FunnelKit Cart is active
                     if (response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
-                        // Trigger FunnelKit Cart
-                        if (typeof fkcart_show_cart === 'function') {
-                            fkcart_show_cart();
-                        } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
-                            FKCart.show_cart();
-                        } else {
-                            // Try to trigger FunnelKit by event
-                            $(document.body).trigger('fkcart_show_cart');
-                            $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
-                        }
+                        console.log('[CBM] FunnelKit is active, attempting to show cart...');
+                        
+                        // Wait for cart fragments to be processed
+                        setTimeout(function() {
+                            // Use our global function to open cart
+                            const opened = window.cbmOpenFunnelKitCart();
+                            if (!opened) {
+                                console.log('[CBM] Failed to open FunnelKit cart, waiting longer...');
+                                // Try again after a longer delay
+                                setTimeout(function() {
+                                    window.cbmOpenFunnelKitCart();
+                                }, 500);
+                            }
+                        }, 300); // Initial delay for cart update
                     } else {
                         // Regular WooCommerce behavior
                         $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
@@ -436,5 +450,53 @@ window.selectBox = function(element, boxType, courseId) {
             console.log('[CBM] Buy box selected by default');
         });
     }
+
+    // Global function to open FunnelKit cart (accessible from console for testing)
+    window.cbmOpenFunnelKitCart = function() {
+        console.log('[CBM] Attempting to open FunnelKit cart...');
+        
+        // Method 1: Direct function calls
+        if (typeof window.fkcart_show_cart === 'function') {
+            console.log('[CBM] Using fkcart_show_cart()');
+            return window.fkcart_show_cart();
+        }
+        
+        if (window.FKCart && typeof window.FKCart.show_cart === 'function') {
+            console.log('[CBM] Using FKCart.show_cart()');
+            return window.FKCart.show_cart();
+        }
+        
+        if (window.fkcart && typeof window.fkcart.open_cart === 'function') {
+            console.log('[CBM] Using fkcart.open_cart()');
+            return window.fkcart.open_cart();
+        }
+        
+        // Method 2: Find and click cart icon
+        const selectors = [
+            '.fkcart-icon',
+            '.fkcart-trigger',
+            '[data-fkcart="trigger"]',
+            '.fk-cart-icon',
+            '.fkcart-modal-toggle',
+            'a[href="#fkcart"]',
+            '.fkcart-float-icon'
+        ];
+        
+        for (let selector of selectors) {
+            const element = document.querySelector(selector);
+            if (element) {
+                console.log('[CBM] Found cart element:', selector);
+                element.click();
+                return true;
+            }
+        }
+        
+        // Method 3: Trigger events
+        console.log('[CBM] Triggering FunnelKit events...');
+        jQuery(document.body).trigger('fkcart_show_cart');
+        jQuery(document.body).trigger('fkcart_open');
+        
+        return false;
+    };
 
 })(jQuery);
