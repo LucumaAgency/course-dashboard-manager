@@ -285,6 +285,7 @@ window.selectBox = function(element, boxType, courseId) {
                     setTimeout(function() {
                         $button.removeClass('loading');
                         $button.find('.button-text').text(originalText);
+                        $button.find('.loading-spinner').remove(); // Remove spinner from DOM
                     }, 2000);
                     
                 } else {
@@ -292,6 +293,7 @@ window.selectBox = function(element, boxType, courseId) {
                     alert('Error adding to cart. Please try again.');
                     $button.removeClass('loading');
                     $button.find('.button-text').text(originalText);
+                    $button.find('.loading-spinner').remove(); // Remove spinner from DOM
                     
                     if (response.product_url) {
                         window.location.href = response.product_url;
@@ -313,6 +315,7 @@ window.selectBox = function(element, boxType, courseId) {
                 
                 $button.removeClass('loading');
                 $button.find('.button-text').text(originalText);
+                $button.find('.loading-spinner').remove(); // Remove spinner from DOM
             }
         });
     });
