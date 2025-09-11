@@ -457,8 +457,21 @@
             $box.removeClass('no-button');
             $box.find('.circlecontainer').show();
             $box.find('.circle-container').hide();
+            
+            // Remove onclick handler completely - no selection changes in popup
+            $box.removeAttr('onclick');
+            $box.css('cursor', 'default'); // Remove pointer cursor since it's not clickable
+            
+            // Prevent any click events on the box itself (but allow on children like buttons)
+            $box.off('click').on('click', function(e) {
+                if (e.target === this) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[CBM Popup] Box click prevented - boxes always stay selected');
+                }
+            });
         });
-        console.log('[CBM Popup] All boxes set to selected state');
+        console.log('[CBM Popup] All boxes set to selected state with onclick disabled');
         
         // Initialize other box scripts
         initializeBoxInteractions();
@@ -520,12 +533,18 @@
         $('#cbm-popup-content').find('.date-btn:not(.sold-out)').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation(); // Prevent event from bubbling
+            e.stopImmediatePropagation(); // Stop ALL event handlers
             
             const $btn = $(this);
             const $box = $btn.closest('.box');
             
+            // Ensure box stays selected
+            $box.addClass('selected');
+            $box.find('.circlecontainer').show();
+            $box.find('.circle-container').hide();
+            
             // Handle date selection
-            $btn.siblings().removeClass('selected');
+            $btn.siblings('.date-btn').removeClass('selected');
             $btn.addClass('selected');
             
             const buttonText = $btn.data('button-text');
@@ -543,9 +562,16 @@
         $('#cbm-popup-content').find('.add-to-cart-button').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation(); // Prevent event from bubbling
+            e.stopImmediatePropagation(); // Stop ALL event handlers
             
             const $button = $(this);
             const $box = $button.closest('.box');
+            
+            // Ensure box stays selected
+            $box.addClass('selected');
+            $box.find('.circlecontainer').show();
+            $box.find('.circle-container').hide();
+            
             const productId = $button.data('product-id');
             const selectedDate = $box.data('selected-date') || $box.find('.date-btn.selected').data('date') || '';
             
