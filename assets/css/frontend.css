@@ -385,6 +385,36 @@
     max-width: 100%;
 }
 
+/* Desktop: Hide enroll box bottom content when not selected */
+@media (min-width: 769px) {
+    .desktop-layout .enroll-course:not(.selected) .divider,
+    .desktop-layout .enroll-course:not(.selected) .divider ~ *,
+    .enroll-buy-combo .enroll-course:not(.selected) .divider,
+    .enroll-buy-combo .enroll-course:not(.selected) .divider ~ * {
+        display: none !important;
+    }
+    
+    /* Show content when selected */
+    .desktop-layout .enroll-course.selected .divider,
+    .desktop-layout .enroll-course.selected .divider ~ *,
+    .enroll-buy-combo .enroll-course.selected .divider,
+    .enroll-buy-combo .enroll-course.selected .divider ~ * {
+        display: block !important;
+    }
+    
+    /* Ensure date options display flex when selected */
+    .desktop-layout .enroll-course.selected .date-options,
+    .enroll-buy-combo .enroll-course.selected .date-options {
+        display: flex !important;
+    }
+    
+    /* Ensure button displays flex when selected */
+    .desktop-layout .enroll-course.selected .add-to-cart-button,
+    .enroll-buy-combo .enroll-course.selected .add-to-cart-button {
+        display: flex !important;
+    }
+}
+
 /* Mobile Tabs for Enroll-Buy */
 .cbm-tabs-wrapper {
     width: 100%;
