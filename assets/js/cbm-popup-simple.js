@@ -514,7 +514,6 @@
                         
                         const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
                                          '<span class="button-text">Enroll Now</span>' +
-                                         '<span class="loader" style="display: none;"></span>' +
                                          '</button>';
                         $box.append(buttonHtml);
                         console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);

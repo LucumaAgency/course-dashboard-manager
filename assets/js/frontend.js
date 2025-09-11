@@ -47,13 +47,23 @@ window.selectBox = function(element, boxType, courseId) {
     console.log('[CBM] Frontend jQuery code initializing...');
 
     // Date selection handler
-    $(document).on('click', '.date-btn:not(.sold-out)', function() {
+    $(document).on('click', '.date-btn:not(.sold-out)', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const $btn = $(this);
         const $container = $btn.closest('.box');
         
-        // Remove selected class from siblings
-        $btn.siblings().removeClass('selected');
+        // Remove selected class from all date buttons in this container
+        $container.find('.date-btn').removeClass('selected');
+        
+        // Add selected class to clicked button
         $btn.addClass('selected');
+        
+        // Force style update to ensure color is applied
+        $btn.css('background-color', '#cc3071');
+        
+        console.log('[CBM] Date selected:', $btn.text(), 'Has selected class:', $btn.hasClass('selected'));
         
         // Update button text if data attribute exists
         const buttonText = $btn.data('button-text');
@@ -72,6 +82,9 @@ window.selectBox = function(element, boxType, courseId) {
             $container.find('.add-to-cart-button').attr('data-product-id', stmCourseId);
             console.log('[CBM] Updated product ID to STM Course:', stmCourseId);
         }
+        
+        // Force re-render to ensure styles are applied
+        $btn.hide().show(0);
     });
 
     // Add to cart handler
@@ -98,7 +111,11 @@ window.selectBox = function(element, boxType, courseId) {
         // Add loading state
         $button.addClass('loading');
         const originalText = $button.find('.button-text').text();
-        $button.find('.button-text').text('Adding...');
+        
+        // Add spinner if it doesn't exist
+        if (!$button.find('.loading-spinner').length) {
+            $button.append('<span class="loading-spinner"></span>');
+        }
         
         // Check if cbm_ajax is available (should always be available now)
         if (typeof cbm_ajax === 'undefined' || !cbm_ajax.ajax_url) {
@@ -145,46 +162,61 @@ window.selectBox = function(element, boxType, courseId) {
             success: function(response) {
                 console.log('Cart response:', response);
                 
-                if (response.success) {
-                    // Update button
+                // Check for success - handle both response.success and response.fragments
+                if (response.success || response.fragments) {
+                    // Remove loading state immediately
+                    $button.removeClass('loading');
+                    
+                    // Update button text briefly to show success
                     $button.find('.button-text').text('Added!');
                     
-                    // Check if FunnelKit Cart is active
-                    if (response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
-                        // Trigger FunnelKit Cart
-                        if (typeof fkcart_show_cart === 'function') {
-                            fkcart_show_cart();
-                        } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
-                            FKCart.show_cart();
-                        } else {
-                            // Try to trigger FunnelKit by event
-                            $(document.body).trigger('fkcart_show_cart');
-                            $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
-                        }
-                    } else {
-                        // Regular WooCommerce behavior
-                        $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
-                        
-                        // Optionally redirect to cart
-                        if (cbm_ajax.cart_url) {
-                            setTimeout(function() {
-                                window.location.href = cbm_ajax.cart_url;
-                            }, 1000);
-                        }
+                    // Mark button to prevent WooCommerce from adding "View cart" link
+                    $button.addClass('cbm-processed');
+                    
+                    // Update cart fragments first
+                    if (response.fragments) {
+                        $.each(response.fragments, function(key, value) {
+                            $(key).replaceWith(value);
+                        });
                     }
                     
-                    // Reset button after delay
+                    // Trigger WooCommerce added_to_cart event
+                    $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash, $button]);
+                    
+                    // Check if FunnelKit Cart is active - simplified approach
+                    if (response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
+                        // Small delay to ensure cart is updated
+                        setTimeout(function() {
+                            // Simple approach: just call the functions if they exist
+                            if (typeof fkcart_show_cart === 'function') {
+                                fkcart_show_cart();
+                            } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
+                                FKCart.show_cart();
+                            } else {
+                                // Trigger FunnelKit events as fallback
+                                $(document.body).trigger('fkcart_show_cart');
+                                $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
+                            }
+                        }, 100);
+                    }
+                    
+                    // Reset button text after delay and remove any "View cart" links
                     setTimeout(function() {
-                        $button.removeClass('loading');
+                        // Remove any "View cart" link that WooCommerce might have added
+                        $button.siblings('a.added_to_cart').remove();
+                        $button.parent().find('a.added_to_cart').remove();
+                        
+                        // Reset button text
                         $button.find('.button-text').text(originalText);
-                    }, 2000);
+                        $button.removeClass('cbm-processed');
+                    }, 1500);
                     
                 } else {
                     // Error handling
-                    alert('Error adding to cart. Please try again.');
                     $button.removeClass('loading');
                     $button.find('.button-text').text(originalText);
                     
+                    alert('Error adding to cart. Please try again.');
                     if (response.product_url) {
                         window.location.href = response.product_url;
                     }
@@ -195,6 +227,10 @@ window.selectBox = function(element, boxType, courseId) {
                 console.error('[CBM] Response status:', xhr.status);
                 console.error('[CBM] Response text:', xhr.responseText ? xhr.responseText.substring(0, 500) : 'empty');
                 
+                // Remove loading state
+                $button.removeClass('loading');
+                $button.find('.button-text').text(originalText);
+                
                 // Check if response is HTML instead of JSON
                 if (xhr.responseText && xhr.responseText.indexOf('<!DOCTYPE') !== -1) {
                     console.error('[CBM] Received HTML instead of JSON - AJAX endpoint not found');
@@ -202,9 +238,6 @@ window.selectBox = function(element, boxType, courseId) {
                 } else {
                     alert('Error adding to cart. Please try again.');
                 }
-                
-                $button.removeClass('loading');
-                $button.find('.button-text').text(originalText);
             }
         });
     });
@@ -212,6 +245,14 @@ window.selectBox = function(element, boxType, courseId) {
     // Initialize on page load
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
+        
+        // Remove any "View cart" links that appear
+        $(document).on('DOMNodeInserted', function(e) {
+            if ($(e.target).hasClass('added_to_cart') || $(e.target).find('.added_to_cart').length > 0) {
+                $('.add-to-cart-button').siblings('a.added_to_cart').remove();
+                $('.add-to-cart-button').parent().find('a.added_to_cart').remove();
+            }
+        });
         
         // Auto-select first available date if only one option
         $('.box').each(function() {

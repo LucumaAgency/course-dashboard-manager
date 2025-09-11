@@ -15,6 +15,10 @@ class EnrollBuyBox extends AbstractBox {
     private $buy_product_id;
     private $enroll_product_id;
     private $buy_price;
+    private $buy_regular_price;     // Added to fix deprecated warning
+    private $buy_sale_price;         // Added to fix deprecated warning
+    private $enroll_regular_price;   // Added to fix deprecated warning
+    private $enroll_sale_price;      // Added to fix deprecated warning
     private $enroll_in_stock;
     private $enroll_dates;
     
@@ -82,7 +86,7 @@ class EnrollBuyBox extends AbstractBox {
         }
         
         // Get enroll dates - these are stored as course_dates
-        $this->enroll_dates = cbm_get_field('course_dates', $this->course_id) ?: $this->available_dates_full;
+        $this->enroll_dates = \cbm_get_field('course_dates', $this->course_id) ?: $this->available_dates_full;
         error_log('[EnrollBuyBox] Enroll Dates: ' . print_r($this->enroll_dates, true));
         
         // Create instances of both boxes with custom configurations
@@ -211,8 +215,13 @@ class EnrollBuyBox extends AbstractBox {
                     boxes.forEach(box => {
                         box.style.cursor = 'pointer';
                         box.addEventListener('click', function(e) {
-                            // Only process if click is on the box itself, not on buttons
-                            if (e.target.closest('.add-to-cart-button') || e.target.closest('.date-btn')) {
+                            // Don't change selection when clicking on interactive elements
+                            if (e.target.closest('.add-to-cart-button') || 
+                                e.target.closest('.date-btn') || 
+                                e.target.closest('.date-options') ||
+                                e.target.closest('.start-dates')) {
+                                // Keep current selection state
+                                e.stopPropagation();
                                 return;
                             }
                             
@@ -283,6 +292,7 @@ class EnrollBuyBox extends AbstractBox {
             }
             // Also run after a short delay to catch any dynamic rendering
             setTimeout(initEnrollBuyCombo, 500);
+            
             </script>
             
         </div>
