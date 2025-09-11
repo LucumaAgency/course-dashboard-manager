@@ -754,13 +754,93 @@ window.selectBox = function(element, boxType, courseId) {
     
     // Function to explore Vue instance
     window.cbmExploreVue = function() {
-        const cartModal = document.querySelector('.fkcart-modal');
-        if (!cartModal || !cartModal.__vue__) {
-            console.log('[CBM] No Vue instance found');
+        console.log('[CBM] Searching for Vue instances...');
+        
+        // Try different selectors where Vue might be mounted
+        const selectors = [
+            '.fkcart-modal',
+            '#fkcart-modal',
+            '.fkcart-container',
+            '#fkcart-app',
+            '.fkcart-app',
+            '[id*="fkcart"]',
+            '[class*="fkcart"]'
+        ];
+        
+        let vueFound = false;
+        let vueInstance = null;
+        
+        for (let selector of selectors) {
+            const elements = document.querySelectorAll(selector);
+            for (let el of elements) {
+                if (el.__vue__) {
+                    console.log(`[CBM] Vue instance found on: ${selector}`, el);
+                    vueFound = true;
+                    vueInstance = el.__vue__;
+                    break;
+                }
+            }
+            if (vueFound) break;
+        }
+        
+        // Also check if Vue is mounted on document.body or #app
+        if (!vueFound) {
+            if (document.body.__vue__) {
+                console.log('[CBM] Vue instance found on document.body');
+                vueInstance = document.body.__vue__;
+                vueFound = true;
+            } else if (document.getElementById('app') && document.getElementById('app').__vue__) {
+                console.log('[CBM] Vue instance found on #app');
+                vueInstance = document.getElementById('app').__vue__;
+                vueFound = true;
+            }
+        }
+        
+        // Check window for Vue apps
+        if (!vueFound && window.Vue && window.Vue.apps) {
+            console.log('[CBM] Vue apps found in window.Vue.apps');
+            console.log('[CBM] Number of Vue apps:', window.Vue.apps.length);
+        }
+        
+        if (!vueFound) {
+            console.log('[CBM] No Vue instance found. Checking fkcart_app_data...');
+            if (window.fkcart_app_data) {
+                console.log('[CBM] fkcart_app_data details:', {
+                    ajax_url: fkcart_app_data.ajax_url,
+                    ajax_nonce: fkcart_app_data.ajax_nonce,
+                    keys: Object.keys(fkcart_app_data)
+                });
+                
+                // Try to apply coupon using AJAX directly with fkcart_app_data
+                window.cbmApplyCouponDirect = function(code) {
+                    console.log('[CBM] Applying coupon directly via AJAX...');
+                    jQuery.ajax({
+                        type: 'POST',
+                        url: fkcart_app_data.ajax_url,
+                        data: {
+                            action: 'fkcart_apply_coupon',
+                            coupon_code: code,
+                            security: fkcart_app_data.ajax_nonce,
+                            _security: fkcart_app_data.ajax_nonce,
+                            nonce: fkcart_app_data.ajax_nonce
+                        },
+                        success: function(response) {
+                            console.log('[CBM] Direct coupon response:', response);
+                            if (response.success) {
+                                location.reload();
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('[CBM] Direct coupon error:', error);
+                        }
+                    });
+                };
+                console.log('[CBM] Created cbmApplyCouponDirect(code) function');
+            }
             return;
         }
         
-        const vue = cartModal.__vue__;
+        const vue = vueInstance;
         console.log('[CBM] === Vue Instance Exploration ===');
         console.log('[CBM] Vue root data:', vue.$data);
         console.log('[CBM] Vue root methods:', vue.$options.methods);
