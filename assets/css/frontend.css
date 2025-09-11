@@ -275,18 +275,9 @@
     display: inline-block;
 }
 
-/* Loader */
+/* Loader - Hidden, we use loading-spinner instead */
 .loader {
-    width: 8px;
-    height: 8px;
-    border: 2px solid transparent;
-    border-top-color: #fff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    display: none !important;
 }
 
 /* Loading spinner for add to cart button */
