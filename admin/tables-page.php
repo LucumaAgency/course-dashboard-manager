@@ -193,7 +193,7 @@ if (!defined('ABSPATH')) {
                         </select>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        <button id="save-all-changes" class="button button-primary" style="font-size: 14px; padding: 8px 20px;">Save All Changes</button>
+                        <button id="save-group-settings" class="button button-primary">Save Group Settings</button>
                         <button id="apply-group-settings" class="button button-secondary">Apply to All Courses</button>
                     </div>
                 </div>
@@ -595,7 +595,7 @@ if (!defined('ABSPATH')) {
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${buttonText}" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>
-                            <!-- Individual save button removed - use Save All Changes button above -->
+                            <button class="button button-small button-primary save-row">Save</button>
                             <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
@@ -609,7 +609,7 @@ if (!defined('ABSPATH')) {
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: #d54e21; font-weight: bold;">0</span></td>`;
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Sold Out" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>
-                            <!-- Individual save button removed - use Save All Changes button above -->
+                            <button class="button button-small button-primary save-row">Save</button>
                             <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
@@ -622,7 +622,7 @@ if (!defined('ABSPATH')) {
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Buy Now" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>
-                            <!-- Individual save button removed - use Save All Changes button above -->
+                            <button class="button button-small button-primary save-row">Save</button>
                             <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
@@ -637,7 +637,7 @@ if (!defined('ABSPATH')) {
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${buttonText}" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>
-                            <!-- Individual save button removed - use Save All Changes button above -->
+                            <button class="button button-small button-primary save-row">Save</button>
                             <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
@@ -647,7 +647,7 @@ if (!defined('ABSPATH')) {
                         rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Join Waitlist" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>
-                            <!-- Individual save button removed - use Save All Changes button above -->
+                            <button class="button button-small button-primary save-row">Save</button>
                             <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
@@ -679,7 +679,7 @@ if (!defined('ABSPATH')) {
                         rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${currentButtonText}" style="width: 100%; padding: 3px;"></td>`;
                         
                         rowHTML += `<td>
-                            <!-- Individual save button removed - use Save All Changes button above -->
+                            <button class="button button-small button-primary save-row">Save</button>
                             <button class="button button-small delete-row" style="background: #d54e21; color: white; margin-left: 5px;">×</button>
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
@@ -735,7 +735,7 @@ if (!defined('ABSPATH')) {
                     rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(buyProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                     rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Buy Course" style="width: 100%; padding: 3px;"></td>`;
                     rowHTML += `<td>
-                        <!-- Individual save button removed - use Save All Changes button above -->
+                        <button class="button button-small button-primary save-buy-row">Save</button>
                         <span class="save-status" style="margin-left: 5px;"></span>
                     </td>`;
                     
@@ -1097,22 +1097,20 @@ if (!defined('ABSPATH')) {
                     }
                 });
                 
-                // Save all changes button
-                const saveAllBtn = document.getElementById('save-all-changes');
-                console.log('[CBM Debug] Save all button element:', saveAllBtn);
+                // Save group settings button (for enroll-buy state)
+                const saveGroupBtn = document.getElementById('save-group-settings');
+                console.log('[CBM Debug] Save group button element:', saveGroupBtn);
                 
-                if (saveAllBtn) {
-                    saveAllBtn.addEventListener('click', function() {
-                        console.log('[CBM Debug] Save all changes button clicked!');
+                if (saveGroupBtn) {
+                    saveGroupBtn.addEventListener('click', function() {
+                        console.log('[CBM Debug] Save group settings button clicked!');
                         
                         const boxState = document.getElementById('group-box-state').value;
-                        const sellingPageId = document.getElementById('group-selling-page').value;
                         
                         // Collect data based on current state
                         let saveData = {
                             group_id: groupId,
                             box_state: boxState,
-                            selling_page_id: sellingPageId,
                             nonce: '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                         };
                         
@@ -1206,7 +1204,7 @@ if (!defined('ABSPATH')) {
                             console.log('[CBM Debug] Save result:', result);
                             if (result.success) {
                                 // Show success message
-                                const button = document.getElementById('save-all-changes');
+                                const button = document.getElementById('save-group-settings');
                                 const originalText = button.textContent;
                                 button.textContent = '✓ Saved!';
                                 button.style.backgroundColor = '#46b450';
