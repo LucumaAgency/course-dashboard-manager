@@ -454,25 +454,30 @@ if (!defined('ABSPATH')) {
                 console.log('[CBM Debug] All products available:', typeof allProducts !== 'undefined' ? 'YES' : 'NO');
                 
                 // Debug selling page selection
-                const sellingPageSelect = document.getElementById('group-selling-page');
-                if (sellingPageSelect) {
-                    console.log('[CBM Debug] Selling page dropdown found!');
-                    console.log('[CBM Debug] Selling page dropdown value on load:', sellingPageSelect.value);
-                    const selectedOption = sellingPageSelect.options[sellingPageSelect.selectedIndex];
-                    console.log('[CBM Debug] Selected option:', selectedOption ? {value: selectedOption.value, text: selectedOption.text} : 'none');
+                console.log('[CBM Debug] About to check for selling page dropdown...');
+                try {
+                    const sellingPageSelect = document.getElementById('group-selling-page');
+                    if (sellingPageSelect) {
+                        console.log('[CBM Debug] Selling page dropdown found!');
+                        console.log('[CBM Debug] Selling page dropdown value on load:', sellingPageSelect.value);
+                        const selectedOption = sellingPageSelect.options[sellingPageSelect.selectedIndex];
+                        console.log('[CBM Debug] Selected option:', selectedOption ? {value: selectedOption.value, text: selectedOption.text} : 'none');
+                        
+                        // Check if PHP set the selection
+                        const phpSellingPageId = <?php echo isset($selling_page_id) ? json_encode($selling_page_id) : 'null'; ?>;
+                        console.log('[CBM Debug] PHP selling_page_id:', phpSellingPageId);
                     
-                    // Check if PHP set the selection
-                    const phpSellingPageId = <?php echo json_encode($selling_page_id); ?>;
-                    console.log('[CBM Debug] PHP selling_page_id:', phpSellingPageId);
-                    
-                    // Force set the value if needed
-                    if (phpSellingPageId && sellingPageSelect.value !== phpSellingPageId.toString()) {
-                        console.log('[CBM Debug] Forcing selling page selection to:', phpSellingPageId);
-                        sellingPageSelect.value = phpSellingPageId;
+                        // Force set the value if needed
+                        if (phpSellingPageId && sellingPageSelect.value !== phpSellingPageId.toString()) {
+                            console.log('[CBM Debug] Forcing selling page selection to:', phpSellingPageId);
+                            sellingPageSelect.value = phpSellingPageId;
+                        }
+                    } else {
+                        console.log('[CBM Debug] Selling page dropdown NOT FOUND at initial load!');
+                        console.log('[CBM Debug] Available elements with IDs:', Array.from(document.querySelectorAll('[id]')).map(el => el.id));
                     }
-                } else {
-                    console.log('[CBM Debug] Selling page dropdown NOT FOUND at initial load!');
-                    console.log('[CBM Debug] Available elements with IDs:', Array.from(document.querySelectorAll('[id]')).map(el => el.id));
+                } catch (error) {
+                    console.error('[CBM Debug] Error checking selling page dropdown:', error);
                 }
                 
                 let currentBoxState = document.getElementById('group-box-state').value;
@@ -482,28 +487,32 @@ if (!defined('ABSPATH')) {
                 console.log('[CBM Debug] Courses data:', typeof coursesData !== 'undefined' ? coursesData : 'NOT DEFINED');
                 
                 // Debug selling page selection - MOVED HERE
-                const sellingPageSelectDebug = document.getElementById('group-selling-page');
-                if (sellingPageSelectDebug) {
-                    console.log('[CBM Debug] Selling page dropdown value on load:', sellingPageSelectDebug.value);
-                    const selectedOptionDebug = sellingPageSelectDebug.options[sellingPageSelectDebug.selectedIndex];
-                    console.log('[CBM Debug] Selected option:', selectedOptionDebug ? {value: selectedOptionDebug.value, text: selectedOptionDebug.text} : 'none');
-                    
-                    // Check if PHP set the selection
-                    const phpSellingPageIdDebug = <?php echo json_encode($selling_page_id); ?>;
-                    console.log('[CBM Debug] PHP selling_page_id:', phpSellingPageIdDebug);
-                    
-                    // Force set the value if needed
-                    if (phpSellingPageIdDebug && sellingPageSelectDebug.value !== phpSellingPageIdDebug.toString()) {
-                        console.log('[CBM Debug] Forcing selling page selection to:', phpSellingPageIdDebug);
-                        sellingPageSelectDebug.value = phpSellingPageIdDebug.toString();
+                try {
+                    const sellingPageSelectDebug = document.getElementById('group-selling-page');
+                    if (sellingPageSelectDebug) {
+                        console.log('[CBM Debug] (Second check) Selling page dropdown value on load:', sellingPageSelectDebug.value);
+                        const selectedOptionDebug = sellingPageSelectDebug.options[sellingPageSelectDebug.selectedIndex];
+                        console.log('[CBM Debug] (Second check) Selected option:', selectedOptionDebug ? {value: selectedOptionDebug.value, text: selectedOptionDebug.text} : 'none');
                         
-                        // Double check it was set
-                        setTimeout(() => {
-                            console.log('[CBM Debug] After forcing, selling page value is:', sellingPageSelectDebug.value);
-                        }, 100);
+                        // Check if PHP set the selection
+                        const phpSellingPageIdDebug = <?php echo isset($selling_page_id) ? json_encode($selling_page_id) : 'null'; ?>;
+                        console.log('[CBM Debug] (Second check) PHP selling_page_id:', phpSellingPageIdDebug);
+                    
+                        // Force set the value if needed
+                        if (phpSellingPageIdDebug && sellingPageSelectDebug.value !== phpSellingPageIdDebug.toString()) {
+                            console.log('[CBM Debug] Forcing selling page selection to:', phpSellingPageIdDebug);
+                            sellingPageSelectDebug.value = phpSellingPageIdDebug.toString();
+                            
+                            // Double check it was set
+                            setTimeout(() => {
+                                console.log('[CBM Debug] After forcing, selling page value is:', sellingPageSelectDebug.value);
+                            }, 100);
+                        }
+                    } else {
+                        console.log('[CBM Debug] (Second check) Selling page dropdown not found!');
                     }
-                } else {
-                    console.log('[CBM Debug] Selling page dropdown not found!');
+                } catch (error) {
+                    console.error('[CBM Debug] (Second check) Error:', error);
                 }
                 
                 // Function to render table based on box state
