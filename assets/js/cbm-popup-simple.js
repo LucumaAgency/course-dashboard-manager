@@ -85,17 +85,7 @@
     }
     
     function showPopup(courseId) {
-        // Prevent FunnelKit cart from opening when popup shows
-        const preventFunnelKit = function(e) {
-            if (e && e.stopImmediatePropagation) {
-                e.stopImmediatePropagation();
-            }
-        };
-        
-        // Temporarily block FunnelKit cart events
-        $(document.body).on('fkcart_show_cart.cbm_popup', preventFunnelKit);
-        $(document.body).on('fkcart_open.cbm_popup', preventFunnelKit);
-        $(document.body).on('wcffwc_show_cart.cbm_popup', preventFunnelKit);
+        // Don't prevent FunnelKit cart - let it work normally
         
         // Use native DOM for maximum speed
         const overlay = document.getElementById('cbm-popup-overlay');
@@ -104,7 +94,7 @@
             // Pre-rendered popup - show instantly with no jQuery overhead
             console.time('[CBM Popup] Show time');
             overlay.style.display = 'block';
-            document.body.classList.add('cbm-popup-open'); // Hide FunnelKit cart
+            // Don't add cbm-popup-open class - not needed anymore
             console.timeEnd('[CBM Popup] Show time');
             
             // Only bind minimal events if not already bound
@@ -113,12 +103,7 @@
                 overlay.setAttribute('data-events-bound', 'true');
             }
             
-            // Remove FunnelKit prevention after popup is shown
-            setTimeout(function() {
-                $(document.body).off('fkcart_show_cart.cbm_popup');
-                $(document.body).off('fkcart_open.cbm_popup');
-                $(document.body).off('wcffwc_show_cart.cbm_popup');
-            }, 500);
+            // No need to remove prevention handlers anymore
             
             return; // Exit early - no further processing needed
         }
@@ -136,7 +121,7 @@
         const $content = $('#cbm-popup-content');
         
         $overlay.fadeIn(100);
-        $('body').addClass('cbm-popup-open'); // Hide FunnelKit cart
+        // Don't add cbm-popup-open class - not needed anymore
         $content.html('<div class="cbm-loading">Loading...</div>');
         
         // Load boxes via AJAX (fallback)
@@ -146,12 +131,7 @@
             // Re-initialize any JavaScript for the boxes
             initializeBoxScripts();
             
-            // Remove FunnelKit prevention after content is loaded
-            setTimeout(function() {
-                $(document.body).off('fkcart_show_cart.cbm_popup');
-                $(document.body).off('fkcart_open.cbm_popup');
-                $(document.body).off('wcffwc_show_cart.cbm_popup');
-            }, 500);
+            // No need to remove prevention handlers anymore
         });
     }
     
@@ -673,7 +653,7 @@
         const overlay = document.getElementById('cbm-popup-overlay');
         if (overlay) {
             overlay.style.display = 'none'; // Direct DOM for instant close
-            document.body.classList.remove('cbm-popup-open'); // Show FunnelKit cart again
+            // No need to remove cbm-popup-open class anymore
         }
     }
     

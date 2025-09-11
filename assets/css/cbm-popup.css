@@ -38,13 +38,13 @@
     box-sizing: border-box;
 }
 
-/* Hide FunnelKit cart when popup is open */
-body.cbm-popup-open .fkcart-panel,
-body.cbm-popup-open .fkcart-modal,
-body.cbm-popup-open .fkcart-drawer,
-body.cbm-popup-open .fkcart-slide-cart,
-body.cbm-popup-open .fkcart-float-icon,
-body.cbm-popup-open .fkcart-icon-wrap {
+/* Temporarily hide FunnelKit cart ONLY when popup is actually showing */
+.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-panel,
+.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-modal,
+.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-drawer,
+.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-slide-cart,
+.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-float-icon,
+.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-icon-wrap {
     display: none !important;
     visibility: hidden !important;
     z-index: 1 !important;
