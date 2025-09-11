@@ -197,7 +197,7 @@
     width: auto;
     min-width: 68px;
     padding: 5px 8px;
-    border: none;
+    border: 1px solid transparent;
     border-radius: 25px;
     background-color: rgba(255, 255, 255, 0.08);
     color: white;
@@ -206,9 +206,17 @@
     font-size: 14px;
 }
 
-.date-btn:hover:not(:disabled),
-.date-btn.selected:not(:disabled) {
-    background-color: #cc3071;
+.date-btn:hover:not(:disabled):not(.selected) {
+    background-color: rgba(204, 48, 113, 0.3);
+    border-color: rgba(204, 48, 113, 0.5);
+}
+
+.date-btn.selected {
+    background-color: #cc3071 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    border: 1px solid #cc3071 !important;
+    box-shadow: 0 2px 8px rgba(204, 48, 113, 0.3) !important;
 }
 
 .date-btn.sold-out,

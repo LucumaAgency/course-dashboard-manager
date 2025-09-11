@@ -51,9 +51,13 @@ window.selectBox = function(element, boxType, courseId) {
         const $btn = $(this);
         const $container = $btn.closest('.box');
         
-        // Remove selected class from siblings
-        $btn.siblings().removeClass('selected');
+        console.log('[CBM] Date button clicked:', $btn.data('date'));
+        
+        // Remove selected class from siblings (other date buttons)
+        $btn.siblings('.date-btn').removeClass('selected');
         $btn.addClass('selected');
+        
+        console.log('[CBM] Date button selected state:', $btn.hasClass('selected'));
         
         // Update button text if data attribute exists
         const buttonText = $btn.data('button-text');
