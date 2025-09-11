@@ -38,17 +38,7 @@
     box-sizing: border-box;
 }
 
-/* Temporarily hide FunnelKit cart ONLY when popup is actually showing */
-.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-panel,
-.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-modal,
-.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-drawer,
-.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-slide-cart,
-.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-float-icon,
-.cbm-popup-overlay:not([style*="display: none"]) ~ .fkcart-icon-wrap {
-    display: none !important;
-    visibility: hidden !important;
-    z-index: 1 !important;
-}
+/* FunnelKit cart should show normally - popup will appear on top with higher z-index */
 
 /* ID selector for more specificity */
 #cbm-popup-container {
@@ -336,10 +326,8 @@
     outline-offset: 2px;
 }
 
-/* Ensure proper scrolling */
-body.cbm-popup-open {
-    overflow: hidden;
-}
+/* Ensure proper scrolling when popup is open */
+/* Note: cbm-popup-open class is no longer used */
 
 /* Box specific adjustments in popup */
 .cbm-popup-container .box {
