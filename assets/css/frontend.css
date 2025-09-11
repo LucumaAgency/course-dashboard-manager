@@ -22,8 +22,8 @@
     max-width: 350px;
     width: 100%;
     padding: 15px;
-    background: transparent;
-    border: 2px solid #9B9FAA7A;
+    background: #0E0D0F;
+    border: 2px solid rgba(155, 159, 170, 0.24);
     border-radius: 15px;
     color: white;
     cursor: pointer;
@@ -32,10 +32,16 @@
     box-sizing: border-box;
 }
 
+.box:hover:not(.selected) {
+    border-color: rgba(155, 159, 170, 0.4);
+    background: rgba(14, 13, 15, 0.9);
+}
+
 .box.selected {
     background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
-    border: 2px solid transparent;
+    border: 2px solid rgba(222, 4, 164, 0.3) !important;
     padding: 15px;
+    box-shadow: 0 0 20px rgba(222, 4, 164, 0.2);
 }
 
 .box:not(.selected) {

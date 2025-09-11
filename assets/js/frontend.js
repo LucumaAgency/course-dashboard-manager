@@ -226,6 +226,50 @@ window.selectBox = function(element, boxType, courseId) {
                 $dates.first().click();
             }
         });
+        
+        // Initialize Enroll-Buy combo box selection
+        initEnrollBuySelection();
     });
+    
+    // Handle Enroll-Buy combo box selection
+    function initEnrollBuySelection() {
+        console.log('[CBM] Initializing Enroll-Buy selection');
+        
+        // Find all enroll-buy combo containers
+        $('.enroll-buy-combo').each(function() {
+            const $container = $(this);
+            const $boxes = $container.find('.box');
+            
+            // Add click handler to each box
+            $boxes.off('click.boxselect').on('click.boxselect', function(e) {
+                // Don't process if clicking on buttons or dates
+                if ($(e.target).closest('.add-to-cart-button, .date-btn').length) {
+                    return;
+                }
+                
+                const $clickedBox = $(this);
+                
+                // Deselect all boxes in this container
+                $boxes.removeClass('selected');
+                $boxes.find('.circlecontainer').hide();
+                $boxes.find('.circle-container').show();
+                
+                // Select the clicked box
+                $clickedBox.addClass('selected');
+                $clickedBox.find('.circlecontainer').show();
+                $clickedBox.find('.circle-container').hide();
+                
+                console.log('[CBM] Box selected:', $clickedBox.closest('.buy-box-wrapper, .enroll-box-wrapper').attr('class'));
+            });
+            
+            // Set initial state: Buy box selected by default
+            const $buyBox = $container.find('.buy-box-wrapper .box, [data-tab="buy"] .box').first();
+            if ($buyBox.length) {
+                $buyBox.addClass('selected');
+                $buyBox.find('.circlecontainer').show();
+                $buyBox.find('.circle-container').hide();
+            }
+        });
+    }
 
 })(jQuery);
