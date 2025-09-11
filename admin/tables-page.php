@@ -456,6 +456,7 @@ if (!defined('ABSPATH')) {
                 // Debug selling page selection
                 const sellingPageSelect = document.getElementById('group-selling-page');
                 if (sellingPageSelect) {
+                    console.log('[CBM Debug] Selling page dropdown found!');
                     console.log('[CBM Debug] Selling page dropdown value on load:', sellingPageSelect.value);
                     const selectedOption = sellingPageSelect.options[sellingPageSelect.selectedIndex];
                     console.log('[CBM Debug] Selected option:', selectedOption ? {value: selectedOption.value, text: selectedOption.text} : 'none');
@@ -469,6 +470,9 @@ if (!defined('ABSPATH')) {
                         console.log('[CBM Debug] Forcing selling page selection to:', phpSellingPageId);
                         sellingPageSelect.value = phpSellingPageId;
                     }
+                } else {
+                    console.log('[CBM Debug] Selling page dropdown NOT FOUND at initial load!');
+                    console.log('[CBM Debug] Available elements with IDs:', Array.from(document.querySelectorAll('[id]')).map(el => el.id));
                 }
                 
                 let currentBoxState = document.getElementById('group-box-state').value;
@@ -1216,6 +1220,8 @@ if (!defined('ABSPATH')) {
                 const sellingPageDropdown = document.getElementById('group-selling-page');
                 if (sellingPageDropdown) {
                     console.log('[CBM Debug] Adding change handler to selling page dropdown');
+                    console.log('[CBM Debug] Current selling page value before handler:', sellingPageDropdown.value);
+                    
                     sellingPageDropdown.addEventListener('change', function() {
                         const sellingPageId = this.value;
                         const groupId = <?php echo $group_id; ?>;
