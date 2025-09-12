@@ -13,6 +13,41 @@ if (!defined('ABSPATH')) {
 // Note: This file is included from dashboard.php which is in the CourseBoxManager\Admin namespace
 // So we need to use global namespace for WordPress functions with \
 
+// Debug mode if requested
+if (isset($_GET['debug']) && $_GET['debug'] == '1') {
+    echo '<div style="background: #ffcccc; padding: 20px; margin: 20px; border: 2px solid red;">';
+    echo '<h2>🔍 DEBUG: Product Loading Test</h2>';
+    echo '<pre style="background: white; padding: 10px;">';
+    
+    echo "1. WooCommerce active: " . (class_exists('WooCommerce') ? '✅ YES' : '❌ NO') . "\n";
+    echo "2. wc_get_products exists: " . (function_exists('wc_get_products') ? '✅ YES' : '❌ NO') . "\n\n";
+    
+    global $wpdb;
+    $product_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'product' AND post_status = 'publish'");
+    echo "3. Products in database: " . $product_count . "\n\n";
+    
+    if (function_exists('wc_get_products')) {
+        echo "4. Testing wc_get_products (limit 5):\n";
+        $test_products = wc_get_products(['limit' => 5, 'status' => 'publish']);
+        echo "   Loaded: " . count($test_products) . " products\n";
+        foreach ($test_products as $p) {
+            echo "   - ID " . $p->get_id() . ": " . $p->get_name() . " (Price: " . $p->get_price() . ")\n";
+        }
+    } else {
+        echo "4. Cannot test wc_get_products - function not available\n";
+    }
+    
+    echo "\n5. Direct database query (last 5 products):\n";
+    $direct_products = $wpdb->get_results("SELECT ID, post_title FROM {$wpdb->posts} WHERE post_type = 'product' AND post_status = 'publish' ORDER BY ID DESC LIMIT 5");
+    foreach ($direct_products as $dp) {
+        echo "   - ID " . $dp->ID . ": " . $dp->post_title . "\n";
+    }
+    
+    echo '</pre>';
+    echo '<p><a href="' . remove_query_arg('debug') . '" class="button">Hide Debug Info</a></p>';
+    echo '</div>';
+}
+
 // Main function content (no function declaration needed - included inline)
     // Show success messages
     if (isset($_GET['group_created'])) {
