@@ -94,9 +94,20 @@
             overlay.style.display = 'block';
             console.timeEnd('[CBM Popup] Show time');
             
-            // Only bind minimal events if not already bound
+            // Check if we need to create tabs for multiple boxes
+            const $content = $('#cbm-popup-content');
+            const $boxes = $content.find('.box');
+            const hasTabs = overlay.getAttribute('data-has-tabs') === 'true';
+            
+            // Create tabs if we have multiple boxes but no tabs yet
+            if ($boxes.length > 1 && $content.find('.cbm-tabs').length === 0) {
+                console.log('[CBM Popup] Creating tabs for pre-rendered content');
+                convertToTabs();
+            }
+            
+            // Only bind events if not already bound
             if (!overlay.hasAttribute('data-events-bound')) {
-                bindMinimalEvents();
+                initializeBoxScripts();
                 overlay.setAttribute('data-events-bound', 'true');
             }
             
@@ -394,9 +405,13 @@
         let tabsHtml = '<div class="cbm-tabs">';
         tabsHtml += '<div class="cbm-tabs-header">';
         
+        // Find the index of the Buy tab
+        let buyIndex = boxTypes.findIndex(type => type.includes('Buy'));
+        if (buyIndex === -1) buyIndex = 0; // Default to first if no Buy tab
+        
         // Create tab buttons
         boxTypes.forEach((type, index) => {
-            const activeClass = index === 0 ? 'active' : '';
+            const activeClass = index === buyIndex ? 'active' : '';
             tabsHtml += `<button class="cbm-tab-btn ${activeClass}" data-tab="${index}" type="button">${type}</button>`;
         });
         
@@ -405,7 +420,7 @@
         
         // Wrap each box in a tab pane
         $boxes.each(function(index) {
-            const activeClass = index === 0 ? 'active' : '';
+            const activeClass = index === buyIndex ? 'active' : '';
             const $box = $(this);
             
             tabsHtml += `<div class="cbm-tab-pane ${activeClass}" data-tab="${index}">`;
