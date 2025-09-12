@@ -363,13 +363,15 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
             </div>
             
             <!-- Hidden data for JavaScript -->
-            <script>
+            <script type="text/javascript" data-version="<?php echo time(); ?>" data-cbm-version="1.9.2">
+                // Force reload - Version 1.9.2 - <?php echo date('Y-m-d H:i:s'); ?>
+                console.log('[CBM] Script loading at: <?php echo date('Y-m-d H:i:s'); ?>');
                 var coursesData = <?php 
                     $courses_json = [];
                     $all_products = [];
                     
                     // Debug: Log what's happening with product loading
-                    error_log('[CBM Debug] Starting product load...');
+                    error_log('[CBM Debug v1.9.2] Starting product load at ' . date('Y-m-d H:i:s'));
                     error_log('[CBM Debug] WooCommerce class exists: ' . (class_exists('WooCommerce') ? 'YES' : 'NO'));
                     error_log('[CBM Debug] wc_get_products exists: ' . (function_exists('wc_get_products') ? 'YES' : 'NO'));
                     
@@ -450,6 +452,32 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
                 ?>;
                 var allProducts = <?php echo json_encode($all_products); ?>;
                 var groupId = <?php echo intval($group_id); ?>;
+                
+                // IMMEDIATE CHECK
+                console.log('[CBM IMMEDIATE CHECK] Products loaded:', Object.keys(allProducts).length);
+                console.log('[CBM IMMEDIATE CHECK] First 3 products:', Object.entries(allProducts).slice(0, 3));
+                
+                // If no products, show alert
+                if (Object.keys(allProducts).length === 0) {
+                    console.error('[CBM] NO PRODUCTS LOADED! Array is empty.');
+                    // Try to load via AJAX immediately
+                    if (typeof jQuery !== 'undefined') {
+                        jQuery.ajax({
+                            url: ajaxurl,
+                            type: 'POST',
+                            data: { action: 'cbm_get_products' },
+                            success: function(response) {
+                                if (response.success && response.data.products) {
+                                    allProducts = response.data.products;
+                                    console.log('[CBM] Loaded ' + response.data.count + ' products via AJAX!');
+                                    location.reload(); // Reload page with products
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    console.log('[CBM] Products loaded successfully:', Object.keys(allProducts).length);
+                }
                 
                 // Debug immediately after loading
                 try {
