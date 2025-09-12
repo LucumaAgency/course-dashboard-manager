@@ -268,6 +268,53 @@ window.selectBox = function(element, boxType, courseId) {
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded (Clean Version)');
         
+        // Force ALL boxes to show selected state immediately
+        function forceSelectedState() {
+            $('.box').each(function() {
+                const $box = $(this);
+                if (!$box.hasClass('selected')) {
+                    $box.addClass('selected');
+                }
+                // Hide the unselected circle
+                $box.find('.circle-container').hide().css('display', 'none');
+                // Show the selected circle
+                $box.find('.circlecontainer').show().css('display', 'block');
+            });
+        }
+        
+        // Apply immediately
+        forceSelectedState();
+        console.log('[CBM] Forced all boxes to selected state');
+        
+        // Monitor for any changes and reapply
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'attributes' || mutation.type === 'childList') {
+                    // Check if any box lost selected state
+                    const $unselectedBoxes = $('.box:not(.selected)');
+                    if ($unselectedBoxes.length > 0) {
+                        console.log('[CBM] Detected unselected boxes, forcing selected state');
+                        forceSelectedState();
+                    }
+                    
+                    // Check if circle-container is visible
+                    $('.box .circle-container:visible').each(function() {
+                        console.log('[CBM] Detected visible circle-container, hiding it');
+                        $(this).hide().css('display', 'none');
+                        $(this).siblings('.circlecontainer').show().css('display', 'block');
+                    });
+                }
+            });
+        });
+        
+        // Start observing the body for changes
+        observer.observe(document.body, {
+            attributes: true,
+            childList: true,
+            subtree: true,
+            attributeFilter: ['class', 'style']
+        });
+        
         // Initialize the Enroll-Buy combo box selection
         initEnrollBuySelection();
         

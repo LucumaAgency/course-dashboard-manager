@@ -99,6 +99,15 @@
     box-sizing: border-box;
 }
 
+/* Force ALL boxes to always show selected state */
+.box .circle-container {
+    display: none !important;
+}
+
+.box .circlecontainer {
+    display: block !important;
+}
+
 /* Single box - no pointer cursor since it can't be deselected */
 .box:only-child {
     cursor: default;
