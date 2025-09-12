@@ -3,7 +3,7 @@
  * Responsive popup with automatic tab conversion for mobile
  */
 
-/* Overlay */
+/* Overlay - Higher z-index than FunnelKit cart */
 .cbm-popup-overlay {
     position: fixed;
     top: 0;
@@ -11,12 +11,12 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-    z-index: 99998;
+    z-index: 999998 !important; /* Higher than FunnelKit which uses 999999 */
     display: none;
     animation: fadeIn 0.1s ease;
 }
 
-/* Container */
+/* Container - Ensure it's above FunnelKit */
 .cbm-popup-container {
     position: fixed;
     top: 50%;
@@ -32,10 +32,22 @@
     max-height: 90vh;
     overflow-y: auto;
     overflow-x: hidden;
-    z-index: 99999;
+    z-index: 999999 !important; /* Same as FunnelKit to ensure it's on top */
     animation: slideIn 0.15s ease;
-    padding: 0;
+    padding: 40px;
     box-sizing: border-box;
+}
+
+/* Hide FunnelKit cart when popup is open */
+body.cbm-popup-open .fkcart-panel,
+body.cbm-popup-open .fkcart-modal,
+body.cbm-popup-open .fkcart-drawer,
+body.cbm-popup-open .fkcart-slide-cart,
+body.cbm-popup-open .fkcart-float-icon,
+body.cbm-popup-open .fkcart-icon-wrap {
+    display: none !important;
+    visibility: hidden !important;
+    z-index: 1 !important;
 }
 
 /* ID selector for more specificity */
@@ -58,10 +70,24 @@
     color: #999;
     z-index: 100000;
     transition: color 0.3s ease;
+    outline: none !important;
 }
 
 .cbm-popup-close:hover {
     color: #fff;
+    background: transparent !important;
+}
+
+.cbm-popup-close:focus,
+.cbm-popup-close:active {
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.cbm-popup-close::before,
+.cbm-popup-close::after {
+    display: none !important;
 }
 
 /* Content wrapper */
@@ -320,25 +346,6 @@ body.cbm-popup-open {
     margin: 0;
     box-shadow: none;
     padding: 15px;
-    /* min-height removed for buy state, will be added conditionally */
-}
-
-/* Buy course box - no min-height */
-.cbm-popup-container .buy-course {
-    min-height: unset !important;
-    height: auto !important;
-}
-
-/* When buy tab is active - ensure no min-height */
-.cbm-tab-pane.active[data-tab="buy"] .box,
-.cbm-tab-pane.active[data-tab="0"] .box {
-    min-height: unset !important;
-    height: auto !important;
-}
-
-/* Enroll course box - with min-height */
-.cbm-popup-container .enroll-course {
-    min-height: 400px;
 }
 
 .cbm-popup-container .box:not(.selected) {
@@ -362,30 +369,53 @@ body.cbm-popup-open {
     background-color: #cc3071;
 }
 
-/* Date buttons in popup */
+/* Date options container in popup */
+.cbm-popup-container .date-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* Date buttons in popup - match desktop styles */
 .cbm-popup-container .date-btn {
-    display: block;
-    width: 100%;
-    margin-bottom: 8px;
-    padding: 10px;
-    background: #f5f5f5;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    width: auto;
+    min-width: 68px;
+    padding: 5px 8px;
+    border: none;
+    border-radius: 25px;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: white;
     cursor: pointer;
-    transition: all 0.15s ease;
-    text-align: center;
+    transition: all 0.3s;
+    font-size: 14px;
+    display: inline-block;
+    margin: 2px;
 }
 
-.cbm-popup-container .date-btn:hover {
-    background: #DE04A4 !important;
-    border-color: #DE04A4 !important;
+.cbm-popup-container .date-btn:hover:not(:disabled),
+.cbm-popup-container .date-btn.selected:not(:disabled),
+.cbm-popup-container .date-btn:active:not(:disabled),
+.cbm-popup-container .date-btn:focus:not(:disabled) {
+    background-color: #cc3071 !important;
+    background: #cc3071 !important;
     color: white !important;
 }
 
-.cbm-popup-container .date-btn.selected {
-    background: #DE04A4 !important;
+/* Override any theme or WooCommerce styles in popup */
+.cbm-popup-container .box .date-btn.selected,
+.cbm-popup-container .date-options .date-btn.selected,
+.cbm-popup-container .start-dates .date-btn.selected {
+    background-color: #cc3071 !important;
+    background: #cc3071 !important;
     color: white !important;
-    border-color: #DE04A4 !important;
+}
+
+.cbm-popup-container .date-btn.sold-out,
+.cbm-popup-container .date-btn:disabled {
+    background-color: #555;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
 
 /* Box styles within popup */
@@ -417,28 +447,7 @@ body.cbm-popup-open {
     border: 2px solid transparent;
 }
 
-/* Date buttons in popup */
-.cbm-popup-container .date-btn {
-    padding: 8px 16px;
-    margin: 5px;
-    border: 1px solid #ddd;
-    background: #fff;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.cbm-popup-container .date-btn:hover {
-    border-color: #DE04A4 !important;
-    background: #DE04A4 !important;
-    color: white !important;
-}
-
-.cbm-popup-container .date-btn.selected {
-    background: #DE04A4 !important;
-    color: white !important;
-    border-color: #DE04A4 !important;
-}
+/* Date button styles moved above to avoid duplication */
 
 /* Ensure trigger button is visible */
 .cbm-popup-trigger {
@@ -449,37 +458,4 @@ body.cbm-popup-open {
 .cbm-popup-trigger:hover {
     opacity: 0.9;
     transform: translateY(-2px);
-}
-
-/* Override WordPress button styles for date buttons */
-.cbm-popup-container button.date-btn:active,
-.cbm-popup-container button.date-btn:focus,
-.cbm-popup-container button.date-btn:hover,
-.cbm-popup-container .date-btn:active,
-.cbm-popup-container .date-btn:focus,
-.cbm-popup-container .date-btn:hover,
-button.date-btn:active,
-button.date-btn:focus,
-button.date-btn:hover {
-    background-color: #DE04A4 !important;
-    border-color: #DE04A4 !important;
-    color: white !important;
-    outline: none !important;
-    text-decoration: none !important;
-}
-
-.cbm-popup-container button.date-btn.selected:active,
-.cbm-popup-container button.date-btn.selected:focus,
-.cbm-popup-container button.date-btn.selected:hover,
-.cbm-popup-container .date-btn.selected:active,
-.cbm-popup-container .date-btn.selected:focus,
-.cbm-popup-container .date-btn.selected:hover,
-button.date-btn.selected:active,
-button.date-btn.selected:focus,
-button.date-btn.selected:hover {
-    background-color: #DE04A4 !important;
-    border-color: #DE04A4 !important;
-    color: white !important;
-    outline: none !important;
-    text-decoration: none !important;
 }
