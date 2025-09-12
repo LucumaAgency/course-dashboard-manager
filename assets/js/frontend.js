@@ -35,48 +35,27 @@ window.selectBox = function(element, boxType, courseId) {
     
     const $ = jQuery;
     const $box = $(element);
-    const $parent = $box.parent();
-    const $allBoxes = $parent.find('.box');
     
-    // Check if mobile
-    const isMobile = window.innerWidth <= 768;
+    // ALWAYS keep the box selected - never allow deselection
+    console.log('[CBM] Forcing box to stay selected');
     
-    // If there's only one box OR on mobile, keep it always selected
-    if ($allBoxes.length === 1 || isMobile) {
-        console.log('[CBM] Single box or mobile - keeping selected');
-        $box.addClass('selected');
-        $box.find('.circlecontainer').show();
-        $box.find('.circle-container').hide();
-        
-        // On mobile with multiple boxes, allow switching but not deselection
-        if (isMobile && $allBoxes.length > 1) {
-            // Deselect siblings
-            $box.siblings('.box').removeClass('selected');
-            $box.siblings('.box').find('.circlecontainer').hide();
-            $box.siblings('.box').find('.circle-container').show();
-        }
-        return; // Don't allow deselection
+    // Check if there are siblings
+    const $siblings = $box.siblings('.box');
+    
+    if ($siblings.length > 0) {
+        // Multiple boxes - allow switching
+        $siblings.removeClass('selected');
+        $siblings.find('.circlecontainer').hide();
+        $siblings.find('.circle-container').show();
     }
     
-    // Toggle selection for multiple boxes
-    if ($box.hasClass('selected')) {
-        // Deselect: show simple circle (inactive state)
-        $box.removeClass('selected');
-        $box.find('.circlecontainer').hide();
-        $box.find('.circle-container').show();
-    } else {
-        // Deselect siblings: show simple circle for them
-        $box.siblings('.box').removeClass('selected');
-        $box.siblings('.box').find('.circlecontainer').hide();
-        $box.siblings('.box').find('.circle-container').show();
-        
-        // Select this box: show ringed circle (active state)
-        $box.addClass('selected');
-        $box.find('.circlecontainer').show();
-        $box.find('.circle-container').hide();
-        
-        // Don't auto-select dates - let the user choose
-    }
+    // Always select this box
+    $box.addClass('selected');
+    $box.find('.circlecontainer').show();
+    $box.find('.circle-container').hide();
+    
+    // Prevent any deselection
+    return false;
 };
 
 // jQuery-dependent code
@@ -296,31 +275,61 @@ window.selectBox = function(element, boxType, courseId) {
         if ($('#popup').length > 0) {
             console.log('[CBM] Custom popup detected, applying styles');
             
-            // Ensure the popup has transparent background
-            $('#popup').css({
-                'background': 'transparent',
-                'border-radius': '10px',
-                'padding': '40px'
+            const $popup = $('#popup');
+            const $popupBoxes = $popup.find('.box');
+            
+            // Check if popup has tabs
+            const hasTabs = $popup.find('.cbm-tabs').length > 0;
+            
+            if (hasTabs || $popupBoxes.length > 1) {
+                // Multiple boxes or tabs - add background
+                $popup.addClass('has-tabs');
+                $popup.css({
+                    'background': '#0E0D0F',
+                    'border-radius': '10px',
+                    'padding': '40px'
+                });
+            } else {
+                // Single box - transparent background
+                $popup.css({
+                    'background': 'transparent',
+                    'border-radius': '10px',
+                    'padding': '40px'
+                });
+            }
+            
+            // Ensure boxes are always selected
+            $popupBoxes.each(function() {
+                const $box = $(this);
+                $box.addClass('selected');
+                $box.find('.circlecontainer').show();
+                $box.find('.circle-container').hide();
+                
+                // Override onclick to force selection
+                $box.attr('onclick', 'selectBox(this); return false;');
             });
             
-            // Ensure single box in popup is always selected
-            const $popupBox = $('#popup .box');
-            if ($popupBox.length === 1) {
-                $popupBox.addClass('selected');
-                $popupBox.find('.circlecontainer').show();
-                $popupBox.find('.circle-container').hide();
+            // Fix tab functionality if tabs exist
+            if (hasTabs) {
+                console.log('[CBM] Fixing tab functionality');
                 
-                // Override onclick to prevent deselection
-                $popupBox.attr('onclick', 'return false;');
-                $popupBox.off('click').on('click', function(e) {
-                    if (!$(e.target).closest('.add-to-cart-button, .date-btn').length) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Keep it selected
-                        $(this).addClass('selected');
-                        $(this).find('.circlecontainer').show();
-                        $(this).find('.circle-container').hide();
-                    }
+                // Bind tab click events
+                $(document).off('click.popuptabs').on('click.popuptabs', '#popup .cbm-tab-btn', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const $btn = $(this);
+                    const tabId = $btn.data('tab') || $btn.attr('data-tab');
+                    
+                    console.log('[CBM] Tab clicked:', tabId);
+                    
+                    // Update button states
+                    $('#popup .cbm-tab-btn').removeClass('active');
+                    $btn.addClass('active');
+                    
+                    // Update pane visibility
+                    $('#popup .cbm-tab-pane').removeClass('active').hide();
+                    $('#popup .cbm-tab-pane[data-tab="' + tabId + '"]').addClass('active').show();
                 });
             }
         }

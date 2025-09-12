@@ -9,8 +9,20 @@
     width: 90% !important;
 }
 
-/* When popup has tabs, add background */
-#popup:has(.cbm-tabs) {
+/* When popup has tabs, add background - using multiple selectors for compatibility */
+#popup:has(.cbm-tabs),
+#popup .cbm-tabs,
+.cbm-popup-container:has(.cbm-tabs),
+.cbm-popup-container .cbm-tabs {
+    background: #0E0D0F !important;
+}
+
+/* Force background for popup with tabs */
+#popup {
+    background: transparent !important;
+}
+
+#popup.has-tabs {
     background: #0E0D0F !important;
 }
 
