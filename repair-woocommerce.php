@@ -5,18 +5,38 @@
  * This file repairs WooCommerce product cache after aggressive cache clearing
  */
 
-// Load WordPress
-$wp_path = '';
-for ($i = 0; $i < 10; $i++) {
-    if (file_exists($wp_path . 'wp-load.php')) {
-        require_once($wp_path . 'wp-load.php');
+// Load WordPress - try multiple paths
+$possible_paths = [
+    $_SERVER['DOCUMENT_ROOT'] . '/wp-load.php',
+    dirname(__FILE__) . '/../../../wp-load.php',
+    dirname(dirname(dirname(dirname(__FILE__)))) . '/wp-load.php',
+    '/var/www/html/wp-load.php'
+];
+
+$wp_loaded = false;
+foreach ($possible_paths as $path) {
+    if (file_exists($path)) {
+        require_once($path);
+        $wp_loaded = true;
         break;
     }
-    $wp_path .= '../';
 }
 
-if (!defined('ABSPATH')) {
-    die('WordPress not loaded');
+if (!$wp_loaded) {
+    // Try relative path climbing
+    $wp_path = '';
+    for ($i = 0; $i < 10; $i++) {
+        if (file_exists($wp_path . 'wp-load.php')) {
+            require_once($wp_path . 'wp-load.php');
+            $wp_loaded = true;
+            break;
+        }
+        $wp_path .= '../';
+    }
+}
+
+if (!defined('ABSPATH') || !$wp_loaded) {
+    die('Error: Could not load WordPress. This file must be in wp-content/plugins/course-dashboard-manager/');
 }
 
 // Check permission
