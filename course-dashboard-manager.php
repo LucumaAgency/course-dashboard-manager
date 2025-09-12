@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.8.3.' . time()); // Force cache refresh with timestamp
+define('CBM_VERSION', '1.9.0'); // New version to force update
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -181,8 +181,31 @@ function cbm_product_debug_notice() {
         
         echo '<tr><td style="padding: 5px;"><strong>Plugin version:</strong></td><td>' . CBM_VERSION . '</td></tr>';
         echo '<tr><td style="padding: 5px;"><strong>Time:</strong></td><td>' . date('Y-m-d H:i:s') . '</td></tr>';
+        
+        // Check file modification times
+        $tables_file = CBM_PLUGIN_DIR . 'admin/tables-page.php';
+        if (file_exists($tables_file)) {
+            echo '<tr><td style="padding: 5px;"><strong>tables-page.php last modified:</strong></td><td>' . date('Y-m-d H:i:s', filemtime($tables_file)) . '</td></tr>';
+        }
+        
         echo '</table>';
-        echo '<p style="color: #666; font-size: 12px; margin-top: 10px;">⚠️ This debug will show on ALL admin pages. To remove: edit course-dashboard-manager.php line 109</p>';
+        
+        // Add action buttons
+        echo '<div style="margin-top: 15px; padding: 10px; background: white; border-radius: 5px;">';
+        echo '<h3 style="color: red;">⚠️ PROBLEM: wc_get_products returns 0 products!</h3>';
+        echo '<p>The plugin code has been updated to use direct database queries, but the files are not updating.</p>';
+        echo '<p><strong>TO FIX THIS:</strong></p>';
+        echo '<ol>';
+        echo '<li>Go to <a href="' . admin_url('plugins.php') . '">Plugins</a></li>';
+        echo '<li>Deactivate "Course Dashboard Manager"</li>';
+        echo '<li>Wait 5 seconds</li>';
+        echo '<li>Activate it again</li>';
+        echo '<li>Clear your browser cache (Ctrl+Shift+R)</li>';
+        echo '</ol>';
+        echo '<p><a href="' . admin_url('plugins.php') . '" class="button button-primary">Go to Plugins Page</a></p>';
+        echo '</div>';
+        
+        echo '<p style="color: #666; font-size: 12px; margin-top: 10px;">⚠️ This debug will show on ALL admin pages. To remove: edit course-dashboard-manager.php line 152</p>';
         echo '</div>';
     }
 }
