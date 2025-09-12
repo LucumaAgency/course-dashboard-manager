@@ -3,7 +3,7 @@
  * Course Dashboard Manager - Tables Page
  * 
  * Displays the course groups and tables management interface
- * Last updated: <?php echo date('Y-m-d H:i:s'); ?>
+ * Last updated: 2024-12-13
  */
 
 // FORCE UPDATE TEST - Remove this after testing

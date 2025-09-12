@@ -1,7 +1,7 @@
 <?php
 /**
  * Test file to verify if changes are being reflected
- * Created at: <?php echo date('Y-m-d H:i:s'); ?>
+ * Created at: 2024-12-13
  */
 
 // Load WordPress
