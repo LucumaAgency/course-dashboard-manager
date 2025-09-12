@@ -505,6 +505,9 @@ if (!defined('ABSPATH')) {
         </style>
         
         <script>
+            // Version: <?php echo time(); ?> - Force reload
+            console.log('[CBM Debug] Script version: <?php echo date('Y-m-d H:i:s'); ?>');
+            
             document.addEventListener('DOMContentLoaded', function() {
                 console.log('[CBM Debug] DOMContentLoaded - Tables view script starting');
                 console.log('[CBM Debug] Group ID:', typeof groupId !== 'undefined' ? groupId : 'NOT DEFINED');
