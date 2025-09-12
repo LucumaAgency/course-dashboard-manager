@@ -358,6 +358,12 @@ if (!defined('ABSPATH')) {
                         error_log('[CBM Debug] Alternative method added ' . count($all_products) . ' products to array');
                     }
                     
+                    // Final debug check
+                    error_log('[CBM Debug] FINAL: Total products loaded = ' . count($all_products));
+                    if (count($all_products) > 0) {
+                        error_log('[CBM Debug] FINAL: First product = ' . print_r(reset($all_products), true));
+                    }
+                    
                     // Process courses safely
                     if (!empty($courses)) {
                         foreach ($courses as $course) {
@@ -388,11 +394,20 @@ if (!defined('ABSPATH')) {
                 var allProducts = <?php echo json_encode($all_products); ?>;
                 var groupId = <?php echo intval($group_id); ?>;
                 
-                // Debug in browser console
-                console.log('[CBM Debug] allProducts loaded:', Object.keys(allProducts).length, 'products');
-                console.log('[CBM Debug] allProducts content:', allProducts);
-                if (Object.keys(allProducts).length === 0) {
-                    console.error('[CBM Debug] No products loaded! Check WordPress error log.');
+                // Debug immediately after loading
+                try {
+                    console.log('[CBM Debug IMMEDIATE] allProducts type:', typeof allProducts);
+                    console.log('[CBM Debug IMMEDIATE] allProducts is array?', Array.isArray(allProducts));
+                    console.log('[CBM Debug IMMEDIATE] allProducts keys:', Object.keys(allProducts));
+                    console.log('[CBM Debug IMMEDIATE] allProducts count:', Object.keys(allProducts).length);
+                    console.log('[CBM Debug IMMEDIATE] First 3 products:', Object.entries(allProducts).slice(0, 3));
+                    
+                    if (Object.keys(allProducts).length === 0) {
+                        console.error('[CBM Debug IMMEDIATE] ERROR: No products loaded from PHP!');
+                        console.log('[CBM Debug IMMEDIATE] Raw allProducts value:', JSON.stringify(allProducts));
+                    }
+                } catch (e) {
+                    console.error('[CBM Debug IMMEDIATE] Error checking products:', e);
                 }
             </script>
         
@@ -495,6 +510,15 @@ if (!defined('ABSPATH')) {
                 console.log('[CBM Debug] Group ID:', typeof groupId !== 'undefined' ? groupId : 'NOT DEFINED');
                 console.log('[CBM Debug] Courses data available:', typeof coursesData !== 'undefined' ? 'YES' : 'NO');
                 console.log('[CBM Debug] All products available:', typeof allProducts !== 'undefined' ? 'YES' : 'NO');
+                
+                // Debug products array
+                console.log('[CBM Debug] Products count:', Object.keys(allProducts).length);
+                console.log('[CBM Debug] Products object:', allProducts);
+                if (Object.keys(allProducts).length === 0) {
+                    console.error('[CBM Debug] WARNING: No products in array! Products not loaded from PHP.');
+                } else {
+                    console.log('[CBM Debug] First product:', Object.values(allProducts)[0]);
+                }
                 
                 // Debug selling page selection
                 console.log('[CBM Debug] About to check for selling page dropdown...');
