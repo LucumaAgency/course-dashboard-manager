@@ -7,6 +7,20 @@
 // Define selectBox immediately when script loads
 console.log('[CBM] Defining selectBox function...');
 
+// Define closePopup function for custom popups
+window.closePopup = function() {
+    console.log('[CBM] closePopup called');
+    const popup = document.getElementById('popup');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+    // Also close cbm popup if exists
+    const cbmPopup = document.getElementById('cbm-popup-overlay');
+    if (cbmPopup) {
+        cbmPopup.style.display = 'none';
+    }
+};
+
 window.selectBox = function(element, boxType, courseId) {
     console.log('[CBM] selectBox called', boxType, courseId);
     
@@ -266,6 +280,40 @@ window.selectBox = function(element, boxType, courseId) {
         
         // Initialize the Enroll-Buy combo box selection
         initEnrollBuySelection();
+        
+        // Handle custom popup if it exists
+        if ($('#popup').length > 0) {
+            console.log('[CBM] Custom popup detected, applying styles');
+            
+            // Ensure the popup has proper background
+            $('#popup').css({
+                'background': '#0E0D0F',
+                'border-radius': '10px',
+                'padding': '40px',
+                'box-shadow': '0 10px 40px rgba(0, 0, 0, 0.3)'
+            });
+            
+            // Ensure single box in popup is always selected
+            const $popupBox = $('#popup .box');
+            if ($popupBox.length === 1) {
+                $popupBox.addClass('selected');
+                $popupBox.find('.circlecontainer').show();
+                $popupBox.find('.circle-container').hide();
+                
+                // Override onclick to prevent deselection
+                $popupBox.attr('onclick', 'return false;');
+                $popupBox.off('click').on('click', function(e) {
+                    if (!$(e.target).closest('.add-to-cart-button, .date-btn').length) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Keep it selected
+                        $(this).addClass('selected');
+                        $(this).find('.circlecontainer').show();
+                        $(this).find('.circle-container').hide();
+                    }
+                });
+            }
+        }
         
         // Check for single boxes and ensure they're selected
         $('.box-container, .course-boxes-container, .selectable-box-container').each(function() {
