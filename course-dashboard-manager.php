@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.8.2');
+define('CBM_VERSION', '1.8.3.' . time()); // Force cache refresh with timestamp
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {

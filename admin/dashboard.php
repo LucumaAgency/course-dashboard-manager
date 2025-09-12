@@ -84,6 +84,32 @@ function cbm_stm_diagnostic_notice() {
  * Include the main tables page content
  */
 function course_box_tables_page() {
+    // Handle cache clearing
+    if (isset($_GET['cbm_clear_cache']) && $_GET['cbm_clear_cache'] == '1') {
+        // Clear any transients
+        delete_transient('cbm_products_cache');
+        delete_transient('cbm_courses_cache');
+        
+        // Clear object cache
+        if (function_exists('wp_cache_flush')) {
+            wp_cache_flush();
+        }
+        
+        // Add version to force reload
+        wp_redirect(admin_url('admin.php?page=course-box-tables&cache_cleared=1&v=' . time()));
+        exit;
+    }
+    
+    if (isset($_GET['cache_cleared'])) {
+        echo '<div class="notice notice-success"><p>✅ Cache cleared successfully! Page reloaded with version ' . (isset($_GET['v']) ? $_GET['v'] : 'unknown') . '</p></div>';
+    }
+    
+    // Add a clear cache button
+    echo '<div style="margin: 10px 0;">';
+    echo '<a href="' . admin_url('admin.php?page=course-box-tables&cbm_clear_cache=1') . '" class="button button-secondary">🔄 Clear Cache & Reload</a>';
+    echo ' <small>Use this if products are not showing in dropdowns</small>';
+    echo '</div>';
+    
     // This will be moved here from the main file
     require_once CBM_PLUGIN_DIR . 'admin/tables-page.php';
 }
