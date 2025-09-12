@@ -285,12 +285,11 @@ window.selectBox = function(element, boxType, courseId) {
         if ($('#popup').length > 0) {
             console.log('[CBM] Custom popup detected, applying styles');
             
-            // Ensure the popup has proper background
+            // Ensure the popup has transparent background
             $('#popup').css({
-                'background': '#0E0D0F',
+                'background': 'transparent',
                 'border-radius': '10px',
-                'padding': '40px',
-                'box-shadow': '0 10px 40px rgba(0, 0, 0, 0.3)'
+                'padding': '40px'
             });
             
             // Ensure single box in popup is always selected

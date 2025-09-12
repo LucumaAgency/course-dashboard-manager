@@ -2,10 +2,9 @@
 
 /* Custom popup styles to match PC version */
 #popup {
-    background: #0E0D0F !important;
+    background: transparent !important;
     border-radius: 10px !important;
     padding: 40px !important;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3) !important;
     max-width: 400px !important;
     width: 90% !important;
 }
