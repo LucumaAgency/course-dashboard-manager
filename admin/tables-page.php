@@ -6,10 +6,31 @@
  * Last updated: 2024-12-13
  */
 
-// FORCE UPDATE TEST - Remove this after testing
-echo '<div style="position: fixed; top: 50px; right: 10px; background: yellow; padding: 10px; border: 2px solid red; z-index: 99999;">';
-echo 'FILE UPDATED: ' . date('Y-m-d H:i:s');
-echo '</div>';
+// FORCE DEBUG - Check products directly here
+if (isset($_GET['checkproducts'])) {
+    echo '<div style="background: #ffcccc; padding: 20px; margin: 20px; border: 3px solid red;">';
+    echo '<h2>🔍 PRODUCT CHECK - ' . date('Y-m-d H:i:s') . '</h2>';
+    echo '<pre style="background: white; padding: 10px;">';
+    
+    global $wpdb;
+    $db_products = $wpdb->get_results("SELECT ID, post_title FROM {$wpdb->posts} WHERE post_type = 'product' AND post_status = 'publish' LIMIT 10");
+    echo "Products in database: " . count($db_products) . "\n\n";
+    foreach ($db_products as $p) {
+        echo "ID: {$p->ID} - {$p->post_title}\n";
+    }
+    
+    echo "\n--- Testing wc_get_products ---\n";
+    if (function_exists('wc_get_products')) {
+        $wc_prods = wc_get_products(['limit' => 5]);
+        echo "wc_get_products found: " . count($wc_prods) . " products\n";
+    } else {
+        echo "wc_get_products NOT available\n";
+    }
+    
+    echo '</pre>';
+    echo '<p><a href="' . remove_query_arg('checkproducts') . '">Hide Debug</a></p>';
+    echo '</div>';
+}
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
@@ -352,52 +373,47 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
                     error_log('[CBM Debug] WooCommerce class exists: ' . (class_exists('WooCommerce') ? 'YES' : 'NO'));
                     error_log('[CBM Debug] wc_get_products exists: ' . (function_exists('wc_get_products') ? 'YES' : 'NO'));
                     
-                    // Safely get WooCommerce products
-                    if (function_exists('wc_get_products')) {
-                        try {
-                            error_log('[CBM Debug] Calling wc_get_products...');
-                            $products = wc_get_products(['limit' => -1, 'orderby' => 'title', 'order' => 'ASC', 'status' => 'publish']);
-                            error_log('[CBM Debug] wc_get_products returned ' . count($products) . ' products');
-                            
-                            foreach ($products as $product) {
-                                $all_products[$product->get_id()] = [
-                                    'name' => $product->get_name(),
-                                    'regular_price' => $product->get_regular_price(),
-                                    'sale_price' => $product->get_sale_price()
+                    // ALWAYS use direct database query for reliability
+                    global $wpdb;
+                    $product_results = $wpdb->get_results(
+                        "SELECT ID, post_title 
+                         FROM {$wpdb->posts} 
+                         WHERE post_type = 'product' 
+                         AND post_status = 'publish' 
+                         ORDER BY post_title ASC"
+                    );
+                    
+                    error_log('[CBM Debug] Direct query found ' . count($product_results) . ' products');
+                    
+                    foreach ($product_results as $product) {
+                        // Try to get WooCommerce product object if available
+                        if (function_exists('wc_get_product')) {
+                            $wc_product = wc_get_product($product->ID);
+                            if ($wc_product) {
+                                $all_products[$product->ID] = [
+                                    'name' => $product->post_title,
+                                    'regular_price' => $wc_product->get_regular_price(),
+                                    'sale_price' => $wc_product->get_sale_price()
+                                ];
+                            } else {
+                                // Fallback to meta
+                                $all_products[$product->ID] = [
+                                    'name' => $product->post_title,
+                                    'regular_price' => get_post_meta($product->ID, '_regular_price', true) ?: '',
+                                    'sale_price' => get_post_meta($product->ID, '_sale_price', true) ?: ''
                                 ];
                             }
-                            error_log('[CBM Debug] Added ' . count($all_products) . ' products to array');
-                        } catch (Exception $e) {
-                            error_log('[CBM Debug] Error getting WooCommerce products: ' . $e->getMessage());
-                        }
-                    } else {
-                        error_log('[CBM Debug] wc_get_products function not found! Trying alternative method...');
-                        
-                        // Alternative method: Direct database query
-                        global $wpdb;
-                        $product_results = $wpdb->get_results(
-                            "SELECT ID, post_title 
-                             FROM {$wpdb->posts} 
-                             WHERE post_type = 'product' 
-                             AND post_status = 'publish' 
-                             ORDER BY post_title ASC"
-                        );
-                        
-                        error_log('[CBM Debug] Direct query found ' . count($product_results) . ' products');
-                        
-                        foreach ($product_results as $product) {
-                            $regular_price = get_post_meta($product->ID, '_regular_price', true);
-                            $sale_price = get_post_meta($product->ID, '_sale_price', true);
-                            
+                        } else {
+                            // No WooCommerce, use meta directly
                             $all_products[$product->ID] = [
                                 'name' => $product->post_title,
-                                'regular_price' => $regular_price ?: '',
-                                'sale_price' => $sale_price ?: ''
+                                'regular_price' => get_post_meta($product->ID, '_regular_price', true) ?: '',
+                                'sale_price' => get_post_meta($product->ID, '_sale_price', true) ?: ''
                             ];
                         }
-                        
-                        error_log('[CBM Debug] Alternative method added ' . count($all_products) . ' products to array');
                     }
+                    
+                    error_log('[CBM Debug] Loaded ' . count($all_products) . ' products into array');
                     
                     // Final debug check
                     error_log('[CBM Debug] FINAL: Total products loaded = ' . count($all_products));
