@@ -3456,20 +3456,6 @@ function cbm_display_course_date_in_cart($item_data, $cart_item) {
 // Old AJAX handler removed - we now use WooCommerce filters instead
 // This ensures we don't interfere with FunnelKit or any other cart plugins
 
-// Save group settings handler
-add_action('wp_ajax_save_group_settings', 'save_group_settings');
-function save_group_settings() {
-    check_ajax_referer('course_box_nonce', 'nonce');
-    
-    $group_id = intval($_POST['group_id']);
-    $box_state = sanitize_text_field($_POST['box_state']);
-        }
-    } else {
-        error_log('[CBM Cart] Cart validation failed for product ID: ' . $product_id);
-        wp_send_json_error('Product validation failed');
-    }
-}
-
 add_action('wp_ajax_save_group_settings', 'save_group_settings');
 function save_group_settings() {
     check_ajax_referer('course_box_nonce', 'nonce');
