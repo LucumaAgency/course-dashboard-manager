@@ -9,6 +9,11 @@
     width: 90% !important;
 }
 
+/* When popup has tabs, add background */
+#popup:has(.cbm-tabs) {
+    background: #0E0D0F !important;
+}
+
 /* Style for popup close button - make it white */
 #popup > img[alt="Close"] {
     position: absolute !important;

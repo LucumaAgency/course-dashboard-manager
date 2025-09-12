@@ -38,12 +38,23 @@ window.selectBox = function(element, boxType, courseId) {
     const $parent = $box.parent();
     const $allBoxes = $parent.find('.box');
     
-    // If there's only one box, keep it always selected
-    if ($allBoxes.length === 1) {
-        console.log('[CBM] Only one box present, keeping it selected');
+    // Check if mobile
+    const isMobile = window.innerWidth <= 768;
+    
+    // If there's only one box OR on mobile, keep it always selected
+    if ($allBoxes.length === 1 || isMobile) {
+        console.log('[CBM] Single box or mobile - keeping selected');
         $box.addClass('selected');
         $box.find('.circlecontainer').show();
         $box.find('.circle-container').hide();
+        
+        // On mobile with multiple boxes, allow switching but not deselection
+        if (isMobile && $allBoxes.length > 1) {
+            // Deselect siblings
+            $box.siblings('.box').removeClass('selected');
+            $box.siblings('.box').find('.circlecontainer').hide();
+            $box.siblings('.box').find('.circle-container').show();
+        }
         return; // Don't allow deselection
     }
     

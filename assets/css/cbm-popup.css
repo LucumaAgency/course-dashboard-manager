@@ -22,7 +22,7 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: #0E0D0F !important;
+    background: transparent !important; /* Default transparent */
     border-radius: 10px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     width: 90%;
@@ -36,6 +36,11 @@
     animation: slideIn 0.15s ease;
     padding: 40px;
     box-sizing: border-box;
+}
+
+/* When tabs exist, add background */
+.cbm-popup-container:has(.cbm-tabs) {
+    background: #0E0D0F !important;
 }
 
 /* Hide FunnelKit cart when popup is open */

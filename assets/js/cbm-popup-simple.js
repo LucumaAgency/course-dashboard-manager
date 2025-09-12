@@ -574,20 +574,23 @@
             console.log('[CBM Popup] Buy tab selected by default');
         }
         
-        $('#cbm-popup-content').find('.cbm-tab-btn').off('click').on('click', function() {
+        // Use document event delegation for tab clicks to ensure they always work
+        $(document).off('click.cbmtabs').on('click.cbmtabs', '.cbm-tab-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
             const $btn = $(this);
             const tabIndex = $btn.data('tab');
             
             console.log('[CBM Popup] Tab clicked:', tabIndex);
             
-            // Update active states
-            $btn.siblings().removeClass('active');
+            // Update active states for buttons
+            $('.cbm-tab-btn').removeClass('active');
             $btn.addClass('active');
             
-            // Show corresponding content
-            $('#cbm-popup-content').find('.cbm-tab-pane').removeClass('active');
-            const $activePane = $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="' + tabIndex + '"]');
-            $activePane.addClass('active');
+            // Hide all panes and show the selected one
+            $('.cbm-tab-pane').removeClass('active').hide();
+            $(`.cbm-tab-pane[data-tab="${tabIndex}"]`).addClass('active').show();
             
             // Box is already selected, just ensure it stays that way
             const $box = $activePane.find('.box');
