@@ -3428,16 +3428,23 @@ function assign_course_to_group() {
 }
 
 // Add course date to cart item data using WooCommerce filter
-// This way we don't interfere with any AJAX handlers
+// Now we get the date from URL parameters instead of POST
 add_filter('woocommerce_add_cart_item_data', 'cbm_add_course_date_to_cart', 10, 3);
 function cbm_add_course_date_to_cart($cart_item_data, $product_id, $variation_id) {
-    // Check if this is from our course box (has start_date in POST)
+    // Check if course_date is in GET parameters (from our URL redirect)
+    if (isset($_GET['course_date']) && !empty($_GET['course_date'])) {
+        $cart_item_data['course_start_date'] = sanitize_text_field($_GET['course_date']);
+        $cart_item_data['course_date'] = sanitize_text_field($_GET['course_date']);
+    }
+    
+    // Also check POST for backward compatibility
     if (isset($_POST['start_date']) && !empty($_POST['start_date'])) {
         $cart_item_data['course_start_date'] = sanitize_text_field($_POST['start_date']);
     }
     if (isset($_POST['course_date']) && !empty($_POST['course_date'])) {
         $cart_item_data['course_date'] = sanitize_text_field($_POST['course_date']);
     }
+    
     return $cart_item_data;
 }
 
@@ -4436,12 +4443,10 @@ function course_box_manager_shortcode() {
         true
     );
     
-    // Localize script with AJAX data
+    // Localize script with site data (no AJAX needed anymore)
     wp_localize_script('course-box-frontend', 'cbm_ajax', array(
-        'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('woocommerce-add-to-cart'),
-        'cart_url' => function_exists('wc_get_cart_url') ? wc_get_cart_url() : '',
-        'is_funnelkit_active' => defined('FKCART_VERSION') || class_exists('FKCart')
+        'site_url' => home_url(),
+        'cart_url' => function_exists('wc_get_cart_url') ? wc_get_cart_url() : ''
     ));
     
     // Add inline script for immediate availability of selectBox function
