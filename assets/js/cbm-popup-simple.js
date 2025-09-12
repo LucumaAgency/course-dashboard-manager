@@ -99,10 +99,22 @@
             const $boxes = $content.find('.box');
             const hasTabs = overlay.getAttribute('data-has-tabs') === 'true';
             
-            // Create tabs if we have multiple boxes but no tabs yet
-            if ($boxes.length > 1 && $content.find('.cbm-tabs').length === 0) {
-                console.log('[CBM Popup] Creating tabs for pre-rendered content');
-                convertToTabs();
+            // Add class based on number of boxes
+            if ($boxes.length === 1) {
+                $('#cbm-popup-container').addClass('has-single-box');
+                // Ensure single box is always selected
+                $boxes.addClass('selected');
+                $boxes.find('.circlecontainer').show();
+                $boxes.find('.circle-container').hide();
+                console.log('[CBM Popup] Single box detected and selected');
+            } else {
+                $('#cbm-popup-container').removeClass('has-single-box');
+                // Create tabs only for multiple boxes
+                if ($content.find('.cbm-tabs').length === 0) {
+                    console.log('[CBM Popup] Creating tabs for multiple boxes');
+                    createTabs($boxes);
+                    bindTabEvents();
+                }
             }
             
             // Only bind events if not already bound
@@ -368,6 +380,18 @@
     
     function createTabs($boxes) {
         console.log('[CBM Popup] Creating tabs for', $boxes.length, 'boxes');
+        
+        // Don't create tabs for single box
+        if ($boxes.length <= 1) {
+            console.log('[CBM Popup] Single box, no tabs needed');
+            if ($boxes.length === 1) {
+                $('#cbm-popup-container').addClass('has-single-box');
+                $boxes.addClass('selected');
+                $boxes.find('.circlecontainer').show();
+                $boxes.find('.circle-container').hide();
+            }
+            return;
+        }
         
         // Detect box types from classes and content
         const boxTypes = [];

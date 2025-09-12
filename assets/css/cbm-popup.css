@@ -288,19 +288,60 @@ body.cbm-popup-open .fkcart-icon-wrap {
 /* Very small screens */
 @media (max-width: 480px) {
     .cbm-popup-container {
-        max-width: 100%;
-        height: 100%;
-        max-height: 100vh;
-        border-radius: 0;
-        margin: 0;
+        max-width: 95%;
+        width: 95%;
+        max-height: 90vh;
+        border-radius: 10px;
+        margin: 5vh auto;
+        padding: 20px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
     
     .cbm-popup-content {
-        padding: 15px 10px;
+        padding: 10px;
     }
     
+    /* Close button always visible in mobile */
+    .cbm-popup-close {
+        display: block !important;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 30px;
+        height: 30px;
+        font-size: 24px;
+        color: #fff;
+        background: transparent !important;
+        border: none;
+        z-index: 100001;
+    }
+    
+    /* Box styles - same as desktop */
+    .cbm-popup-container .box {
+        max-width: 100%;
+        width: 100%;
+        margin: 0 auto;
+        /* Keep all desktop styles */
+    }
+    
+    /* Only show tabs if multiple boxes */
     .cbm-tabs-header {
         margin-bottom: 15px;
+    }
+    
+    /* Single box - no tabs needed */
+    .cbm-popup-container.has-single-box .cbm-tabs {
+        display: block !important;
+    }
+    
+    .cbm-popup-container.has-single-box .cbm-tabs-header {
+        display: none !important;
+    }
+    
+    .cbm-popup-container.has-single-box .cbm-tab-pane {
+        display: block !important;
     }
 }
 
