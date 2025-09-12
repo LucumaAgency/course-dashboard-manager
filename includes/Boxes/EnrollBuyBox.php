@@ -87,7 +87,18 @@ class EnrollBuyBox extends AbstractBox {
         
         // Use dates already loaded by parent AbstractBox
         $this->enroll_dates = $this->available_dates_full;
-        error_log('[EnrollBuyBox] Enroll Dates: ' . print_r($this->enroll_dates, true));
+        
+        // Debug: Check if dates are actually loaded
+        if (empty($this->enroll_dates)) {
+            error_log('[EnrollBuyBox] WARNING: No dates found in available_dates_full, trying to load directly');
+            $course_dates = get_post_meta($this->course_id, 'course_dates', true);
+            if ($course_dates) {
+                $this->enroll_dates = $course_dates;
+                error_log('[EnrollBuyBox] Loaded dates from meta: ' . print_r($course_dates, true));
+            }
+        }
+        
+        error_log('[EnrollBuyBox] Final Enroll Dates: ' . print_r($this->enroll_dates, true));
         
         // Create instances of both boxes with custom configurations
         $this->buyBox = new BuyCourseBox($course_id);
@@ -109,8 +120,15 @@ class EnrollBuyBox extends AbstractBox {
         $this->enrollBox->enroll_regular_price = $this->enroll_regular_price;
         $this->enrollBox->enroll_sale_price = $this->enroll_sale_price;
         $this->enrollBox->is_out_of_stock = !$this->enroll_in_stock; // Pass WooCommerce stock status
-        $this->enrollBox->available_dates_full = $this->enroll_dates;
-        $this->enrollBox->available_dates = is_array($this->enroll_dates) ? array_column($this->enroll_dates, 'date') : [];
+        
+        // Make sure we pass the dates to the enrollBox
+        if (!empty($this->enroll_dates)) {
+            $this->enrollBox->available_dates_full = $this->enroll_dates;
+            $this->enrollBox->available_dates = is_array($this->enroll_dates) ? array_column($this->enroll_dates, 'date') : [];
+            error_log('[EnrollBuyBox] Successfully set ' . count($this->enroll_dates) . ' dates on enrollBox');
+        } else {
+            error_log('[EnrollBuyBox] WARNING: No dates to set on enrollBox');
+        }
         
         error_log('[EnrollBuyBox] EnrollBox configured with product ID: ' . $this->enrollBox->course_product_id . ', price: ' . $this->enrollBox->course_price . ', WC stock: ' . ($this->enroll_in_stock ? 'in stock' : 'out of stock'));
     }
