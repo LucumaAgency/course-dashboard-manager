@@ -62,6 +62,11 @@ add_action('init', function() {
     // Include and initialize enrollment sync for STM LMS integration
     if (class_exists('WooCommerce')) {
         require_once CBM_PLUGIN_DIR . 'includes/EnrollmentSync.php';
+        
+        // Load product loader helper if it exists
+        if (file_exists(CBM_PLUGIN_DIR . 'includes/product-loader.php')) {
+            require_once CBM_PLUGIN_DIR . 'includes/product-loader.php';
+        }
         new CourseBoxManager\EnrollmentSync();
     }
     
