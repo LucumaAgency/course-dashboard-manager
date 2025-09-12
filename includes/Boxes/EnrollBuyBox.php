@@ -85,8 +85,8 @@ class EnrollBuyBox extends AbstractBox {
             error_log('[EnrollBuyBox] No enroll_product_id set or WooCommerce not available');
         }
         
-        // Get enroll dates - these are stored as course_dates
-        $this->enroll_dates = \cbm_get_field('course_dates', $this->course_id) ?: $this->available_dates_full;
+        // Use dates already loaded by parent AbstractBox
+        $this->enroll_dates = $this->available_dates_full;
         error_log('[EnrollBuyBox] Enroll Dates: ' . print_r($this->enroll_dates, true));
         
         // Create instances of both boxes with custom configurations
@@ -109,8 +109,8 @@ class EnrollBuyBox extends AbstractBox {
         $this->enrollBox->enroll_regular_price = $this->enroll_regular_price;
         $this->enrollBox->enroll_sale_price = $this->enroll_sale_price;
         $this->enrollBox->is_out_of_stock = !$this->enroll_in_stock; // Pass WooCommerce stock status
-        $this->enrollBox->available_dates_full = $this->enroll_dates ?: $this->available_dates_full;
-        $this->enrollBox->available_dates = array_column($this->enroll_dates ?: $this->available_dates_full, 'date');
+        $this->enrollBox->available_dates_full = $this->enroll_dates;
+        $this->enrollBox->available_dates = is_array($this->enroll_dates) ? array_column($this->enroll_dates, 'date') : [];
         
         error_log('[EnrollBuyBox] EnrollBox configured with product ID: ' . $this->enrollBox->course_product_id . ', price: ' . $this->enrollBox->course_price . ', WC stock: ' . ($this->enroll_in_stock ? 'in stock' : 'out of stock'));
     }
