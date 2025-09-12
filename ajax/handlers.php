@@ -50,17 +50,13 @@ function cbm_ajax_add_to_cart() {
         // Get cart count
         $cart_count = WC()->cart->get_cart_contents_count();
         
-        // Check if FunnelKit Cart is active
-        $use_funnelkit = defined('FKCART_VERSION') || class_exists('FKCart');
-        
         $data = array(
             'success' => true,
             'cart_hash' => WC()->cart->get_cart_hash(),
             'cart_count' => $cart_count,
             'fragments' => apply_filters('woocommerce_add_to_cart_fragments', array(
                 'div.widget_shopping_cart_content' => '<div class="widget_shopping_cart_content">' . $mini_cart . '</div>',
-            )),
-            'use_funnelkit' => $use_funnelkit
+            ))
         );
         
         wp_send_json($data);

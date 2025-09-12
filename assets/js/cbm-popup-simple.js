@@ -612,7 +612,7 @@
         $('#cbm-popup-content').find('.date-btn:not(.sold-out)').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation(); // Prevent event from bubbling
-            // e.stopImmediatePropagation(); // Removed to prevent blocking FunnelKit coupon handlers
+            // Removed stopImmediatePropagation to prevent blocking other handlers
             
             const $btn = $(this);
             const $box = $btn.closest('.box');
@@ -641,7 +641,7 @@
         $('#cbm-popup-content').find('.add-to-cart-button').off('click').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation(); // Prevent event from bubbling
-            // e.stopImmediatePropagation(); // Removed to prevent blocking FunnelKit coupon handlers
+            // Removed stopImmediatePropagation to prevent blocking other handlers
             
             const $button = $(this);
             const $box = $button.closest('.box');
@@ -713,16 +713,7 @@
                 if (response.success) {
                     $button.find('.button-text').text('Added!');
                     
-                    // Trigger FunnelKit Cart if available
-                    if (window.cbm_ajax.is_funnelkit_active || response.use_funnelkit) {
-                        if (typeof fkcart_show_cart === 'function') {
-                            fkcart_show_cart();
-                        } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
-                            FKCart.show_cart();
-                        } else {
-                            $(document.body).trigger('fkcart_show_cart');
-                        }
-                    }
+                    // Removed FunnelKit-specific code - cart plugins will respond to WooCommerce events
                     
                     // Trigger WooCommerce events
                     $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);

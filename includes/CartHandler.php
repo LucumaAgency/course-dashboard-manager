@@ -96,16 +96,12 @@ class CartHandler {
             $fragments['.cart-count'] = '<span class="cart-count">' . $cart_count . '</span>';
             $fragments['.hfe-cart-count'] = '<span class="hfe-cart-count">' . $cart_count . '</span>';
             
-            // Check if FunnelKit is active
-            $use_funnelkit = class_exists('FKCart') || class_exists('\\FKCart') || defined('FKCART_VERSION');
-            
             // Send success response
             $response = array(
                 'success' => true,
                 'fragments' => $fragments,
                 'cart_hash' => WC()->cart->get_cart_hash(),
-                'cart_count' => $cart_count,
-                'use_funnelkit' => $use_funnelkit
+                'cart_count' => $cart_count
             );
             
             // Allow other plugins to modify the response

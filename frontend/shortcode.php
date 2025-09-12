@@ -60,8 +60,7 @@ function enqueue_frontend_assets() {
     wp_localize_script('course-box-frontend', 'cbm_ajax', array(
         'ajax_url' => admin_url('admin-ajax.php'),
         'nonce' => wp_create_nonce('woocommerce-add-to-cart'),
-        'cart_url' => wc_get_cart_url(),
-        'is_funnelkit_active' => defined('FKCART_VERSION') || class_exists('FKCart')
+        'cart_url' => wc_get_cart_url()
     ));
 }
 

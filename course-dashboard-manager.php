@@ -100,13 +100,7 @@ function register_instructor_cpt() {
     ]);
 }
 
-// Enable FunnelKit Cart for course post type
-add_filter('fkcart_disabled_post_types', function ($post_types) {
-    $post_types = array_filter($post_types, function ($i) {
-        return $i !== 'course';
-    });
-    return $post_types;
-});
+// Removed FunnelKit filter - no longer needed
 
 // Add admin menu for dashboard
 add_action('admin_menu', 'course_box_manager_menu', 15); // Priority 15 to ensure proper loading
@@ -3460,8 +3454,8 @@ function cbm_display_course_date_in_cart($item_data, $cart_item) {
     return $item_data;
 }
 
-// Old AJAX handler removed - we now use WooCommerce filters instead
-// This ensures we don't interfere with FunnelKit or any other cart plugins
+// Old AJAX handler removed - we now use iframe method for add to cart
+// This ensures compatibility with all cart plugins
 
 add_action('wp_ajax_save_group_settings', 'save_group_settings');
 function save_group_settings() {
@@ -4376,8 +4370,7 @@ function cbm_enqueue_global_assets() {
                 ajax_url: "' . admin_url('admin-ajax.php') . '",
                 url: "' . admin_url('admin-ajax.php') . '",
                 nonce: "' . wp_create_nonce('woocommerce-add-to-cart') . '",
-                cart_url: "' . (function_exists('wc_get_cart_url') ? wc_get_cart_url() : '') . '",
-                is_funnelkit_active: ' . (defined('FKCART_VERSION') || class_exists('FKCart') ? 'true' : 'false') . '
+                cart_url: "' . (function_exists('wc_get_cart_url') ? wc_get_cart_url() : '') . '"
             };
             console.log("[CBM] Global cbm_ajax initialized early:", window.cbm_ajax);
         ');

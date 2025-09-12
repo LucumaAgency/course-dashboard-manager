@@ -76,13 +76,4 @@ function register_instructor_cpt() {
     ]);
 }
 
-// Disable FunnelKit Cart for Course post type
-add_filter('fkcart_disabled_post_types', function ($post_types) {
-    if (!is_array($post_types)) {
-        $post_types = [];
-    }
-    $post_types = array_filter($post_types, function($i) {
-        return $i !== 'course';
-    });
-    return $post_types;
-});
+// Removed FunnelKit filter - no longer needed

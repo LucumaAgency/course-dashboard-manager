@@ -1,7 +1,7 @@
 /**
  * Course Box Manager - Frontend JavaScript (Clean Version)
  * Handles add to cart via URL redirect, date selection, and box interactions
- * No AJAX, No FunnelKit interference - pure WooCommerce compatibility
+ * No AJAX interference - pure WooCommerce compatibility
  */
 
 // Define selectBox immediately when script loads
@@ -93,7 +93,7 @@ window.selectBox = function(element, boxType, courseId) {
         $container.trigger('dateSelected', [dateValue]);
     });
 
-    // Add to cart using URL redirect (WooCommerce standard method)
+    // Add to cart using iframe (no page reload, no AJAX interference)
     $(document).on('click', '.box .add-to-cart-button:not(.sold-out)', function(e) {
         e.preventDefault();
         
@@ -154,6 +154,7 @@ window.selectBox = function(element, boxType, courseId) {
         
         // Show loading feedback
         $button.addClass('loading');
+        const originalText = $button.find('.button-text').text();
         $button.find('.button-text').text('Adding to cart...');
         
         // Build the add to cart URL with parameters
@@ -162,18 +163,44 @@ window.selectBox = function(element, boxType, courseId) {
         
         // Add course date as URL parameter if available
         if (selectedDate) {
-            // Store in session for later retrieval
             sessionStorage.setItem('cbm_course_date_' + productId, selectedDate);
-            // Also add to URL for immediate use
             addToCartUrl += `&course_date=${encodeURIComponent(selectedDate)}`;
         }
         
-        console.log('[CBM] Redirecting to:', addToCartUrl);
+        console.log('[CBM] Adding to cart via iframe:', addToCartUrl);
         
-        // Redirect to add to cart URL
-        // This will trigger WooCommerce's standard add to cart process
-        // FunnelKit will intercept this naturally without our interference
-        window.location.href = addToCartUrl;
+        // Create invisible iframe to add to cart without page reload
+        const iframeId = 'cbm-cart-iframe-' + Date.now();
+        const $iframe = $('<iframe>', {
+            id: iframeId,
+            src: addToCartUrl,
+            style: 'display:none;position:absolute;width:1px;height:1px;',
+            'aria-hidden': 'true'
+        });
+        
+        // Append iframe to body
+        $('body').append($iframe);
+        
+        // Wait for cart to be added then trigger cart update
+        setTimeout(function() {
+            // Remove iframe
+            $('#' + iframeId).remove();
+            
+            // Update button state
+            $button.removeClass('loading');
+            $button.find('.button-text').text('Added to cart!');
+            
+            // Trigger WooCommerce cart update event
+            // This should make cart plugins refresh and show the cart
+            $(document.body).trigger('added_to_cart');
+            $(document.body).trigger('wc_fragment_refresh');
+            
+            // Reset button after 2 seconds
+            setTimeout(function() {
+                $button.find('.button-text').text(originalText);
+            }, 2000);
+            
+        }, 1500); // Wait 1.5 seconds for cart to process
     });
 
     // Initialize on page load
