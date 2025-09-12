@@ -306,10 +306,18 @@ if (!defined('ABSPATH')) {
                     $courses_json = [];
                     $all_products = [];
                     
+                    // Debug: Log what's happening with product loading
+                    error_log('[CBM Debug] Starting product load...');
+                    error_log('[CBM Debug] WooCommerce class exists: ' . (class_exists('WooCommerce') ? 'YES' : 'NO'));
+                    error_log('[CBM Debug] wc_get_products exists: ' . (function_exists('wc_get_products') ? 'YES' : 'NO'));
+                    
                     // Safely get WooCommerce products
                     if (function_exists('wc_get_products')) {
                         try {
+                            error_log('[CBM Debug] Calling wc_get_products...');
                             $products = wc_get_products(['limit' => -1, 'orderby' => 'title', 'order' => 'ASC', 'status' => 'publish']);
+                            error_log('[CBM Debug] wc_get_products returned ' . count($products) . ' products');
+                            
                             foreach ($products as $product) {
                                 $all_products[$product->get_id()] = [
                                     'name' => $product->get_name(),
@@ -317,9 +325,37 @@ if (!defined('ABSPATH')) {
                                     'sale_price' => $product->get_sale_price()
                                 ];
                             }
+                            error_log('[CBM Debug] Added ' . count($all_products) . ' products to array');
                         } catch (Exception $e) {
                             error_log('[CBM Debug] Error getting WooCommerce products: ' . $e->getMessage());
                         }
+                    } else {
+                        error_log('[CBM Debug] wc_get_products function not found! Trying alternative method...');
+                        
+                        // Alternative method: Direct database query
+                        global $wpdb;
+                        $product_results = $wpdb->get_results(
+                            "SELECT ID, post_title 
+                             FROM {$wpdb->posts} 
+                             WHERE post_type = 'product' 
+                             AND post_status = 'publish' 
+                             ORDER BY post_title ASC"
+                        );
+                        
+                        error_log('[CBM Debug] Direct query found ' . count($product_results) . ' products');
+                        
+                        foreach ($product_results as $product) {
+                            $regular_price = get_post_meta($product->ID, '_regular_price', true);
+                            $sale_price = get_post_meta($product->ID, '_sale_price', true);
+                            
+                            $all_products[$product->ID] = [
+                                'name' => $product->post_title,
+                                'regular_price' => $regular_price ?: '',
+                                'sale_price' => $sale_price ?: ''
+                            ];
+                        }
+                        
+                        error_log('[CBM Debug] Alternative method added ' . count($all_products) . ' products to array');
                     }
                     
                     // Process courses safely
@@ -351,6 +387,13 @@ if (!defined('ABSPATH')) {
                 ?>;
                 var allProducts = <?php echo json_encode($all_products); ?>;
                 var groupId = <?php echo intval($group_id); ?>;
+                
+                // Debug in browser console
+                console.log('[CBM Debug] allProducts loaded:', Object.keys(allProducts).length, 'products');
+                console.log('[CBM Debug] allProducts content:', allProducts);
+                if (Object.keys(allProducts).length === 0) {
+                    console.error('[CBM Debug] No products loaded! Check WordPress error log.');
+                }
             </script>
         
         <style>
