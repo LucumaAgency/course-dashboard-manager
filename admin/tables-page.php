@@ -3,7 +3,13 @@
  * Course Dashboard Manager - Tables Page
  * 
  * Displays the course groups and tables management interface
+ * Last updated: <?php echo date('Y-m-d H:i:s'); ?>
  */
+
+// FORCE UPDATE TEST - Remove this after testing
+echo '<div style="position: fixed; top: 50px; right: 10px; background: yellow; padding: 10px; border: 2px solid red; z-index: 99999;">';
+echo 'FILE UPDATED: ' . date('Y-m-d H:i:s');
+echo '</div>';
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
