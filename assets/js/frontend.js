@@ -48,11 +48,11 @@ window.selectBox = function(element, boxType, courseId) {
 
     console.log('[CBM] Frontend jQuery code initializing...');
 
-    // Date selection handler - use event delegation with document
-    // Using body instead of document for better compatibility
-    $('body').on('click', '.date-btn:not(.sold-out)', function(e) {
+    // Date selection handler - only for OUR date buttons
+    // Use more specific selector to avoid interfering with other plugins
+    $('body').on('click', '.box .date-btn:not(.sold-out)', function(e) {
         e.preventDefault();
-        e.stopPropagation();
+        // Don't stop propagation - let events bubble
         
         console.log('[CBM] Date button click event triggered!');
         
@@ -116,8 +116,8 @@ window.selectBox = function(element, boxType, courseId) {
         $container.trigger('dateSelected', [dateValue]);
     });
 
-    // Add to cart handler
-    $(document).on('click', '.add-to-cart-button:not(.sold-out):not(.loading)', function(e) {
+    // Add to cart handler - only for OUR add to cart buttons
+    $(document).on('click', '.box .add-to-cart-button:not(.sold-out):not(.loading)', function(e) {
         e.preventDefault();
         // Don't stop propagation - let other handlers work
         
@@ -228,14 +228,14 @@ window.selectBox = function(element, boxType, courseId) {
         
         console.log('[CBM] Using AJAX URL:', cbm_ajax.ajax_url);
         
-        // Prepare data
+        // Prepare data - use our custom action to avoid conflicts
         const data = {
-            action: 'woocommerce_add_to_cart',
+            action: 'cbm_add_to_cart',  // Our custom action
             product_id: productId,
             quantity: quantity,
             variation_id: 0,
-            nonce: cbm_ajax.nonce || '',  // Changed from 'security' to 'nonce'
-            security: cbm_ajax.nonce || '' // Keep both for compatibility
+            nonce: cbm_ajax.nonce || '',
+            security: cbm_ajax.nonce || ''
         };
         
         // Add selected date if available

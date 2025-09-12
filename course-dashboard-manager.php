@@ -3428,10 +3428,13 @@ function assign_course_to_group() {
 }
 
 // AJAX handler for adding products to cart (compatible with FunnelKit)
-// Priority 999 to run AFTER FunnelKit's handlers
-// Only handle if FunnelKit didn't already handle it
-add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 999);
-add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 999);
+// DISABLED to test if this is causing FunnelKit issues
+// add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 999);
+// add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 999);
+
+// Instead, use a custom action that doesn't conflict
+add_action('wp_ajax_cbm_add_to_cart', 'cbm_ajax_add_to_cart');
+add_action('wp_ajax_nopriv_cbm_add_to_cart', 'cbm_ajax_add_to_cart');
 
 function cbm_ajax_add_to_cart() {
     // ONLY handle requests that have our course-specific fields
