@@ -4,8 +4,19 @@
  * Created at: 2024-12-13
  */
 
-// Load WordPress
-require_once('../../../wp-load.php');
+// Find and load WordPress
+$wp_load = '';
+$depth = 0;
+while (!file_exists($wp_load . 'wp-load.php') && $depth < 10) {
+    $wp_load .= '../';
+    $depth++;
+}
+
+if (file_exists($wp_load . 'wp-load.php')) {
+    require_once($wp_load . 'wp-load.php');
+} else {
+    die('Error: Could not find wp-load.php');
+}
 
 if (!current_user_can('manage_options')) {
     die('Access denied');
