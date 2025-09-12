@@ -1086,6 +1086,36 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
                     }
                 }
                 
+                // Global function to rebuild ALL product dropdowns on the page
+                window.rebuildAllProductDropdowns = function() {
+                    console.log('[CBM] Rebuilding all product dropdowns with', Object.keys(allProducts).length, 'products');
+                    
+                    // Find all product select elements
+                    const selects = document.querySelectorAll('select.inline-edit-product, select.enroll-product-select, select.buy-product-select');
+                    
+                    selects.forEach(select => {
+                        const currentValue = select.value;
+                        
+                        // Clear existing options
+                        select.innerHTML = '<option value="">None</option>';
+                        
+                        // Add all products
+                        for (let id in allProducts) {
+                            const productName = allProducts[id].name || allProducts[id];
+                            const option = document.createElement('option');
+                            option.value = id;
+                            option.textContent = productName;
+                            if (id == currentValue) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        }
+                    });
+                    
+                    console.log('[CBM] Rebuilt', selects.length, 'dropdowns');
+                    return selects.length;
+                };
+                
                 // Build product select dropdown
                 function buildProductSelect(selectedId, className = '') {
                     const selectClass = className || 'inline-edit-product';

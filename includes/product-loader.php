@@ -115,6 +115,32 @@ add_action('admin_footer', function() {
                                 .delay(3000)
                                 .fadeOut();
                                 
+                            // Rebuild all product dropdowns using the global function
+                            console.log('[CBM] Calling rebuildAllProductDropdowns...');
+                            
+                            if (typeof window.rebuildAllProductDropdowns === 'function') {
+                                const count = window.rebuildAllProductDropdowns();
+                                console.log('[CBM] ✅ Successfully rebuilt ' + count + ' dropdowns!');
+                            } else {
+                                console.log('[CBM] ⚠️ rebuildAllProductDropdowns function not found, trying manual rebuild...');
+                                
+                                // Manual fallback
+                                $('select.inline-edit-product, select.enroll-product-select, select.buy-product-select').each(function() {
+                                    var currentValue = $(this).val();
+                                    var $select = $(this);
+                                    
+                                    $select.empty();
+                                    $select.append('<option value="">None</option>');
+                                    
+                                    for (var id in window.allProducts) {
+                                        var productName = window.allProducts[id].name || window.allProducts[id];
+                                        var selected = (id == currentValue) ? ' selected' : '';
+                                        $select.append('<option value="' + id + '"' + selected + '>' + productName + '</option>');
+                                    }
+                                });
+                                console.log('[CBM] ✅ Manual rebuild complete!');
+                            }
+                            
                             // Trigger reload of tables if needed
                             if (typeof reloadTables === 'function') {
                                 reloadTables();
