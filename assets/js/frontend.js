@@ -315,6 +315,63 @@ window.selectBox = function(element, boxType, courseId) {
             attributeFilter: ['class', 'style']
         });
         
+        // Setup global tab handler as fallback
+        setTimeout(function() {
+            console.log('[CBM] Setting up global tab handler');
+            
+            // Remove any existing handlers
+            $(document).off('click.globaltabs');
+            
+            // Bind to any tab button globally
+            $(document).on('click.globaltabs', '.cbm-tab-btn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                const $btn = $(this);
+                const tabId = $btn.data('tab') || $btn.attr('data-tab') || $btn.text().toLowerCase().replace(/\s+/g, '-');
+                
+                console.log('[CBM] Global tab handler - Tab clicked:', tabId, 'Text:', $btn.text());
+                
+                // Update all tab buttons
+                $('.cbm-tab-btn').removeClass('active');
+                $btn.addClass('active');
+                
+                // Update all tab panes
+                $('.cbm-tab-pane').each(function() {
+                    const $pane = $(this);
+                    const paneId = $pane.data('tab') || $pane.attr('data-tab');
+                    
+                    // Also check by content if no data-tab
+                    const hasEnroll = $pane.find('.enroll-course').length > 0 || $pane.text().includes('Enroll');
+                    const hasBuy = $pane.find('.buy-course').length > 0 || $pane.text().includes('Buy');
+                    
+                    let shouldShow = false;
+                    
+                    if (paneId == tabId) {
+                        shouldShow = true;
+                    } else if (tabId.includes('enroll') && hasEnroll) {
+                        shouldShow = true;
+                    } else if (tabId.includes('buy') && hasBuy) {
+                        shouldShow = true;
+                    } else if ($btn.text().includes('Enroll') && hasEnroll) {
+                        shouldShow = true;
+                    } else if ($btn.text().includes('Buy') && hasBuy) {
+                        shouldShow = true;
+                    }
+                    
+                    if (shouldShow) {
+                        $pane.show().addClass('active');
+                        console.log('[CBM] Showing pane with content');
+                    } else {
+                        $pane.hide().removeClass('active');
+                    }
+                });
+                
+                return false;
+            });
+        }, 1000); // Wait a second to ensure DOM is ready
+        
         // Initialize the Enroll-Buy combo box selection
         initEnrollBuySelection();
         
@@ -358,26 +415,55 @@ window.selectBox = function(element, boxType, courseId) {
             
             // Fix tab functionality if tabs exist
             if (hasTabs) {
-                console.log('[CBM] Fixing tab functionality');
+                console.log('[CBM] Setting up tab functionality');
                 
-                // Bind tab click events
-                $(document).off('click.popuptabs').on('click.popuptabs', '#popup .cbm-tab-btn', function(e) {
+                // Remove any existing handlers first
+                $(document).off('click.popuptabs');
+                $('#popup .cbm-tab-btn').off('click');
+                
+                // Bind tab click events with multiple selectors
+                $(document).on('click.popuptabs', '#popup .cbm-tab-btn, .cbm-popup-container .cbm-tab-btn, .cbm-tab-btn', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     
                     const $btn = $(this);
-                    const tabId = $btn.data('tab') || $btn.attr('data-tab');
+                    const tabId = $btn.data('tab') || $btn.attr('data-tab') || $btn.index();
                     
-                    console.log('[CBM] Tab clicked:', tabId);
+                    console.log('[CBM] Tab button clicked:', tabId, 'Button text:', $btn.text());
                     
-                    // Update button states
-                    $('#popup .cbm-tab-btn').removeClass('active');
+                    // Find the container
+                    const $container = $btn.closest('#popup, .cbm-popup-container');
+                    
+                    // Update button states within the same container
+                    $container.find('.cbm-tab-btn').removeClass('active');
                     $btn.addClass('active');
                     
-                    // Update pane visibility
-                    $('#popup .cbm-tab-pane').removeClass('active').hide();
-                    $('#popup .cbm-tab-pane[data-tab="' + tabId + '"]').addClass('active').show();
+                    // Hide all panes and show the selected one
+                    $container.find('.cbm-tab-pane').each(function() {
+                        const $pane = $(this);
+                        const paneTab = $pane.data('tab') || $pane.attr('data-tab') || $pane.index();
+                        
+                        if (paneTab == tabId) {
+                            $pane.addClass('active').show();
+                            console.log('[CBM] Showing pane:', paneTab);
+                        } else {
+                            $pane.removeClass('active').hide();
+                            console.log('[CBM] Hiding pane:', paneTab);
+                        }
+                    });
+                    
+                    // Force selected state on visible box
+                    $container.find('.cbm-tab-pane.active .box').each(function() {
+                        const $box = $(this);
+                        $box.addClass('selected');
+                        $box.find('.circlecontainer').show().css('display', 'block');
+                        $box.find('.circle-container').hide().css('display', 'none');
+                    });
                 });
+                
+                // Log current state
+                console.log('[CBM] Tab buttons found:', $('#popup .cbm-tab-btn').length);
+                console.log('[CBM] Tab panes found:', $('#popup .cbm-tab-pane').length);
             }
         }
         
