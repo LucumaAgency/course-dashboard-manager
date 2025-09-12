@@ -3460,6 +3460,94 @@ function cbm_display_course_date_in_cart($item_data, $cart_item) {
 // Old AJAX handler removed - we now use iframe method for add to cart
 // This ensures compatibility with all cart plugins
 
+// Bidirectional sync: Update dashboard when WooCommerce product is saved
+add_action('woocommerce_update_product', 'cbm_sync_woo_price_to_dashboard', 10, 2);
+add_action('woocommerce_new_product', 'cbm_sync_woo_price_to_dashboard', 10, 2);
+add_action('save_post_product', 'cbm_sync_woo_price_to_dashboard_on_save', 10, 3);
+
+function cbm_sync_woo_price_to_dashboard($product_id, $product = null) {
+    // Get the product if not provided
+    if (!$product) {
+        $product = wc_get_product($product_id);
+    }
+    
+    if (!$product) {
+        return;
+    }
+    
+    // Find courses that use this product for buy or enroll
+    $args = array(
+        'post_type' => 'course',
+        'posts_per_page' => -1,
+        'meta_query' => array(
+            'relation' => 'OR',
+            array(
+                'key' => 'buy_product_id',
+                'value' => $product_id,
+                'compare' => '='
+            ),
+            array(
+                'key' => 'enroll_product_id', 
+                'value' => $product_id,
+                'compare' => '='
+            ),
+            array(
+                'key' => 'linked_product_id',
+                'value' => $product_id,
+                'compare' => '='
+            )
+        )
+    );
+    
+    $courses = get_posts($args);
+    
+    // Get the prices from WooCommerce
+    $regular_price = $product->get_regular_price();
+    $sale_price = $product->get_sale_price();
+    
+    error_log('[CBM Sync] WooCommerce product ' . $product_id . ' updated. Regular: ' . $regular_price . ', Sale: ' . $sale_price);
+    error_log('[CBM Sync] Found ' . count($courses) . ' courses using this product');
+    
+    // Update each course's stored prices
+    foreach ($courses as $course) {
+        $buy_product_id = get_post_meta($course->ID, 'buy_product_id', true);
+        $enroll_product_id = get_post_meta($course->ID, 'enroll_product_id', true);
+        
+        // Update buy prices if this is the buy product
+        if ($buy_product_id == $product_id) {
+            update_post_meta($course->ID, 'buy_regular_price_cache', $regular_price);
+            update_post_meta($course->ID, 'buy_sale_price_cache', $sale_price);
+            error_log('[CBM Sync] Updated buy prices for course ' . $course->ID);
+        }
+        
+        // Update enroll prices if this is the enroll product
+        if ($enroll_product_id == $product_id) {
+            update_post_meta($course->ID, 'enroll_regular_price_cache', $regular_price);
+            update_post_meta($course->ID, 'enroll_sale_price_cache', $sale_price);
+            error_log('[CBM Sync] Updated enroll prices for course ' . $course->ID);
+        }
+        
+        // Update general price if using linked_product_id
+        if (get_post_meta($course->ID, 'linked_product_id', true) == $product_id) {
+            update_post_meta($course->ID, 'course_price', $sale_price ?: $regular_price);
+        }
+    }
+}
+
+function cbm_sync_woo_price_to_dashboard_on_save($post_id, $post, $update) {
+    // Avoid infinite loops
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+    
+    if ($post->post_type !== 'product') {
+        return;
+    }
+    
+    // Call our sync function
+    cbm_sync_woo_price_to_dashboard($post_id);
+}
+
 add_action('wp_ajax_save_group_settings', 'save_group_settings');
 function save_group_settings() {
     check_ajax_referer('course_box_nonce', 'nonce');
