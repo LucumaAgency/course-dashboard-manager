@@ -10,7 +10,7 @@
     width: 90% !important;
 }
 
-/* Style for popup close button */
+/* Style for popup close button - make it white */
 #popup > img[alt="Close"] {
     position: absolute !important;
     top: 10px !important;
@@ -18,7 +18,7 @@
     width: 30px !important;
     height: 30px !important;
     cursor: pointer !important;
-    filter: none !important;
+    filter: invert(100%) !important; /* Makes it white */
     opacity: 0.7 !important;
     transition: opacity 0.3s ease !important;
 }
@@ -27,11 +27,19 @@
     opacity: 1 !important;
 }
 
-/* Ensure box inside popup matches PC styles */
+/* Ensure box inside popup matches PC styles with gradient background */
 #popup .box {
     margin: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
+    background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
+    border: 2px solid rgba(222, 4, 164, 0.3) !important;
+}
+
+/* Ensure selected box in popup has the gradient */
+#popup .box.selected {
+    background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
+    border: 2px solid rgba(222, 4, 164, 0.3) !important;
 }
 
 /* Mobile specific adjustments for custom popup */
