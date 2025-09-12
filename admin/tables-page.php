@@ -549,13 +549,41 @@ if (isset($_GET['debug']) && $_GET['debug'] == '1') {
                 console.log('[CBM Debug] Courses data available:', typeof coursesData !== 'undefined' ? 'YES' : 'NO');
                 console.log('[CBM Debug] All products available:', typeof allProducts !== 'undefined' ? 'YES' : 'NO');
                 
-                // Debug products array
-                console.log('[CBM Debug] Products count:', Object.keys(allProducts).length);
-                console.log('[CBM Debug] Products object:', allProducts);
-                if (Object.keys(allProducts).length === 0) {
-                    console.error('[CBM Debug] WARNING: No products in array! Products not loaded from PHP.');
+                // FORCE DEBUG - Check products right here
+                if (typeof allProducts !== 'undefined') {
+                    const productCount = Object.keys(allProducts).length;
+                    console.log('========== PRODUCT DEBUG ==========');
+                    console.log('Product count:', productCount);
+                    console.log('Is empty object?', JSON.stringify(allProducts) === '{}');
+                    console.log('Is array?', Array.isArray(allProducts));
+                    console.log('Raw allProducts:', allProducts);
+                    console.log('First 3 product IDs:', Object.keys(allProducts).slice(0, 3));
+                    console.log('First product data:', Object.values(allProducts)[0]);
+                    console.log('===================================');
+                    
+                    // ALWAYS show debug info for now
+                    setTimeout(function() {
+                        const debugDiv = document.createElement('div');
+                        debugDiv.style.cssText = 'background: #ffcccc; padding: 20px; margin: 20px; border: 2px solid red; font-family: monospace;';
+                        debugDiv.innerHTML = '<h2>🔍 PRODUCT DEBUG INFO</h2>' +
+                            '<p><strong>Products in dropdown:</strong> ' + productCount + '</p>' +
+                            '<p><strong>allProducts variable:</strong></p>' +
+                            '<pre style="background: white; padding: 10px; overflow: auto; max-height: 200px;">' +
+                            JSON.stringify(allProducts, null, 2) +
+                            '</pre>' +
+                            '<p>If this shows {} or empty, products are not loading from PHP.</p>';
+                        
+                        const wrapper = document.querySelector('.wrap');
+                        if (wrapper && wrapper.firstChild) {
+                            wrapper.insertBefore(debugDiv, wrapper.firstChild);
+                        } else {
+                            document.body.insertBefore(debugDiv, document.body.firstChild);
+                        }
+                    }, 100);
                 } else {
-                    console.log('[CBM Debug] First product:', Object.values(allProducts)[0]);
+                    console.error('========== PRODUCT DEBUG ERROR ==========');
+                    console.error('allProducts is undefined!');
+                    console.error('=========================================');
                 }
                 
                 // Debug selling page selection
