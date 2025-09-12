@@ -105,6 +105,88 @@ function register_instructor_cpt() {
 // Add admin menu for dashboard
 add_action('admin_menu', 'course_box_manager_menu', 15); // Priority 15 to ensure proper loading
 
+// Add dashboard widget for debugging
+add_action('wp_dashboard_setup', 'cbm_add_debug_widget');
+function cbm_add_debug_widget() {
+    wp_add_dashboard_widget(
+        'cbm_product_debug_widget',
+        '🔍 Course Dashboard Manager - Product Debug',
+        'cbm_product_debug_widget_content'
+    );
+}
+
+function cbm_product_debug_widget_content() {
+    global $wpdb;
+    
+    echo '<div style="padding: 10px; background: #fff3cd; border-radius: 5px;">';
+    echo '<h3>Product Loading Test</h3>';
+    
+    $product_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'product' AND post_status = 'publish'");
+    echo '<p><strong>Total products in database:</strong> ' . $product_count . '</p>';
+    
+    if ($product_count > 0) {
+        echo '<p><strong>Last 3 products:</strong></p>';
+        echo '<ul>';
+        $products = $wpdb->get_results("SELECT ID, post_title, post_date FROM {$wpdb->posts} WHERE post_type = 'product' AND post_status = 'publish' ORDER BY ID DESC LIMIT 3");
+        foreach ($products as $p) {
+            echo '<li>ID ' . $p->ID . ': ' . $p->post_title . ' (Created: ' . $p->post_date . ')</li>';
+        }
+        echo '</ul>';
+    } else {
+        echo '<p style="color: red;">❌ No products found in database!</p>';
+    }
+    
+    echo '<hr>';
+    echo '<p><strong>System Status:</strong></p>';
+    echo '<ul>';
+    echo '<li>WooCommerce: ' . (class_exists('WooCommerce') ? '✅ Active' : '❌ Inactive') . '</li>';
+    echo '<li>Plugin Version: ' . CBM_VERSION . '</li>';
+    echo '<li>PHP Version: ' . PHP_VERSION . '</li>';
+    echo '</ul>';
+    
+    echo '<p><a href="' . admin_url('admin.php?page=course-box-tables') . '" class="button button-primary">Go to Course Tables</a></p>';
+    echo '</div>';
+}
+
+// DEBUG: Always show product status
+add_action('admin_notices', 'cbm_product_debug_notice');
+function cbm_product_debug_notice() {
+    // Show on all admin pages for debugging
+    if (is_admin()) {
+        global $wpdb;
+        $product_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'product' AND post_status = 'publish'");
+        
+        echo '<div class="notice notice-warning" style="background: #ffeb3b; border: 2px solid #ff5722; padding: 15px;">';
+        echo '<h2 style="color: #ff5722;">🔍 PRODUCT DROPDOWN DEBUG</h2>';
+        echo '<table style="width: 100%; border-collapse: collapse;">';
+        echo '<tr><td style="padding: 5px;"><strong>Products in database:</strong></td><td>' . $product_count . '</td></tr>';
+        
+        if ($product_count > 0) {
+            $sample_products = $wpdb->get_results("SELECT ID, post_title FROM {$wpdb->posts} WHERE post_type = 'product' AND post_status = 'publish' LIMIT 5");
+            echo '<tr><td style="padding: 5px; vertical-align: top;"><strong>Sample products:</strong></td><td>';
+            foreach ($sample_products as $p) {
+                echo 'ID ' . $p->ID . ': ' . $p->post_title . '<br>';
+            }
+            echo '</td></tr>';
+        }
+        
+        echo '<tr><td style="padding: 5px;"><strong>WooCommerce:</strong></td><td>' . (class_exists('WooCommerce') ? '✅ Active' : '❌ Not Active') . '</td></tr>';
+        echo '<tr><td style="padding: 5px;"><strong>wc_get_products:</strong></td><td>' . (function_exists('wc_get_products') ? '✅ Available' : '❌ Not Available') . '</td></tr>';
+        
+        // Test wc_get_products
+        if (function_exists('wc_get_products')) {
+            $test_products = @wc_get_products(['limit' => 2]);
+            echo '<tr><td style="padding: 5px;"><strong>wc_get_products test:</strong></td><td>' . (is_array($test_products) ? 'Returns ' . count($test_products) . ' products' : 'Failed') . '</td></tr>';
+        }
+        
+        echo '<tr><td style="padding: 5px;"><strong>Plugin version:</strong></td><td>' . CBM_VERSION . '</td></tr>';
+        echo '<tr><td style="padding: 5px;"><strong>Time:</strong></td><td>' . date('Y-m-d H:i:s') . '</td></tr>';
+        echo '</table>';
+        echo '<p style="color: #666; font-size: 12px; margin-top: 10px;">⚠️ This debug will show on ALL admin pages. To remove: edit course-dashboard-manager.php line 109</p>';
+        echo '</div>';
+    }
+}
+
 // Add diagnostic admin notice to verify STM courses
 add_action('admin_notices', 'cbm_stm_diagnostic_notice');
 function cbm_stm_diagnostic_notice() {
