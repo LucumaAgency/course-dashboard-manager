@@ -157,6 +157,9 @@ window.selectBox = function(element, boxType, courseId) {
         const originalText = $button.find('.button-text').text();
         $button.find('.button-text').text('Adding to cart...');
         
+        // Show the loader spinner
+        $button.find('.loader').show();
+        
         // Build the add to cart URL with parameters
         const siteUrl = window.location.origin;
         let addToCartUrl = `${siteUrl}/?add-to-cart=${productId}&quantity=${quantity}`;
@@ -188,6 +191,7 @@ window.selectBox = function(element, boxType, courseId) {
             
             // Update button state
             $button.removeClass('loading');
+            $button.find('.loader').hide();
             $button.find('.button-text').text('Added to cart!');
             
             // Force refresh cart fragments to get updated cart contents
