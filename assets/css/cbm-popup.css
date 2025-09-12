@@ -266,7 +266,16 @@
         max-height: 100vh;
         border-radius: 0;
         margin: 0;
-        /* No fixed height - container adapts to content */
+    }
+    
+    /* When buy course is active in mobile */
+    .cbm-popup-container:has(.buy-course:not(.cbm-tab-pane .buy-course)) {
+        height: 400px;
+    }
+    
+    /* When buy tab is active in mobile */
+    .cbm-popup-container:has(.cbm-tab-pane.active .buy-course) {
+        height: 400px;
     }
     
     .cbm-popup-content {
