@@ -32,6 +32,11 @@
     box-sizing: border-box;
 }
 
+/* Single box - no pointer cursor since it can't be deselected */
+.box:only-child {
+    cursor: default;
+}
+
 .box:hover:not(.selected) {
     border-color: rgba(155, 159, 170, 0.4);
     background: rgba(14, 13, 15, 0.9);

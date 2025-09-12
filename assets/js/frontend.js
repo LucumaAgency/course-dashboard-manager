@@ -21,8 +21,19 @@ window.selectBox = function(element, boxType, courseId) {
     
     const $ = jQuery;
     const $box = $(element);
+    const $parent = $box.parent();
+    const $allBoxes = $parent.find('.box');
     
-    // Toggle selection
+    // If there's only one box, keep it always selected
+    if ($allBoxes.length === 1) {
+        console.log('[CBM] Only one box present, keeping it selected');
+        $box.addClass('selected');
+        $box.find('.circlecontainer').show();
+        $box.find('.circle-container').hide();
+        return; // Don't allow deselection
+    }
+    
+    // Toggle selection for multiple boxes
     if ($box.hasClass('selected')) {
         // Deselect: show simple circle (inactive state)
         $box.removeClass('selected');
@@ -256,6 +267,31 @@ window.selectBox = function(element, boxType, courseId) {
         // Initialize the Enroll-Buy combo box selection
         initEnrollBuySelection();
         
+        // Check for single boxes and ensure they're selected
+        $('.box-container, .course-boxes-container, .selectable-box-container').each(function() {
+            const $container = $(this);
+            const $boxes = $container.find('.box');
+            
+            if ($boxes.length === 1) {
+                console.log('[CBM] Found single box, ensuring it stays selected');
+                const $singleBox = $boxes.first();
+                $singleBox.addClass('selected');
+                $singleBox.find('.circlecontainer').show();
+                $singleBox.find('.circle-container').hide();
+                
+                // Prevent clicking from deselecting
+                $singleBox.off('click.singlebox').on('click.singlebox', function(e) {
+                    // Only prevent deselection if not clicking on buttons or dates
+                    if (!$(e.target).closest('.add-to-cart-button, .date-btn').length) {
+                        e.stopPropagation();
+                        $(this).addClass('selected');
+                        $(this).find('.circlecontainer').show();
+                        $(this).find('.circle-container').hide();
+                    }
+                });
+            }
+        });
+        
         // Re-bind date button handlers after a short delay
         setTimeout(function() {
             console.log('[CBM] Binding date button handlers');
@@ -294,7 +330,17 @@ window.selectBox = function(element, boxType, courseId) {
             const $container = $(this);
             const $boxes = $container.find('.box');
             
-            // Add click handler to each box
+            // If there's only one box, keep it selected always
+            if ($boxes.length === 1) {
+                console.log('[CBM] Single box in enroll-buy combo, keeping selected');
+                const $singleBox = $boxes.first();
+                $singleBox.addClass('selected');
+                $singleBox.find('.circlecontainer').show();
+                $singleBox.find('.circle-container').hide();
+                return; // Skip adding click handlers for single box
+            }
+            
+            // Add click handler to each box (only for multiple boxes)
             $boxes.off('click.boxselect').on('click.boxselect', function(e) {
                 // Don't process if clicking on buttons or dates
                 if ($(e.target).closest('.add-to-cart-button, .date-btn').length) {
