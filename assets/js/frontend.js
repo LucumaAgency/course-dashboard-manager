@@ -190,10 +190,52 @@ window.selectBox = function(element, boxType, courseId) {
             $button.removeClass('loading');
             $button.find('.button-text').text('Added to cart!');
             
-            // Trigger WooCommerce cart update event
-            // This should make cart plugins refresh and show the cart
-            $(document.body).trigger('added_to_cart');
-            $(document.body).trigger('wc_fragment_refresh');
+            // Force refresh cart fragments to get updated cart contents
+            console.log('[CBM] Refreshing cart fragments...');
+            
+            // Build the AJAX URL properly
+            let ajaxUrl = '/wc-ajax=get_refreshed_fragments';
+            if (typeof wc_add_to_cart_params !== 'undefined' && wc_add_to_cart_params.wc_ajax_url) {
+                ajaxUrl = wc_add_to_cart_params.wc_ajax_url.toString().replace('%%endpoint%%', 'get_refreshed_fragments');
+            } else if (window.cbm_ajax && window.cbm_ajax.ajax_url) {
+                ajaxUrl = window.cbm_ajax.ajax_url + '?wc-ajax=get_refreshed_fragments';
+            }
+            
+            console.log('[CBM] Using AJAX URL:', ajaxUrl);
+            
+            $.ajax({
+                url: ajaxUrl,
+                type: 'POST',
+                success: function(data) {
+                    console.log('[CBM] Cart fragments response:', data);
+                    if (data && data.fragments) {
+                        $.each(data.fragments, function(key, value) {
+                            $(key).replaceWith(value);
+                        });
+                        
+                        // Update cart hash and fragments in session storage
+                        if (data.cart_hash) {
+                            const fragmentsKey = (typeof wc_cart_fragments_params !== 'undefined' && wc_cart_fragments_params.fragment_name) 
+                                ? wc_cart_fragments_params.fragment_name 
+                                : 'wc_fragments_' + data.cart_hash;
+                            
+                            sessionStorage.setItem(fragmentsKey, JSON.stringify(data.fragments));
+                            sessionStorage.setItem('wc_cart_hash', data.cart_hash);
+                            console.log('[CBM] Updated session storage with cart hash:', data.cart_hash);
+                        }
+                    }
+                    
+                    // Trigger cart updated events
+                    $(document.body).trigger('wc_fragments_refreshed');
+                    $(document.body).trigger('added_to_cart', [data.fragments, data.cart_hash]);
+                    
+                    // Try to open cart if function exists
+                    if (typeof window.open_cart === 'function') {
+                        console.log('[CBM] Opening cart after refresh');
+                        window.open_cart();
+                    }
+                }
+            });
             
             // Reset button after 2 seconds
             setTimeout(function() {

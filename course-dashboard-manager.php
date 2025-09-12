@@ -1408,19 +1408,22 @@ function course_box_tables_page() {
                 }
                 
                 // Box state change handler
-                document.getElementById('group-box-state').addEventListener('change', function() {
-                    currentBoxState = this.value;
-                    renderTable(currentBoxState);
-                    
-                    // Auto-set stock to 0 for sold out
-                    if (currentBoxState === 'soldout') {
-                        document.querySelectorAll('.inline-edit-stock').forEach(input => {
-                            input.value = 0;
-                            input.readOnly = true;
-                            input.dispatchEvent(new Event('change'));
-                        });
-                    }
-                });
+                const boxStateElement = document.getElementById('group-box-state');
+                if (boxStateElement) {
+                    boxStateElement.addEventListener('change', function() {
+                        currentBoxState = this.value;
+                        renderTable(currentBoxState);
+                        
+                        // Auto-set stock to 0 for sold out
+                        if (currentBoxState === 'soldout') {
+                            document.querySelectorAll('.inline-edit-stock').forEach(input => {
+                                input.value = 0;
+                                input.readOnly = true;
+                                input.dispatchEvent(new Event('change'));
+                            });
+                        }
+                    });
+                }
                 
                 // Save group settings button (for enroll-buy state)
                 const saveGroupBtn = document.getElementById('save-group-settings');
