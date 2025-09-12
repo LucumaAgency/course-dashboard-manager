@@ -3427,118 +3427,42 @@ function assign_course_to_group() {
     wp_send_json_success();
 }
 
-// AJAX handler for adding products to cart (compatible with FunnelKit)
-// DISABLED to test if this is causing FunnelKit issues
-// add_action('wp_ajax_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 999);
-// add_action('wp_ajax_nopriv_woocommerce_add_to_cart', 'cbm_ajax_add_to_cart', 999);
+// Add course date to cart item data using WooCommerce filter
+// This way we don't interfere with any AJAX handlers
+add_filter('woocommerce_add_cart_item_data', 'cbm_add_course_date_to_cart', 10, 3);
+function cbm_add_course_date_to_cart($cart_item_data, $product_id, $variation_id) {
+    // Check if this is from our course box (has start_date in POST)
+    if (isset($_POST['start_date']) && !empty($_POST['start_date'])) {
+        $cart_item_data['course_start_date'] = sanitize_text_field($_POST['start_date']);
+    }
+    if (isset($_POST['course_date']) && !empty($_POST['course_date'])) {
+        $cart_item_data['course_date'] = sanitize_text_field($_POST['course_date']);
+    }
+    return $cart_item_data;
+}
 
-// Instead, use a custom action that doesn't conflict
-add_action('wp_ajax_cbm_add_to_cart', 'cbm_ajax_add_to_cart');
-add_action('wp_ajax_nopriv_cbm_add_to_cart', 'cbm_ajax_add_to_cart');
+// Display course date in cart
+add_filter('woocommerce_get_item_data', 'cbm_display_course_date_in_cart', 10, 2);
+function cbm_display_course_date_in_cart($item_data, $cart_item) {
+    if (isset($cart_item['course_start_date'])) {
+        $item_data[] = array(
+            'key' => __('Course Date', 'course-box-manager'),
+            'value' => $cart_item['course_start_date']
+        );
+    }
+    return $item_data;
+}
 
-function cbm_ajax_add_to_cart() {
-    // ONLY handle requests that have our course-specific fields
-    // This ensures we never interfere with FunnelKit or other cart operations
-    if (!isset($_POST['start_date']) && !isset($_POST['course_date'])) {
-        // Not our course box request, let others handle it
-        return;
-    }
+// Old AJAX handler removed - we now use WooCommerce filters instead
+// This ensures we don't interfere with FunnelKit or any other cart plugins
+
+// Save group settings handler
+add_action('wp_ajax_save_group_settings', 'save_group_settings');
+function save_group_settings() {
+    check_ajax_referer('course_box_nonce', 'nonce');
     
-    // Additional safety check: must have product_id
-    if (!isset($_POST['product_id'])) {
-        return;
-    }
-    
-    error_log('[CBM Cart] Processing course box add to cart request');
-    
-    // Verify nonce - check both 'security' and 'nonce' fields for compatibility
-    $nonce = isset($_POST['security']) ? $_POST['security'] : (isset($_POST['nonce']) ? $_POST['nonce'] : '');
-    
-    if (!$nonce || !wp_verify_nonce($nonce, 'woocommerce-add-to-cart')) {
-        error_log('[CBM Cart] Invalid nonce for our request. Received: ' . print_r($_POST, true));
-        wp_send_json_error('Invalid security token');
-        return;
-    }
-    
-    $product_id = intval($_POST['product_id']);
-    $quantity = isset($_POST['quantity']) ? intval($_POST['quantity']) : 1;
-    $start_date = isset($_POST['start_date']) ? sanitize_text_field($_POST['start_date']) : '';
-    
-    error_log('[CBM Cart] Add to cart request - Product ID: ' . $product_id . ', Quantity: ' . $quantity . ', Start Date: ' . $start_date);
-    
-    if (!$product_id) {
-        wp_send_json_error('Invalid product ID');
-        return;
-    }
-    
-    // Check if product exists
-    $product = wc_get_product($product_id);
-    if (!$product) {
-        error_log('[CBM Cart] Product not found for ID: ' . $product_id);
-        wp_send_json_error('Product not found');
-        return;
-    }
-    
-    error_log('[CBM Cart] Product found: ' . $product->get_name() . ', Price: ' . $product->get_price() . ', In Stock: ' . ($product->is_in_stock() ? 'yes' : 'no'));
-    
-    // Initialize WooCommerce cart if needed
-    if (!WC()->cart) {
-        WC()->cart = new WC_Cart();
-    }
-    
-    // Clear any previous notices
-    wc_clear_notices();
-    
-    // Add custom data if start_date is provided
-    $cart_item_data = array();
-    if (!empty($start_date)) {
-        $cart_item_data['course_start_date'] = $start_date;
-    }
-    
-    // Try to add product to cart
-    $passed_validation = apply_filters('woocommerce_add_to_cart_validation', true, $product_id, $quantity);
-    
-    if ($passed_validation) {
-        $cart_item_key = WC()->cart->add_to_cart($product_id, $quantity, 0, array(), $cart_item_data);
-        
-        if ($cart_item_key) {
-            error_log('[CBM Cart] Product added to cart successfully. Cart item key: ' . $cart_item_key);
-            
-            // Trigger FunnelKit Cart hooks if available
-            do_action('fkcart_item_added', $product_id, $quantity);
-            do_action('woocommerce_ajax_added_to_cart', $product_id);
-            
-            // Get cart fragments for updating mini-cart
-            ob_start();
-            woocommerce_mini_cart();
-            $mini_cart = ob_get_clean();
-            
-            // Check if FunnelKit Cart is active
-            $use_funnelkit = defined('FKCART_VERSION') || class_exists('FKCart') || class_exists('FunnelKitCart');
-            
-            $data = array(
-                'success' => true,
-                'fragments' => apply_filters('woocommerce_add_to_cart_fragments', array(
-                    'div.widget_shopping_cart_content' => '<div class="widget_shopping_cart_content">' . $mini_cart . '</div>',
-                    '.cart-contents-count' => '<span class="cart-contents-count">' . WC()->cart->get_cart_contents_count() . '</span>'
-                )),
-                'cart_hash' => WC()->cart->get_cart_hash(),
-                'cart_item_key' => $cart_item_key,
-                'product_name' => $product->get_name(),
-                'use_funnelkit' => $use_funnelkit
-            );
-            
-            // Add FunnelKit specific data if available
-            $data = apply_filters('fkcart_add_to_cart_response', $data, $product_id);
-            
-            wp_send_json($data);
-        } else {
-            // Get any error notices
-            $notices = wc_get_notices('error');
-            $error_message = !empty($notices) ? strip_tags($notices[0]['notice']) : 'Failed to add product to cart';
-            
-            error_log('[CBM Cart] Failed to add product to cart. Error: ' . $error_message);
-            wp_send_json_error($error_message);
+    $group_id = intval($_POST['group_id']);
+    $box_state = sanitize_text_field($_POST['box_state']);
         }
     } else {
         error_log('[CBM Cart] Cart validation failed for product ID: ' . $product_id);

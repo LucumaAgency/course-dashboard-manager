@@ -228,9 +228,10 @@ window.selectBox = function(element, boxType, courseId) {
         
         console.log('[CBM] Using AJAX URL:', cbm_ajax.ajax_url);
         
-        // Prepare data - use our custom action to avoid conflicts
+        // Prepare data - use standard WooCommerce action
+        // Let FunnelKit handle it if active, otherwise WooCommerce handles it
         const data = {
-            action: 'cbm_add_to_cart',  // Our custom action
+            action: 'woocommerce_add_to_cart',
             product_id: productId,
             quantity: quantity,
             variation_id: 0,
