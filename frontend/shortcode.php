@@ -18,9 +18,77 @@ add_shortcode('course_box_manager', __NAMESPACE__ . '\\course_box_manager_shortc
 function course_box_manager_shortcode($atts) {
     $atts = shortcode_atts(array(
         'id' => get_the_ID(),
+        'group' => '', // Allow specifying a group to get its selling page
     ), $atts);
     
     $course_id = intval($atts['id']);
+    
+    // Debug logging
+    error_log('[CBM Shortcode] Original ID: ' . $course_id);
+    error_log('[CBM Shortcode] Post type: ' . get_post_type($course_id));
+    
+    // If a group is specified, get its selling page
+    if (!empty($atts['group'])) {
+        $group_term = get_term_by('slug', $atts['group'], 'course_group');
+        if (!$group_term) {
+            $group_term = get_term_by('name', $atts['group'], 'course_group');
+        }
+        
+        if ($group_term) {
+            // Get the selling page for this group
+            $selling_pages = get_posts([
+                'post_type' => 'course',
+                'posts_per_page' => 1,
+                'meta_key' => 'is_selling_page',
+                'meta_value' => '1',
+                'tax_query' => [
+                    [
+                        'taxonomy' => 'course_group',
+                        'field' => 'term_id',
+                        'terms' => $group_term->term_id,
+                    ],
+                ],
+            ]);
+            
+            if (!empty($selling_pages)) {
+                $course_id = $selling_pages[0]->ID;
+                error_log('[CBM Shortcode] Using selling page from group: ' . $course_id);
+            }
+        }
+    }
+    
+    // If this is not a 'course' post type, try to find the selling page for this post's group
+    if (get_post_type($course_id) !== 'course') {
+        error_log('[CBM Shortcode] Not a course post type, checking for group association...');
+        
+        // Check if this post has a course_group term
+        $terms = wp_get_post_terms($course_id, 'course_group');
+        if (!empty($terms)) {
+            $group_id = $terms[0]->term_id;
+            
+            // Get the selling page for this group
+            $selling_pages = get_posts([
+                'post_type' => 'course',
+                'posts_per_page' => 1,
+                'meta_key' => 'is_selling_page',
+                'meta_value' => '1',
+                'tax_query' => [
+                    [
+                        'taxonomy' => 'course_group',
+                        'field' => 'term_id',
+                        'terms' => $group_id,
+                    ],
+                ],
+            ]);
+            
+            if (!empty($selling_pages)) {
+                $course_id = $selling_pages[0]->ID;
+                error_log('[CBM Shortcode] Found selling page via group: ' . $course_id);
+            }
+        }
+    }
+    
+    error_log('[CBM Shortcode] Final course ID to use: ' . $course_id);
     
     // Enqueue required assets
     enqueue_frontend_assets();
@@ -32,7 +100,7 @@ function course_box_manager_shortcode($atts) {
         return $box->render();
     }
     
-    return '<div class="course-box-error">Course box configuration not found.</div>';
+    return '<div class="course-box-error">Course box configuration not found for ID: ' . $course_id . '</div>';
 }
 
 /**

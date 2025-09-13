@@ -33,10 +33,19 @@ abstract class AbstractBox {
     }
     
     protected function initialize_properties() {
+        // Debug: Log what course we're loading
+        error_log('[CBM AbstractBox] Initializing properties for course ID: ' . $this->course_id);
+        error_log('[CBM AbstractBox] Course title: ' . ($this->course ? $this->course->post_title : 'Course not found'));
+        error_log('[CBM AbstractBox] Course type: ' . ($this->course ? $this->course->post_type : 'N/A'));
+        
         $this->box_state = get_post_meta($this->course_id, 'box_state', true) ?: 'enroll-course';
         $this->course_product_id = get_post_meta($this->course_id, 'linked_product_id', true);
         $this->course_price = \cbm_get_field('course_price', $this->course_id, 749.99);
         $this->enroll_price = \cbm_get_field('enroll_price', $this->course_id, 1249.99);
+        
+        // Debug: Log the loaded values
+        error_log('[CBM AbstractBox] Loaded box_state: ' . $this->box_state);
+        error_log('[CBM AbstractBox] Loaded linked_product_id: ' . $this->course_product_id);
         
         $available_dates_raw = \cbm_get_field('course_dates', $this->course_id, []);
         // Ensure we have an array before using array_column
