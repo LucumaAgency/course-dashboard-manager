@@ -17,6 +17,25 @@ define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CBM_VERSION', '1.8.2');
 
+// Helper function to get the correct course post type
+function cbm_get_course_post_type() {
+    // Check for STM LMS course types first
+    $stm_types = ['stm-courses', 'stm_lms_courses', 'stm-course', 'stm_course'];
+    foreach ($stm_types as $type) {
+        if (post_type_exists($type)) {
+            return $type;
+        }
+    }
+    
+    // Fallback to standard course type
+    if (post_type_exists('course')) {
+        return 'course';
+    }
+    
+    // Default fallback
+    return 'stm-courses';
+}
+
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
     if (function_exists('get_field')) {
@@ -74,7 +93,22 @@ add_action('init', function() {
 // Register course_group taxonomy
 add_action('init', 'register_course_group_taxonomy');
 function register_course_group_taxonomy() {
-    register_taxonomy('course_group', ['course', 'product'], [
+    // Check which course post type is available
+    $course_post_types = ['stm-courses', 'stm_lms_courses', 'course'];
+    $available_post_types = ['product']; // Always include product
+    
+    foreach ($course_post_types as $cpt) {
+        if (post_type_exists($cpt)) {
+            $available_post_types[] = $cpt;
+        }
+    }
+    
+    // If standard course type exists, add it too
+    if (post_type_exists('course')) {
+        $available_post_types[] = 'course';
+    }
+    
+    register_taxonomy('course_group', $available_post_types, [
         'labels' => [
             'name' => __('Course Groups'),
             'singular_name' => __('Course Group'),
@@ -262,7 +296,7 @@ function handle_course_group_actions() {
         
         // Get all courses in the group to unassign them
         $courses = get_posts([
-            'post_type' => 'course',
+            'post_type' => cbm_get_course_post_type(),
             'posts_per_page' => -1,
             'fields' => 'ids',
             'tax_query' => [
@@ -393,7 +427,7 @@ function course_box_tables_page() {
                     $groups = get_terms(['taxonomy' => 'course_group', 'hide_empty' => false]);
                     foreach ($groups as $group) :
                         $courses_in_group = get_posts([
-                            'post_type' => 'course',
+                            'post_type' => cbm_get_course_post_type(),
                             'posts_per_page' => -1,
                             'fields' => 'ids',
                             'tax_query' => [
@@ -436,7 +470,7 @@ function course_box_tables_page() {
             $group_id = intval($_GET['group_id']);
             $group = get_term($group_id, 'course_group');
             $courses = get_posts([
-                'post_type' => 'course',
+                'post_type' => cbm_get_course_post_type(),
                 'posts_per_page' => -1,
                 'tax_query' => [
                     [
@@ -456,7 +490,7 @@ function course_box_tables_page() {
             // Get selling page for the group
             $selling_page_id = 0;
             $group_courses = get_posts([
-                'post_type' => 'course',
+                'post_type' => cbm_get_course_post_type(),
                 'posts_per_page' => 1,
                 'meta_key' => 'is_selling_page',
                 'meta_value' => '1',
@@ -509,7 +543,7 @@ function course_box_tables_page() {
                             <option value="">None</option>
                             <?php
                             // Get all courses for selling page selection
-                            $all_courses = get_posts(['post_type' => 'course', 'posts_per_page' => -1, 'orderby' => 'title', 'order' => 'ASC']);
+                            $all_courses = get_posts(['post_type' => cbm_get_course_post_type(), 'posts_per_page' => -1, 'orderby' => 'title', 'order' => 'ASC']);
                             foreach ($all_courses as $course) {
                                 echo '<option value="' . esc_attr($course->ID) . '"' . selected($selling_page_id, $course->ID, false) . '>' . 
                                      esc_html($course->post_title) . '</option>';
@@ -1680,7 +1714,7 @@ function course_box_tables_page() {
                     <?php
                     // Get all available courses
                     $all_courses_modal = get_posts([
-                        'post_type' => 'course',
+                        'post_type' => cbm_get_course_post_type(),
                         'posts_per_page' => -1,
                         'orderby' => 'title',
                         'order' => 'ASC'
@@ -1824,7 +1858,7 @@ function course_box_manager_page() {
                 <tbody>
                     <?php foreach ($groups as $group) :
                         $courses_in_group = get_posts([
-                            'post_type' => 'course',
+                            'post_type' => cbm_get_course_post_type(),
                             'posts_per_page' => -1,
                             'fields' => 'ids',
                             'tax_query' => [
@@ -1855,7 +1889,7 @@ function course_box_manager_page() {
             $group_id = intval($_GET['group_id']);
             $group = get_term($group_id, 'course_group');
             $courses = get_posts([
-                'post_type' => 'course',
+                'post_type' => cbm_get_course_post_type(),
                 'posts_per_page' => -1,
                 'fields' => 'ids',
                 'tax_query' => [
@@ -2013,7 +2047,7 @@ function course_box_manager_page() {
             $group_id = !empty($terms) ? $terms[0]->term_id : 0;
             $group_name = $group_id ? get_term($group_id, 'course_group')->name : 'None';
             $selling_page = get_posts([
-                'post_type' => 'course',
+                'post_type' => cbm_get_course_post_type(),
                 'posts_per_page' => 1,
                 'tax_query' => [
                     [
@@ -2300,7 +2334,7 @@ function course_box_manager_page() {
                             <select id="selling-page" data-course-id="<?php echo esc_attr($course_id); ?>">
                                 <option value="0">None</option>
                                 <?php
-                                $selling_pages = get_posts(['post_type' => 'course', 'posts_per_page' => -1]);
+                                $selling_pages = get_posts(['post_type' => cbm_get_course_post_type(), 'posts_per_page' => -1]);
                                 foreach ($selling_pages as $page) {
                                     echo '<option value="' . esc_attr($page->ID) . '"' . ($selling_page_id == $page->ID ? ' selected' : '') . '>' . esc_html($page->post_title) . '</option>';
                                 }
@@ -2327,7 +2361,7 @@ function course_box_manager_page() {
                     
                     // Get all courses
                     $all_courses = get_posts([
-                        'post_type' => 'course',
+                        'post_type' => cbm_get_course_post_type(),
                         'posts_per_page' => -1,
                         'orderby' => 'title',
                         'order' => 'ASC'
@@ -2337,7 +2371,7 @@ function course_box_manager_page() {
                     $courses_in_group = [];
                     if ($current_group_id) {
                         $courses_in_group = get_posts([
-                            'post_type' => 'course',
+                            'post_type' => cbm_get_course_post_type(),
                             'posts_per_page' => -1,
                             'fields' => 'ids',
                             'tax_query' => [
@@ -3343,7 +3377,7 @@ function delete_course_group() {
     
     // Remove the term from all courses first
     $courses = get_posts([
-        'post_type' => 'course',
+        'post_type' => cbm_get_course_post_type(),
         'posts_per_page' => -1,
         'fields' => 'ids',
         'tax_query' => [
@@ -3477,7 +3511,7 @@ function cbm_sync_woo_price_to_dashboard($product_id, $product = null) {
     
     // Find courses that use this product for buy or enroll
     $args = array(
-        'post_type' => 'course',
+        'post_type' => cbm_get_course_post_type(),
         'posts_per_page' => -1,
         'meta_query' => array(
             'relation' => 'OR',
@@ -3560,7 +3594,7 @@ function save_group_settings() {
     $courses_to_update = [];
     if ($group_id) {
         $courses = get_posts([
-            'post_type' => 'course',
+            'post_type' => cbm_get_course_post_type(),
             'posts_per_page' => -1,
             'tax_query' => [
                 [
@@ -3715,7 +3749,7 @@ function save_course_settings() {
     $current_group_id = !empty($current_terms) ? $current_terms[0]->term_id : 0;
     if ($current_group_id) {
         $existing_page = get_posts([
-            'post_type' => 'course',
+            'post_type' => cbm_get_course_post_type(),
             'posts_per_page' => 1,
             'tax_query' => [
                 [
@@ -4164,7 +4198,7 @@ function update_group_selling_page() {
     
     // Get all courses in the group
     $courses = get_posts([
-        'post_type' => 'course',
+        'post_type' => cbm_get_course_post_type(),
         'posts_per_page' => -1,
         'fields' => 'ids',
         'tax_query' => [
@@ -4217,10 +4251,11 @@ function create_quick_course() {
         wp_send_json_error('Course name is required');
     }
     
-    // Create the course post
+    // Create the course post using the correct post type
+    $course_post_type = cbm_get_course_post_type();
     $course_id = wp_insert_post([
         'post_title' => $course_name,
-        'post_type' => 'course',
+        'post_type' => $course_post_type,
         'post_status' => 'publish'
     ]);
     
@@ -4274,7 +4309,7 @@ function apply_group_settings() {
     
     // Get all courses in the group
     $courses = get_posts([
-        'post_type' => 'course',
+        'post_type' => cbm_get_course_post_type(),
         'posts_per_page' => -1,
         'fields' => 'ids',
         'tax_query' => [
@@ -4453,7 +4488,7 @@ function cbm_get_course_boxes() {
                         
                         // Get first course in the group
                         $courses = get_posts([
-                            'post_type' => 'course',
+                            'post_type' => cbm_get_course_post_type(),
                             'posts_per_page' => 1,
                             'tax_query' => [
                                 [

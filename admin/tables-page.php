@@ -68,7 +68,7 @@ if (!defined('ABSPATH')) {
                     $groups = get_terms(['taxonomy' => 'course_group', 'hide_empty' => false]);
                     foreach ($groups as $group) :
                         $courses_in_group = get_posts([
-                            'post_type' => 'course',
+                            'post_type' => cbm_get_course_post_type(),
                             'posts_per_page' => -1,
                             'fields' => 'ids',
                             'tax_query' => [
@@ -111,7 +111,7 @@ if (!defined('ABSPATH')) {
             $group_id = intval($_GET['group_id']);
             $group = get_term($group_id, 'course_group');
             $courses = get_posts([
-                'post_type' => 'course',
+                'post_type' => cbm_get_course_post_type(),
                 'posts_per_page' => -1,
                 'tax_query' => [
                     [
@@ -136,7 +136,7 @@ if (!defined('ABSPATH')) {
             
             // First, let's see all courses in this group
             $all_in_group = get_posts([
-                'post_type' => 'course',
+                'post_type' => cbm_get_course_post_type(),
                 'posts_per_page' => -1,
                 'fields' => 'ids',
                 'tax_query' => [
@@ -150,7 +150,7 @@ if (!defined('ABSPATH')) {
             error_log('[CBM Debug] Total courses in group ' . $group_id . ': ' . count($all_in_group) . ' - IDs: ' . implode(', ', $all_in_group));
             
             $group_courses = get_posts([
-                'post_type' => 'course',
+                'post_type' => cbm_get_course_post_type(),
                 'posts_per_page' => 1,
                 'meta_key' => 'is_selling_page',
                 'meta_value' => '1',
@@ -171,7 +171,7 @@ if (!defined('ABSPATH')) {
                 
                 // Debug: Check all courses in group and their meta
                 $all_group_courses = get_posts([
-                    'post_type' => 'course',
+                    'post_type' => cbm_get_course_post_type(),
                     'posts_per_page' => -1,
                     'tax_query' => [
                         [
@@ -266,7 +266,7 @@ if (!defined('ABSPATH')) {
                             <?php
                             // Get only courses in this group for selling page selection
                             $group_courses_for_select = get_posts([
-                                'post_type' => 'course',
+                                'post_type' => cbm_get_course_post_type(),
                                 'posts_per_page' => -1,
                                 'orderby' => 'title',
                                 'order' => 'ASC',
@@ -1707,7 +1707,7 @@ if (!defined('ABSPATH')) {
                     <?php
                     // Get all available courses
                     $all_courses_modal = get_posts([
-                        'post_type' => 'course',
+                        'post_type' => cbm_get_course_post_type(),
                         'posts_per_page' => -1,
                         'orderby' => 'title',
                         'order' => 'ASC'
