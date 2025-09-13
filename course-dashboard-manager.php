@@ -4205,6 +4205,59 @@ function update_group_selling_page() {
     wp_send_json_success(['message' => 'Selling page updated', 'selling_page_id' => $selling_page_id]);
 }
 
+// AJAX Handler for creating a quick course
+add_action('wp_ajax_create_quick_course', 'create_quick_course');
+function create_quick_course() {
+    check_ajax_referer('course_box_nonce', 'nonce');
+    
+    $course_name = sanitize_text_field($_POST['name']);
+    $group_id = intval($_POST['group_id']);
+    
+    if (!$course_name) {
+        wp_send_json_error('Course name is required');
+    }
+    
+    // Create the course post
+    $course_id = wp_insert_post([
+        'post_title' => $course_name,
+        'post_type' => 'course',
+        'post_status' => 'publish'
+    ]);
+    
+    if (is_wp_error($course_id)) {
+        wp_send_json_error('Failed to create course');
+    }
+    
+    // Assign to the group
+    if ($group_id) {
+        wp_set_object_terms($course_id, $group_id, 'course_group');
+    }
+    
+    // Create a linked product automatically
+    if (function_exists('wc_get_product')) {
+        $product_id = wp_insert_post([
+            'post_title' => $course_name . ' - Product',
+            'post_type' => 'product',
+            'post_status' => 'publish'
+        ]);
+        
+        if (!is_wp_error($product_id)) {
+            // Set product type
+            wp_set_object_terms($product_id, 'simple', 'product_type');
+            
+            // Set default price
+            update_post_meta($product_id, '_regular_price', '0');
+            update_post_meta($product_id, '_price', '0');
+            update_post_meta($product_id, '_virtual', 'yes');
+            
+            // Link product to course
+            update_post_meta($course_id, 'linked_product_id', $product_id);
+        }
+    }
+    
+    wp_send_json_success(['course_id' => $course_id, 'message' => 'Course created successfully']);
+}
+
 // AJAX Handler for applying group settings
 add_action('wp_ajax_apply_group_settings', 'apply_group_settings');
 function apply_group_settings() {

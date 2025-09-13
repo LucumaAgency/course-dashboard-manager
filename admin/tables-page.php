@@ -194,14 +194,41 @@ if (!defined('ABSPATH')) {
             <?php if (empty($courses)): ?>
                 <div class="notice notice-warning" style="margin: 20px 0;">
                     <p><strong>⚠️ This group has no courses assigned.</strong></p>
-                    <p>To add courses to this group:</p>
+                    <p>You need to add <strong>courses</strong> (not just products) to this group.</p>
+                    <p><strong>Quick Option:</strong></p>
+                    <button class="button button-primary" onclick="createQuickCourse()">Create a Quick Course for this Group</button>
+                    <p style="margin-top: 15px;"><strong>Or manually:</strong></p>
                     <ol>
                         <li>Go to <a href="<?php echo admin_url('edit.php?post_type=course'); ?>">Courses</a></li>
-                        <li>Edit a course</li>
+                        <li>Create or edit a course</li>
                         <li>Assign it to the "<?php echo esc_html($group->name); ?>" group</li>
                         <li>Come back here to configure the group settings</li>
                     </ol>
                 </div>
+                
+                <script>
+                function createQuickCourse() {
+                    const courseName = prompt('Enter course name:');
+                    if (!courseName) return;
+                    
+                    fetch(ajaxurl, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: 'action=create_quick_course&name=' + encodeURIComponent(courseName) + 
+                              '&group_id=' + <?php echo $group_id; ?> +
+                              '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            alert('Course created successfully! Reloading page...');
+                            window.location.reload();
+                        } else {
+                            alert('Error creating course: ' + result.data);
+                        }
+                    });
+                }
+                </script>
             <?php endif; ?>
             
             <!-- Group Settings -->
