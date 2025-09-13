@@ -3583,7 +3583,7 @@ function save_group_settings() {
     }
     
     if (empty($courses_to_update)) {
-        wp_send_json_error('No courses found in group');
+        wp_send_json_error('No courses found in this group. Please add courses to the group before saving settings.');
         return;
     }
     
@@ -3940,9 +3940,9 @@ function save_table_row_data() {
     // Debug logging
     error_log('[CBM Debug] save_table_row_data - Course ID: ' . $course_id . ', Box State: ' . $box_state . ', Date: ' . $date . ', Date Index: ' . $date_index);
     
-    if (!$course_id) {
-        error_log('[CBM Debug] Error: Invalid course ID');
-        wp_send_json_error('Invalid course ID');
+    if (!$course_id || $course_id == 0) {
+        error_log('[CBM Debug] Error: Invalid course ID - ID was: ' . $course_id);
+        wp_send_json_error('No course selected. Please add courses to this group first.');
     }
     
     // Date is required for states that use dates (enroll-course, soldout, countdown)

@@ -191,6 +191,19 @@ if (!defined('ABSPATH')) {
             <h2>Group: <?php echo esc_html($group->name); ?></h2>
             <a href="?page=course-box-tables" class="button">← Back to Groups</a>
             
+            <?php if (empty($courses)): ?>
+                <div class="notice notice-warning" style="margin: 20px 0;">
+                    <p><strong>⚠️ This group has no courses assigned.</strong></p>
+                    <p>To add courses to this group:</p>
+                    <ol>
+                        <li>Go to <a href="<?php echo admin_url('edit.php?post_type=course'); ?>">Courses</a></li>
+                        <li>Edit a course</li>
+                        <li>Assign it to the "<?php echo esc_html($group->name); ?>" group</li>
+                        <li>Come back here to configure the group settings</li>
+                    </ol>
+                </div>
+            <?php endif; ?>
+            
             <!-- Group Settings -->
             <div style="margin: 20px 0; padding: 15px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 5px;">
                 <h3 style="margin-top: 0;">Group Settings</h3>
@@ -288,7 +301,13 @@ if (!defined('ABSPATH')) {
                         <span id="stm-save-status" style="margin-left: 10px;"></span>
                     </div>
                     
-                    <button id="add-new-row" class="button button-primary" style="margin-bottom: 10px;">+ Add Course/Date</button>
+                    <?php if (!empty($courses)): ?>
+                        <button id="add-new-row" class="button button-primary" style="margin-bottom: 10px;">+ Add Course/Date</button>
+                    <?php else: ?>
+                        <div class="notice notice-info inline" style="margin-bottom: 10px;">
+                            <p>Add courses to this group first before you can configure dates.</p>
+                        </div>
+                    <?php endif; ?>
                     <table class="wp-list-table widefat fixed striped" id="courses-table" style="margin-top: 10px;">
                         <thead id="table-header">
                             <!-- Dynamic header based on box state -->
@@ -668,15 +687,30 @@ if (!defined('ABSPATH')) {
                         }
                     } else {
                         // Single row for all other states
-                        const firstCourse = coursesData[0] || {id: 0, product_id: '', stock: 20};
-                        const firstDate = firstCourse.dates && firstCourse.dates.length > 0 ? 
-                                         {date: firstCourse.dates[0], index: 0} : null;
-                        addTableRow(firstCourse, firstDate, boxState);
+                        if (coursesData && coursesData.length > 0) {
+                            const firstCourse = coursesData[0];
+                            const firstDate = firstCourse.dates && firstCourse.dates.length > 0 ? 
+                                             {date: firstCourse.dates[0], index: 0} : null;
+                            addTableRow(firstCourse, firstDate, boxState);
+                        } else {
+                            // Show message if no courses
+                            const tableBody = document.getElementById('table-body');
+                            if (tableBody) {
+                                tableBody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">No courses in this group. Please add courses first.</td></tr>';
+                            }
+                        }
                     }
                 }
                 
                 // Function to add a table row
                 function addTableRow(course, dateInfo, boxState) {
+                    // Don't add rows if there are no courses in the group
+                    if (!course || !course.id || course.id === 0) {
+                        console.warn('[CBM] Cannot add row - no valid course ID');
+                        alert('Please add courses to this group first before configuring settings.');
+                        return;
+                    }
+                    
                     const tableBody = document.getElementById('table-body');
                     const row = document.createElement('tr');
                     row.className = 'course-row editable-row';
