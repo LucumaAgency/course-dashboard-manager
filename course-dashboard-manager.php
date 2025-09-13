@@ -3583,8 +3583,34 @@ function save_group_settings() {
     }
     
     if (empty($courses_to_update)) {
-        wp_send_json_error('No courses found in this group. Please add courses to the group before saving settings.');
-        return;
+        // Auto-create a default selling page for this group
+        $group = get_term($group_id, 'course_group');
+        $course_title = $group ? $group->name . ' - Selling Page' : 'Group ' . $group_id . ' - Selling Page';
+        
+        $new_course_id = wp_insert_post([
+            'post_title' => $course_title,
+            'post_type' => 'course',
+            'post_status' => 'publish'
+        ]);
+        
+        if (!is_wp_error($new_course_id)) {
+            // Assign to group
+            wp_set_object_terms($new_course_id, $group_id, 'course_group');
+            
+            // Mark as selling page
+            update_post_meta($new_course_id, 'is_selling_page', '1');
+            
+            $courses_to_update = [$new_course_id];
+            
+            // Log for debugging
+            error_log('[CBM] Auto-created selling page ' . $new_course_id . ' for group ' . $group_id);
+            
+            // Flag to reload page after save
+            $auto_created_page = true;
+        } else {
+            wp_send_json_error('Failed to create selling page for group.');
+            return;
+        }
     }
     
     // Update all courses in the group
@@ -3680,7 +3706,15 @@ function save_group_settings() {
         }
     }
     
-    wp_send_json_success(['message' => 'Settings saved successfully']);
+    $response = ['message' => 'Settings saved successfully'];
+    
+    // If we auto-created a selling page, tell the frontend to reload
+    if (!empty($auto_created_page)) {
+        $response['reload'] = true;
+        $response['message'] = 'Selling page created and settings saved. Reloading...';
+    }
+    
+    wp_send_json_success($response);
 }
 
 add_action('wp_ajax_save_course_settings', 'save_course_settings');
@@ -3942,7 +3976,14 @@ function save_table_row_data() {
     
     if (!$course_id || $course_id == 0) {
         error_log('[CBM Debug] Error: Invalid course ID - ID was: ' . $course_id);
-        wp_send_json_error('No course selected. Please add courses to this group first.');
+        
+        // More helpful error message
+        $error_msg = 'No selling page found. ';
+        $error_msg .= 'This group needs at least one selling page (course) to save configurations. ';
+        $error_msg .= 'Either: 1) Create a selling page using the "Create Quick Course" button, ';
+        $error_msg .= 'or 2) Go to Courses and create/assign a selling page to this group.';
+        
+        wp_send_json_error($error_msg);
     }
     
     // Date is required for states that use dates (enroll-course, soldout, countdown)
