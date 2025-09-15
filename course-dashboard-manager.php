@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.8.4
+ * Version: 1.8.5
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.8.4');
+define('CBM_VERSION', '1.8.5');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -590,6 +590,11 @@ function course_box_tables_page() {
                             // Use safe field retrieval
                             $dates = function_exists('get_field') ? get_field('course_dates', $course_id) : get_post_meta($course_id, 'course_dates', true);
                             $stock = function_exists('get_field') ? get_field('course_stock', $course_id) : get_post_meta($course_id, 'course_stock', true);
+
+                            // Debug log to see what data we're loading
+                            if (!empty($dates)) {
+                                error_log('[CBM Debug] Loading dates for course ' . $course_id . ': ' . json_encode($dates));
+                            }
                             
                             $courses_json[] = [
                                 'id' => $course_id,
@@ -837,11 +842,15 @@ function course_box_tables_page() {
                     if (boxState === 'enroll-course') {
                         // Multiple rows allowed for enroll-course
                         coursesData.forEach(course => {
+                            console.log('[CBM Debug] Loading course data:', course);
                             if (course.dates && course.dates.length > 0) {
+                                console.log('[CBM Debug] Course has dates:', course.dates);
                                 course.dates.forEach((dateInfo, index) => {
+                                    console.log('[CBM Debug] Processing date:', dateInfo, 'at index:', index);
                                     addTableRow(course, {date: dateInfo, index: index}, boxState);
                                 });
                             } else {
+                                console.log('[CBM Debug] Course has no dates, adding empty row');
                                 addTableRow(course, null, boxState);
                             }
                         });
@@ -3918,9 +3927,15 @@ function save_table_row_data() {
     }
     
     // Update product association and prices
+    // Only update linked_product_id if we're in a state that doesn't use per-date products
+    // or if this is a new course without dates
     if ($product_id) {
-        update_post_meta($course_id, 'linked_product_id', $product_id);
-        
+        // Don't update linked_product_id for individual date rows in states that support multiple dates
+        // This preserves the main product association
+        if (!in_array($box_state, ['enroll-course', 'soldout', 'countdown', 'enroll-buy']) || $date_index === 'new_course') {
+            update_post_meta($course_id, 'linked_product_id', $product_id);
+        }
+
         // Update product prices in WooCommerce if provided
         if (function_exists('wc_get_product')) {
             $product = wc_get_product($product_id);
@@ -4037,10 +4052,15 @@ function save_table_row_data() {
         }
         
         // Save the updated dates
+        error_log('[CBM Debug] Saving dates for course ' . $course_id . ': ' . json_encode($existing_dates));
         update_post_meta($course_id, 'course_dates', $existing_dates);
         if (function_exists('update_field')) {
             update_field('course_dates', $existing_dates, $course_id);
         }
+
+        // Verify the save
+        $saved_dates = get_post_meta($course_id, 'course_dates', true);
+        error_log('[CBM Debug] Dates after save: ' . json_encode($saved_dates));
     }
     
     wp_send_json_success(['message' => 'Data saved successfully']);
