@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.8.5
+ * Version: 1.8.6
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.8.5');
+define('CBM_VERSION', '1.8.6');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -1325,22 +1325,42 @@ function course_box_tables_page() {
                         body: Object.keys(data).map(key => `${key}=${encodeURIComponent(data[key])}`).join('&') + 
                               '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                     })
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('[CBM Debug] Server response status:', response.status);
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.status);
+                        }
+                        return response.json();
+                    })
                     .then(result => {
+                        console.log('[CBM Debug] Server response:', result);
                         if (result.success) {
                             statusSpan.className = 'save-status success';
-                            statusSpan.textContent = '✓';
+                            statusSpan.textContent = '✓ Saved';
                             row.classList.remove('has-changes');
-                            setTimeout(() => { statusSpan.textContent = ''; }, 3000);
-                            
+
+                            // Show success message longer
+                            setTimeout(() => {
+                                statusSpan.textContent = '';
+                                statusSpan.className = 'save-status';
+                            }, 5000);
+
                             if (dateIndex === 'new') {
-                                setTimeout(() => location.reload(), 1000);
+                                statusSpan.textContent = '✓ Saved - Reloading...';
+                                setTimeout(() => location.reload(), 1500);
                             }
                         } else {
                             console.error('[CBM Debug] Save failed:', result);
                             statusSpan.className = 'save-status error';
-                            statusSpan.textContent = '✗ ' + (result.data || 'Error');
+                            statusSpan.textContent = '✗ ' + (result.data || 'Error saving');
+                            alert('Error saving: ' + (result.data || 'Unknown error. Check console for details.'));
                         }
+                    })
+                    .catch(error => {
+                        console.error('[CBM Debug] Fetch error:', error);
+                        statusSpan.className = 'save-status error';
+                        statusSpan.textContent = '✗ Network error';
+                        alert('Network error: ' + error.message);
                     });
                 }
                 
@@ -3914,6 +3934,7 @@ function save_table_row_data() {
     
     // Debug logging
     error_log('[CBM Debug] save_table_row_data - Course ID: ' . $course_id . ', Box State: ' . $box_state . ', Date: ' . $date . ', Date Index: ' . $date_index);
+    error_log('[CBM Debug] Product ID: ' . $product_id . ', Stock: ' . $stock . ', Button Text: ' . $button_text);
     
     if (!$course_id) {
         error_log('[CBM Debug] Error: Invalid course ID');
@@ -4007,13 +4028,20 @@ function save_table_row_data() {
             update_field('course_stock', $stock, $course_id);
         }
     } else {
-        // Get existing dates
+        // Get existing dates - ensure it's always an array
         $existing_dates = [];
         if (function_exists('get_field')) {
-            $existing_dates = get_field('course_dates', $course_id) ?: [];
+            $existing_dates = get_field('course_dates', $course_id);
         } else {
-            $existing_dates = get_post_meta($course_id, 'course_dates', true) ?: [];
+            $existing_dates = get_post_meta($course_id, 'course_dates', true);
         }
+
+        // Ensure we have an array
+        if (!is_array($existing_dates)) {
+            $existing_dates = [];
+        }
+
+        error_log('[CBM Debug] Existing dates before update: ' . json_encode($existing_dates));
         
         // Update or add the date entry
         if ($date_index === 'new') {
@@ -4063,7 +4091,17 @@ function save_table_row_data() {
         error_log('[CBM Debug] Dates after save: ' . json_encode($saved_dates));
     }
     
-    wp_send_json_success(['message' => 'Data saved successfully']);
+    // Return detailed success response
+    wp_send_json_success([
+        'message' => 'Data saved successfully',
+        'saved_data' => [
+            'course_id' => $course_id,
+            'date_index' => $date_index,
+            'dates_count' => count($existing_dates),
+            'product_id' => $product_id,
+            'stock' => $stock
+        ]
+    ]);
 }
 
 // AJAX Handler for deleting table row
