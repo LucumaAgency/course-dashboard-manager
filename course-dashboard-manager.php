@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.8.6
+ * Version: 1.8.7
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.8.6');
+define('CBM_VERSION', '1.8.7');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -1119,10 +1119,15 @@ function course_box_tables_page() {
                 // Build product select dropdown
                 function buildProductSelect(selectedId, className = '') {
                     const selectClass = className || 'inline-edit-product';
+                    // Convert selectedId to string for comparison
+                    const selectedIdStr = selectedId ? String(selectedId) : '';
+                    console.log('[CBM Debug] Building product select with selectedId:', selectedIdStr);
+
                     let html = `<select class="${selectClass}" style="width: 100%; padding: 3px;" onchange="updateProductPrice(this)"><option value="">None</option>`;
                     for (let id in allProducts) {
                         const productName = allProducts[id].name || allProducts[id]; // Support both old and new format
-                        html += `<option value="${id}" ${selectedId == id ? 'selected' : ''}>${productName}</option>`;
+                        const isSelected = selectedIdStr === String(id);
+                        html += `<option value="${id}" ${isSelected ? 'selected' : ''}>${productName}</option>`;
                     }
                     html += '</select>';
                     return html;
@@ -1169,6 +1174,10 @@ function course_box_tables_page() {
                 
                 // Build STM Course select dropdown
                 function buildSTMCourseSelect(selectedId, courseId) {
+                    // Convert selectedId to string for comparison
+                    const selectedIdStr = selectedId ? String(selectedId) : '';
+                    console.log('[CBM Debug] Building STM course select with selectedId:', selectedIdStr);
+
                     let html = `<select class="inline-edit-stm-course" data-course-id="${courseId}" style="width: 100%; padding: 3px;">`;
                     html += '<option value="">None</option>';
                     
@@ -1194,8 +1203,8 @@ function course_box_tables_page() {
                     const stmCourses = <?php echo json_encode($stm_courses_js); ?>;
                     
                     stmCourses.forEach(course => {
-                        const selected = selectedId == course.id ? 'selected' : '';
-                        html += `<option value="${course.id}" ${selected}>${course.title} (#${course.id})</option>`;
+                        const isSelected = selectedIdStr === String(course.id);
+                        html += `<option value="${course.id}" ${isSelected ? 'selected' : ''}>${course.title} (#${course.id})</option>`;
                     });
                     
                     html += '</select>';
