@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.8.3
+ * Version: 1.8.4
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.8.3');
+define('CBM_VERSION', '1.8.4');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -900,12 +900,14 @@ function course_box_tables_page() {
                     if (boxState === 'enroll-course') {
                         // Get STM Course ID for this specific date
                         const stmCourseId = dateInfo && dateInfo.date && dateInfo.date.stm_course_id ? dateInfo.date.stm_course_id : course.related_stm_course_id || '';
+                        // Get Product ID for this specific date, fallback to course product
+                        const productId = dateInfo && dateInfo.date && dateInfo.date.product_id ? dateInfo.date.product_id : course.product_id;
 
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo && dateInfo.date ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
+                        rowHTML += `<td>${buildProductSelect(productId)}</td>`;
                         rowHTML += `<td>${buildSTMCourseSelect(stmCourseId, course.id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(productId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(productId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
@@ -916,10 +918,11 @@ function course_box_tables_page() {
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
                     } else if (boxState === 'soldout') {
+                        const productId = dateInfo && dateInfo.date && dateInfo.date.product_id ? dateInfo.date.product_id : course.product_id;
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo && dateInfo.date ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>${buildProductSelect(productId)}</td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(productId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(productId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="0" min="0" readonly style="width: 100%; padding: 3px; background: #f0f0f0;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: #d54e21; font-weight: bold;">0</span></td>`;
@@ -943,10 +946,11 @@ function course_box_tables_page() {
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
                     } else if (boxState === 'countdown') {
+                        const productId = dateInfo && dateInfo.date && dateInfo.date.product_id ? dateInfo.date.product_id : course.product_id;
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo && dateInfo.date ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>${buildProductSelect(productId)}</td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(productId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(productId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="datetime-local" class="inline-edit-launch-date" value="${course.launch_date || ''}" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
@@ -972,8 +976,8 @@ function course_box_tables_page() {
                         // Similar to enroll-course but for the enroll table
                         const dateValue = dateInfo && dateInfo.date ? (typeof dateInfo.date === 'object' ? dateInfo.date.date : dateInfo.date) : '';
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateValue}" placeholder="Date/Text" style="width: 100%; padding: 3px;"></td>`;
-                        
-                        const enrollProductId = course.enroll_product_id || course.product_id;
+
+                        const enrollProductId = (dateInfo && dateInfo.date && dateInfo.date.product_id) ? dateInfo.date.product_id : (course.enroll_product_id || course.product_id);
                         console.log('[CBM Debug] Enroll product ID for row:', enrollProductId);
                         rowHTML += `<td>${buildProductSelect(enrollProductId, 'enroll-product-select')}</td>`;
                         
@@ -4002,14 +4006,15 @@ function save_table_row_data() {
             $date_entry = [
                 'date' => $date,
                 'stock' => $stock,
-                'button_text' => $button_text
+                'button_text' => $button_text,
+                'product_id' => $product_id  // Store product ID for each date
             ];
-            
+
             // Add STM Course ID if provided
             if ($stm_course_id && ($box_state === 'enroll-course' || $box_state === 'enroll-buy')) {
                 $date_entry['stm_course_id'] = $stm_course_id;
             }
-            
+
             $existing_dates[] = $date_entry;
         } else {
             // Updating existing date
@@ -4018,14 +4023,15 @@ function save_table_row_data() {
                 $date_entry = [
                     'date' => $date,
                     'stock' => $stock,
-                    'button_text' => $button_text
+                    'button_text' => $button_text,
+                    'product_id' => $product_id  // Store product ID for each date
                 ];
-                
+
                 // Add STM Course ID if provided
                 if ($stm_course_id && ($box_state === 'enroll-course' || $box_state === 'enroll-buy')) {
                     $date_entry['stm_course_id'] = $stm_course_id;
                 }
-                
+
                 $existing_dates[$index] = $date_entry;
             }
         }
