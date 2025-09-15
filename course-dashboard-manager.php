@@ -476,7 +476,8 @@ function course_box_tables_page() {
                             <option value="buy-course" <?php selected($default_box_state, 'buy-course'); ?>>Buy Course</option>
                             <option value="enroll-buy" <?php selected($default_box_state, 'enroll-buy'); ?>>Buy Course + Enroll Course</option>
                             <option value="countdown" <?php selected($default_box_state, 'countdown'); ?>>Countdown Box</option>
-                            <option value="waitlist" <?php selected($default_box_state, 'waitlist'); ?>>Waitlist</option>
+                            <!-- Waitlist option hidden but code preserved -->
+                            <!-- <option value="waitlist" <?php selected($default_box_state, 'waitlist'); ?>>Waitlist</option> -->
                             <option value="soldout" <?php selected($default_box_state, 'soldout'); ?>>Sold Out</option>
                         </select>
                     </div>
@@ -2056,7 +2057,8 @@ function course_box_manager_page() {
                                 <option value="enroll-course" <?php echo $box_state === 'enroll-course' ? 'selected' : ''; ?>>Enroll in the Live Course</option>
                                 <option value="buy-course" <?php echo $box_state === 'buy-course' ? 'selected' : ''; ?>>Buy This Course</option>
                                 <option value="enroll-buy" <?php echo $box_state === 'enroll-buy' ? 'selected' : ''; ?>>Buy Course + Enroll Course</option>
-                                <option value="waitlist" <?php echo $box_state === 'waitlist' ? 'selected' : ''; ?>>Waitlist</option>
+                                <!-- Waitlist option hidden but code preserved -->
+                                <!-- <option value="waitlist" <?php echo $box_state === 'waitlist' ? 'selected' : ''; ?>>Waitlist</option> -->
                                 <option value="soldout" <?php echo $box_state === 'soldout' ? 'selected' : ''; ?>>Sold Out</option>
                             </select>
                         </td>
@@ -3709,12 +3711,12 @@ function save_course_settings() {
             }
         }
     }
-    
-    // Auto-change to waitlist if enroll-course has no dates
-    if ($box_state === 'enroll-course' && empty($formatted_dates)) {
-        $box_state = 'waitlist';
-    }
-    
+
+    // Removed auto-change to waitlist - keep the selected state
+    // if ($box_state === 'enroll-course' && empty($formatted_dates)) {
+    //     $box_state = 'waitlist';
+    // }
+
     update_post_meta($course_id, 'box_state', $box_state);
     update_post_meta($course_id, 'course_instructors', $instructors);
     
@@ -3778,7 +3780,7 @@ function save_course_settings() {
         cbm_update_field('course_dates', $formatted_dates, $course_id);
     } else {
         // Delete dates field when empty array or no dates
-        delete_field('course_dates', $course_id);
+        delete_post_meta($course_id, 'course_dates');
     }
 
     // Update instructor meta
@@ -3847,7 +3849,7 @@ function save_inline_dates() {
     if (!empty($formatted_dates)) {
         cbm_update_field('course_dates', $formatted_dates, $course_id);
     } else {
-        delete_field('course_dates', $course_id);
+        delete_post_meta($course_id, 'course_dates');
     }
     
     // Calculate new summary
@@ -3973,19 +3975,13 @@ function save_table_row_data() {
         }
     } else {
         delete_post_meta($course_id, 'course_instructors');
-        if (function_exists('delete_field')) {
-            delete_field('course_instructors', $course_id);
-        }
+        delete_post_meta($course_id, 'course_instructors');
     }
     
     // Handle dates based on box state
     if ($box_state === 'buy-course' || $box_state === 'waitlist') {
         // These states don't use dates
-        if (function_exists('delete_field')) {
-            delete_field('course_dates', $course_id);
-        } else {
-            delete_post_meta($course_id, 'course_dates');
-        }
+        delete_post_meta($course_id, 'course_dates');
         // Store stock directly on course
         update_post_meta($course_id, 'course_stock', $stock);
         if (function_exists('update_field')) {
@@ -4067,7 +4063,7 @@ function delete_table_row() {
         if (!empty($existing_dates)) {
             cbm_update_field('course_dates', $existing_dates, $course_id);
         } else {
-            delete_field('course_dates', $course_id);
+            delete_post_meta($course_id, 'course_dates');
         }
         
         wp_send_json_success(['message' => 'Row deleted successfully']);
@@ -4121,7 +4117,7 @@ function apply_group_settings() {
             cbm_update_field('course_instructors', $instructors, $course_id);
         } else {
             delete_post_meta($course_id, 'course_instructors');
-            delete_field('course_instructors', $course_id);
+            delete_post_meta($course_id, 'course_instructors');
         }
         
         // Set selling page flag
