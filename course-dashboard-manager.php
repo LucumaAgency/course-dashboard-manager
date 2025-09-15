@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.8.7
+ * Version: 1.8.8
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.8.7');
+define('CBM_VERSION', '1.8.8');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -900,7 +900,8 @@ function course_box_tables_page() {
                     }
                     
                     let rowHTML = '';
-                    const stock = boxState === 'soldout' ? 0 : (dateInfo && dateInfo.date && dateInfo.date.stock ? dateInfo.date.stock : course.stock || 20);
+                    const stock = boxState === 'soldout' ? 0 : (dateInfo && dateInfo.date && dateInfo.date.stock !== undefined ? dateInfo.date.stock : course.stock || 20);
+                    console.log('[CBM Debug] Stock for row:', stock, 'DateInfo:', dateInfo, 'Course stock:', course.stock);
                     const sold = 0; // Will be calculated server-side
                     const available = Math.max(0, stock - sold);
                     const buttonText = dateInfo && dateInfo.date && dateInfo.date.button_text ? dateInfo.date.button_text :
@@ -911,6 +912,7 @@ function course_box_tables_page() {
                         const stmCourseId = dateInfo && dateInfo.date && dateInfo.date.stm_course_id ? dateInfo.date.stm_course_id : course.related_stm_course_id || '';
                         // Get Product ID for this specific date, fallback to course product
                         const productId = dateInfo && dateInfo.date && dateInfo.date.product_id ? dateInfo.date.product_id : course.product_id;
+                        console.log('[CBM Debug] Product ID for row:', productId, 'from dateInfo:', dateInfo?.date?.product_id, 'fallback:', course.product_id);
 
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo && dateInfo.date ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(productId)}</td>`;
@@ -1122,11 +1124,15 @@ function course_box_tables_page() {
                     // Convert selectedId to string for comparison
                     const selectedIdStr = selectedId ? String(selectedId) : '';
                     console.log('[CBM Debug] Building product select with selectedId:', selectedIdStr);
+                    console.log('[CBM Debug] Available products:', Object.keys(allProducts));
 
                     let html = `<select class="${selectClass}" style="width: 100%; padding: 3px;" onchange="updateProductPrice(this)"><option value="">None</option>`;
                     for (let id in allProducts) {
                         const productName = allProducts[id].name || allProducts[id]; // Support both old and new format
                         const isSelected = selectedIdStr === String(id);
+                        if (isSelected) {
+                            console.log('[CBM Debug] Found match! Product', id, 'is selected');
+                        }
                         html += `<option value="${id}" ${isSelected ? 'selected' : ''}>${productName}</option>`;
                     }
                     html += '</select>';
