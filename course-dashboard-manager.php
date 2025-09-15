@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.8.2
+ * Version: 1.8.3
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.8.2');
+define('CBM_VERSION', '1.8.3');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -891,17 +891,17 @@ function course_box_tables_page() {
                     }
                     
                     let rowHTML = '';
-                    const stock = boxState === 'soldout' ? 0 : (dateInfo && dateInfo.date.stock ? dateInfo.date.stock : course.stock || 20);
+                    const stock = boxState === 'soldout' ? 0 : (dateInfo && dateInfo.date && dateInfo.date.stock ? dateInfo.date.stock : course.stock || 20);
                     const sold = 0; // Will be calculated server-side
                     const available = Math.max(0, stock - sold);
-                    const buttonText = dateInfo && dateInfo.date.button_text ? dateInfo.date.button_text : 
+                    const buttonText = dateInfo && dateInfo.date && dateInfo.date.button_text ? dateInfo.date.button_text :
                                       (boxState === 'waitlist' ? 'Join Waitlist' : 'Enroll Now');
-                    
+
                     if (boxState === 'enroll-course') {
                         // Get STM Course ID for this specific date
-                        const stmCourseId = dateInfo && dateInfo.date.stm_course_id ? dateInfo.date.stm_course_id : course.related_stm_course_id || '';
-                        
-                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
+                        const stmCourseId = dateInfo && dateInfo.date && dateInfo.date.stm_course_id ? dateInfo.date.stm_course_id : course.related_stm_course_id || '';
+
+                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo && dateInfo.date ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
                         rowHTML += `<td>${buildSTMCourseSelect(stmCourseId, course.id)}</td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
@@ -916,7 +916,7 @@ function course_box_tables_page() {
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
                     } else if (boxState === 'soldout') {
-                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo && dateInfo.date ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
@@ -943,7 +943,7 @@ function course_box_tables_page() {
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
                     } else if (boxState === 'countdown') {
-                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo && dateInfo.date ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
