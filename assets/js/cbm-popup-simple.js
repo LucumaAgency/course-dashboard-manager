@@ -37,6 +37,14 @@
         // IMMEDIATELY clean any pre-selected sold-out dates
         $('.date-btn.selected.sold-out').removeClass('selected');
 
+        // Override any global functions that might select dates
+        if (typeof window.initializeEnrollCourseSelection !== 'undefined') {
+            console.warn('[CBM Popup] Overriding initializeEnrollCourseSelection');
+            window.initializeEnrollCourseSelection = function() {
+                console.log('[CBM Popup] Blocked initializeEnrollCourseSelection');
+            };
+        }
+
         // Debug: Check if pre-rendered popup exists
         const prerenderedPopup = $('#cbm-popup-overlay[data-prerendered="true"]');
         if (prerenderedPopup.length > 0) {
@@ -134,22 +142,39 @@
         });
 
         // Tab switching (if tabs exist)
-        $('.cbm-tab-btn').off('click').on('click', function(e) {
+        $(document).off('click', '.cbm-tab-btn').on('click', '.cbm-tab-btn', function(e) {
             e.preventDefault();
             e.stopPropagation();
 
-            const tabIndex = $(this).data('tab');
+            const $btn = $(this);
+            const tabIndex = $btn.data('tab');
             console.log('[CBM Popup] Tab button clicked, tab index:', tabIndex);
 
             // Update active states
             $('.cbm-tab-btn').removeClass('active');
-            $(this).addClass('active');
+            $btn.addClass('active');
 
             // Switch panes - handle both numeric and string tab indices
             $('.cbm-tab-pane').removeClass('active').hide();
-            $(`.cbm-tab-pane[data-tab="${tabIndex}"]`).addClass('active').show();
+            const $targetPane = $(`.cbm-tab-pane[data-tab="${tabIndex}"]`);
+            $targetPane.addClass('active').show();
+
+            // Clean up any sold-out selections in the newly visible pane
+            const $soldOutSelected = $targetPane.find('.date-btn.selected.sold-out');
+            if ($soldOutSelected.length > 0) {
+                console.warn('[CBM Popup] Removing sold-out selection in tab:', tabIndex);
+                $soldOutSelected.removeClass('selected');
+
+                // Auto-select first available date in this tab
+                const $availableDate = $targetPane.find('.date-btn:not(.sold-out)').first();
+                if ($availableDate.length > 0) {
+                    $availableDate.addClass('selected');
+                    console.log('[CBM Popup] Auto-selected available date in tab:', $availableDate.text());
+                }
+            }
 
             console.log('[CBM Popup] Tab switched to:', tabIndex);
+            return false;
         });
         
         // Date selection
