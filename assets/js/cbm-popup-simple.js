@@ -8,20 +8,7 @@
 
     // Removed: protectSelectedState - no longer needed since only selected state exists
 
-    // Simple button visibility check - only runs once on popup open
-    function ensureButtonsVisible() {
-        const buttons = document.querySelectorAll('#cbm-popup-content .add-to-cart-button, #cbm-popup-overlay .add-to-cart-button');
-        buttons.forEach(function(btn) {
-            // Remove no-button class from parent if exists
-            const box = btn.closest('.box');
-            if (box && box.classList.contains('no-button')) {
-                box.classList.remove('no-button');
-            }
-            // Ensure button is visible
-            btn.style.display = 'flex';
-            btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
-        });
-    }
+    // Removed ensureButtonsVisible - functionality moved inline to showPopup
 
     // IMMEDIATE: Run cleanup as soon as script loads, not waiting for DOM ready
     (function immediateCleanup() {
@@ -231,12 +218,18 @@
             $('#cbm-popup-content .cbm-tab-pane[data-tab="' + tabName + '"]').show().addClass('active');
         });
 
-        // Ensure buttons remain visible (one-time check)
+        // Ensure buttons remain visible
         $('#cbm-popup-content .box, #cbm-popup-overlay .box').each(function() {
             const $box = $(this);
             $box.removeClass('no-button');
             $box.off('click');
             $box.css('cursor', 'default');
+
+            // Force button visible with jQuery
+            const $button = $box.find('.add-to-cart-button');
+            if ($button.length > 0) {
+                $button.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
+            }
         });
 
         // Date selection (keep this simple too)
@@ -299,10 +292,16 @@
 
                 // Remove no-button class if present
                 box.classList.remove('no-button');
-            });
 
-            // Ensure all buttons are visible
-            ensureButtonsVisible();
+                // Force button visible immediately
+                const btn = box.querySelector('.add-to-cart-button');
+                if (btn) {
+                    btn.style.display = 'flex';
+                    btn.style.visibility = 'visible';
+                    btn.style.opacity = '1';
+                    btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
+                }
+            });
 
             // Bind events
             bindMinimalEvents();
@@ -325,13 +324,12 @@
                     $box.find('.circlecontainer').show();
                     $box.find('.circle-container').hide();
 
-                    // ULTRA FORCE button to be visible with inline styles
+                    // Force button to be visible
                     const $button = $box.find('.add-to-cart-button');
-                    $button.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
-                    console.log('[CBM Popup] Forced button visible with inline styles');
+                    if ($button.length > 0) {
+                        $button.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
+                    }
                 });
-
-                console.log('[CBM Popup] Initialized with Buy tab active and buttons visible');
             }, 100);
 
             // Mark as bound but allow re-binding on next open
