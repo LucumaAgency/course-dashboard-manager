@@ -194,40 +194,102 @@
             console.log(`  Date ${index + 1}: "${$btn.text()}" - selected: ${$btn.hasClass('selected')}, sold-out: ${$btn.hasClass('sold-out')}`);
         });
 
-        // Tab switching - ensure it works properly
-        $(document).off('click.cbmtab').on('click.cbmtab', '.cbm-tab-btn', function(e) {
+        // DEBUG: Check what tab buttons exist
+        console.log('[CBM Popup DEBUG] Tab buttons found:', $('.cbm-tab-btn').length);
+        $('.cbm-tab-btn').each(function(index) {
+            console.log(`  Tab ${index}: data-tab="${$(this).data('tab')}" text="${$(this).text()}" classes="${$(this).attr('class')}"`);
+        });
+
+        // Clear ALL previous handlers first
+        $(document).off('click.cbmtab');
+        $(document).off('click', '.cbm-tab-btn');
+        $('#cbm-popup-content').off('click', '.cbm-tab-btn');
+        $('.cbm-tab-btn').off('click');
+
+        // Tab switching - use multiple binding methods to ensure it works
+        console.log('[CBM Popup DEBUG] Setting up tab click handlers');
+
+        // Method 1: Direct binding
+        $('.cbm-tab-btn').on('click', function(e) {
+            console.log('[CBM Popup DEBUG] Direct tab click detected!');
+            e.preventDefault();
+            e.stopPropagation();
+            handleTabClick($(this));
+        });
+
+        // Method 2: Document delegation
+        $(document).on('click.cbmtab', '.cbm-tab-btn', function(e) {
+            console.log('[CBM Popup DEBUG] Delegated tab click detected!');
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
+            handleTabClick($(this));
+            return false;
+        });
 
-            const $btn = $(this);
+        // Method 3: Specific to popup content
+        $('#cbm-popup-content').on('click', '.cbm-tab-btn', function(e) {
+            console.log('[CBM Popup DEBUG] Popup-specific tab click detected!');
+            e.preventDefault();
+            e.stopPropagation();
+            handleTabClick($(this));
+        });
+
+        function handleTabClick($btn) {
             const tabIndex = $btn.data('tab') || $btn.attr('data-tab');
 
-            console.log('[CBM Popup] Tab button clicked, index:', tabIndex);
+            console.log('[CBM Popup TAB CLICK] Button clicked:', $btn[0]);
+            console.log('[CBM Popup TAB CLICK] Tab index:', tabIndex);
+            console.log('[CBM Popup TAB CLICK] Button text:', $btn.text());
+            console.log('[CBM Popup TAB CLICK] Button classes:', $btn.attr('class'));
 
             if (!tabIndex) {
-                console.error('[CBM Popup] No tab index found on button');
-                return false;
+                console.error('[CBM Popup TAB CLICK] ERROR: No tab index found!');
+                return;
             }
 
             // Find popup content container
             const $popupContent = $('#cbm-popup-content');
+            console.log('[CBM Popup TAB CLICK] Popup content found:', $popupContent.length > 0);
 
-            // Update active states for ALL tab buttons in popup
-            $popupContent.find('.cbm-tab-btn').removeClass('active');
+            // Find all tab buttons and panes
+            const $allButtons = $popupContent.find('.cbm-tab-btn');
+            const $allPanes = $popupContent.find('.cbm-tab-pane');
+            console.log('[CBM Popup TAB CLICK] Found', $allButtons.length, 'buttons and', $allPanes.length, 'panes');
+
+            // Update button states
+            $allButtons.removeClass('active');
             $btn.addClass('active');
+            console.log('[CBM Popup TAB CLICK] Updated button active states');
 
-            // Hide all panes first
-            $popupContent.find('.cbm-tab-pane').removeClass('active').hide();
+            // Update pane visibility
+            $allPanes.each(function() {
+                const $pane = $(this);
+                const paneTab = $pane.data('tab') || $pane.attr('data-tab');
+                console.log(`[CBM Popup TAB CLICK] Checking pane with tab="${paneTab}"`);
 
-            // Show the selected pane
-            const $targetPane = $popupContent.find(`.cbm-tab-pane[data-tab="${tabIndex}"]`);
-            if ($targetPane.length > 0) {
-                $targetPane.addClass('active').show();
-                console.log('[CBM Popup] Showed pane for tab:', tabIndex);
-            } else {
-                console.error('[CBM Popup] Target pane not found for tab:', tabIndex);
+                if (paneTab == tabIndex) {
+                    $pane.addClass('active').show();
+                    console.log(`[CBM Popup TAB CLICK] SHOWING pane for tab: ${paneTab}`);
+                } else {
+                    $pane.removeClass('active').hide();
+                    console.log(`[CBM Popup TAB CLICK] Hiding pane for tab: ${paneTab}`);
+                }
+            });
+
+            // Clean up sold-out selections in the active pane
+            const $activePane = $popupContent.find(`.cbm-tab-pane[data-tab="${tabIndex}"]`);
+            if ($activePane.length > 0) {
+                console.log('[CBM Popup TAB CLICK] Active pane found, checking for sold-out dates');
+                const $soldOutSelected = $activePane.find('.date-btn.selected.sold-out');
+                if ($soldOutSelected.length > 0) {
+                    console.warn('[CBM Popup TAB CLICK] Removing sold-out selections');
+                    $soldOutSelected.removeClass('selected');
+                }
             }
+
+            console.log('[CBM Popup TAB CLICK] Tab switch complete!');
+        }
 
             // Clean up any sold-out selections in the newly visible pane
             const $soldOutSelected = $targetPane.find('.date-btn.selected.sold-out');
@@ -247,6 +309,14 @@
             return false;
         });
         
+        // DEBUG: Monitor ALL clicks in popup
+        $('#cbm-popup-overlay').on('click', function(e) {
+            console.log('[CBM Popup CLICK DEBUG] Click detected on:', e.target);
+            console.log('[CBM Popup CLICK DEBUG] Target classes:', e.target.className);
+            console.log('[CBM Popup CLICK DEBUG] Is tab button:', $(e.target).hasClass('cbm-tab-btn'));
+            console.log('[CBM Popup CLICK DEBUG] Parent is tab button:', $(e.target).closest('.cbm-tab-btn').length > 0);
+        });
+
         // Date selection
         $('.date-btn:not(.sold-out)').off('click').on('click', function() {
             $(this).siblings().removeClass('selected');
@@ -296,21 +366,33 @@
             cleanupSoldOutSelections();
 
             // Always re-bind events to ensure tabs work
+            console.log('[CBM Popup OPEN] About to bind minimal events');
             bindMinimalEvents();
 
             // Force tab initialization after a small delay
             setTimeout(function() {
+                console.log('[CBM Popup DELAYED INIT] Checking tabs after delay...');
                 const $tabs = $('#cbm-popup-content .cbm-tab-btn');
-                console.log('[CBM Popup] Found', $tabs.length, 'tab buttons after popup open');
+                console.log('[CBM Popup DELAYED INIT] Found', $tabs.length, 'tab buttons');
+
+                $tabs.each(function(index) {
+                    const $tab = $(this);
+                    console.log(`[CBM Popup DELAYED INIT] Tab ${index}: data-tab="${$tab.data('tab')}" text="${$tab.text()}" active="${$tab.hasClass('active')}"`);
+                });
+
+                // Test if clicking works programmatically
                 if ($tabs.length > 0) {
-                    // Make sure Buy tab is active by default
-                    const $buyTab = $tabs.filter('[data-tab="buy"]');
-                    if ($buyTab.length > 0 && !$buyTab.hasClass('active')) {
-                        console.log('[CBM Popup] Activating Buy tab by default');
-                        $buyTab.trigger('click');
+                    console.log('[CBM Popup DELAYED INIT] Testing programmatic click...');
+                    const $enrollTab = $tabs.filter('[data-tab="enroll"]');
+                    if ($enrollTab.length > 0) {
+                        console.log('[CBM Popup DELAYED INIT] Found enroll tab, attempting programmatic click');
+                        // Try multiple click methods
+                        $enrollTab[0].click(); // Native click
+                        $enrollTab.trigger('click'); // jQuery trigger
+                        $enrollTab.click(); // jQuery click
                     }
                 }
-            }, 100);
+            }, 500);
 
             // Mark as bound but allow re-binding on next open
             overlay.setAttribute('data-events-bound', 'true');
