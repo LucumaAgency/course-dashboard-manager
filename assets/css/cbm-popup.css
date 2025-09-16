@@ -43,39 +43,29 @@
     background: #0e0d0f !important;
 }
 
-/* Close button - positioned just above the black box */
+/* Close button - simple X without circle */
 .cbm-popup-close {
-    position: fixed !important;
-    top: calc(50% - 45vh - 30px) !important; /* Just above the container (45vh is half of max-height 90vh) */
-    right: calc(50% - 600px + 10px) !important; /* Aligned with right edge of container (600px is half of 1200px max-width) */
-    width: 40px !important;
-    height: 40px !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 2px solid rgba(255, 255, 255, 0.3) !important;
-    border-radius: 50% !important;
-    font-size: 24px !important;
+    position: absolute !important;
+    top: 15px !important;
+    right: 15px !important;
+    width: 30px !important;
+    height: 30px !important;
+    background: transparent !important;
+    border: none !important;
+    font-size: 28px !important;
     line-height: 1 !important;
     cursor: pointer !important;
-    color: #fff !important;
+    color: #999 !important;
     z-index: 100001 !important;
-    transition: all 0.3s ease !important;
+    transition: color 0.3s ease !important;
+    padding: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
 }
 
 .cbm-popup-close:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
-    border-color: #fff !important;
-    transform: scale(1.1) !important;
-}
-
-/* For medium screens */
-@media (max-width: 1200px) {
-    .cbm-popup-close {
-        right: 5% !important;
-        top: 5% !important;
-    }
+    color: #fff !important;
 }
 
 /* Content wrapper */
@@ -246,13 +236,13 @@
         padding: 20px 15px;
     }
     
-    /* Close button positioned above box on mobile */
+    /* Simple X button on mobile */
     .cbm-popup-close {
-        top: calc(2.5% - 10px) !important; /* Just above the container on mobile */
-        right: 2.5% !important;
-        width: 35px !important;
-        height: 35px !important;
-        font-size: 20px !important;
+        top: 10px !important;
+        right: 10px !important;
+        width: 25px !important;
+        height: 25px !important;
+        font-size: 24px !important;
     }
     
     /* Tab buttons on mobile */
