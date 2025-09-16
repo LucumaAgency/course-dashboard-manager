@@ -21,11 +21,17 @@ function mobile_price_shortcode($atts) {
 
     $course_id = intval($atts['course_id']);
 
-    // Get course price (buy price)
-    $course_price = cbm_get_field('course_price', $course_id, 0);
+    // Get course price (buy price) - try multiple fields
+    $course_price = cbm_get_field('course_price', $course_id, null);
+    if ($course_price === null) {
+        $course_price = get_post_meta($course_id, 'course_price', true);
+    }
 
-    // Get webinar/enroll price
-    $webinar_price = cbm_get_field('enroll_price', $course_id, 0);
+    // Get webinar/enroll price - try multiple fields
+    $webinar_price = cbm_get_field('enroll_price', $course_id, null);
+    if ($webinar_price === null) {
+        $webinar_price = get_post_meta($course_id, 'enroll_price', true);
+    }
 
     // Also check WooCommerce products if linked
     $prices_to_compare = [];
@@ -66,6 +72,15 @@ function mobile_price_shortcode($atts) {
 
     // Get the minimum price
     $price = !empty($prices_to_compare) ? min($prices_to_compare) : 0;
+
+    // If still no price, try to get from webinar_price shortcode as fallback
+    if ($price == 0 && shortcode_exists('webinar_price')) {
+        $webinar_price_html = do_shortcode('[webinar_price]');
+        // Extract numeric price from the shortcode output if possible
+        if (preg_match('/[\d,]+\.?\d*/', $webinar_price_html, $matches)) {
+            $price = floatval(str_replace(',', '', $matches[0]));
+        }
+    }
 
     // Format the price
     $formatted_price = number_format($price, 2, '.', ',');
