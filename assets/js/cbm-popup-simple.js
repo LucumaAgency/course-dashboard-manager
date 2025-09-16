@@ -9,16 +9,46 @@
     // Wait for DOM ready
     $(document).ready(function() {
         console.log('[CBM Popup] Initializing simple popup system');
-        
+
         // Debug: Check if pre-rendered popup exists
         const prerenderedPopup = $('#cbm-popup-overlay[data-prerendered="true"]');
         if (prerenderedPopup.length > 0) {
             console.log('[CBM Popup] ✅ Pre-rendered popup found in DOM');
             console.log('[CBM Popup] Has tabs:', prerenderedPopup.attr('data-has-tabs'));
+
+            // DEBUG: Set up MutationObserver to track date selection changes
+            if (window.MutationObserver) {
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                            const target = mutation.target;
+                            if (target.classList.contains('date-btn')) {
+                                const wasSelected = mutation.oldValue && mutation.oldValue.includes('selected');
+                                const isSelected = target.classList.contains('selected');
+                                if (!wasSelected && isSelected) {
+                                    console.warn('[CBM Popup OBSERVER] Date SELECTED:', target.textContent, 'Stack trace:');
+                                    console.trace();
+                                }
+                            }
+                        }
+                    });
+                });
+
+                // Start observing the popup content
+                const popupContent = document.getElementById('cbm-popup-content');
+                if (popupContent) {
+                    observer.observe(popupContent, {
+                        attributes: true,
+                        attributeOldValue: true,
+                        subtree: true
+                    });
+                    console.log('[CBM Popup DEBUG] MutationObserver activated to track date selections');
+                }
+            }
         } else {
             console.log('[CBM Popup] ⚠️ No pre-rendered popup found - will use AJAX fallback');
         }
-        
+
         // Initialize popup triggers
         initializePopupTriggers();
     });
@@ -51,7 +81,14 @@
     // Minimal event binding for pre-rendered content
     function bindMinimalEvents() {
         console.log('[CBM Popup] Binding minimal events for pre-rendered content');
-        
+
+        // DEBUG: Check current state before binding
+        console.log('[CBM Popup DEBUG] Before binding - checking date states:');
+        $('.date-btn').each(function(index) {
+            const $btn = $(this);
+            console.log(`  Date ${index + 1}: "${$btn.text()}" - selected: ${$btn.hasClass('selected')}, sold-out: ${$btn.hasClass('sold-out')}`);
+        });
+
         // Tab switching (if tabs exist)
         $('.cbm-tab-btn').off('click').on('click', function() {
             const tabIndex = $(this).data('tab');
@@ -89,6 +126,15 @@
         const overlay = document.getElementById('cbm-popup-overlay');
 
         if (overlay && overlay.getAttribute('data-prerendered') === 'true') {
+            console.log('[CBM Popup DEBUG] ===== POPUP OPENING =====');
+
+            // DEBUG: Check initial state IMMEDIATELY
+            const allDates = overlay.querySelectorAll('.date-btn');
+            console.log('[CBM Popup DEBUG] Initial state - found', allDates.length, 'dates:');
+            allDates.forEach(function(btn, index) {
+                console.log(`  Initial Date ${index + 1}: "${btn.textContent}" - selected: ${btn.classList.contains('selected')}, sold-out: ${btn.classList.contains('sold-out')}`);
+            });
+
             // Pre-rendered popup - show instantly with no jQuery overhead
             console.time('[CBM Popup] Show time');
             overlay.style.display = 'block';
