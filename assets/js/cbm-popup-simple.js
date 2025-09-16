@@ -262,6 +262,18 @@
 
     // Wait for DOM ready
     $(document).ready(function() {
+        // Override jQuery removeClass for popup boxes
+        const originalRemoveClass = $.fn.removeClass;
+        $.fn.removeClass = function() {
+            // Check if this is a popup box trying to remove 'selected'
+            if (this.closest('#cbm-popup-overlay, #cbm-popup-content').length > 0 &&
+                this.hasClass('box') &&
+                arguments[0] === 'selected') {
+                console.log('[CBM Popup] Blocked jQuery removeClass("selected") on popup box');
+                return this; // Return without removing
+            }
+            return originalRemoveClass.apply(this, arguments);
+        };
         console.log('[CBM Popup] Initializing simple popup system');
 
         // IMMEDIATELY clean any pre-selected sold-out dates
@@ -456,6 +468,13 @@
         if (overlay && overlay.getAttribute('data-prerendered') === 'true') {
             console.log('[CBM Popup DEBUG] ===== POPUP OPENING =====');
 
+            // OVERRIDE selectBox function for popup - make it do NOTHING
+            window.originalSelectBox = window.selectBox;
+            window.selectBox = function(element, boxType, courseId) {
+                console.log('[CBM Popup] SelectBox called but IGNORED - boxes always selected in popup');
+                return false; // Do nothing
+            };
+
             // DEBUG: Check initial state IMMEDIATELY
             const allDates = overlay.querySelectorAll('.date-btn');
             console.log('[CBM Popup DEBUG] Initial state - found', allDates.length, 'dates:');
@@ -478,24 +497,32 @@
             // CRITICAL: Clean up any pre-selected sold-out dates BEFORE binding events
             cleanupSoldOutSelections();
 
-            // IMMEDIATE: Force buttons visible and boxes selected RIGHT when popup opens
-            console.log('[CBM Popup OPEN] Forcing buttons visible and boxes selected immediately!');
+            // IMMEDIATE: Force ALL boxes to selected state and remove click handlers
+            console.log('[CBM Popup OPEN] Setting up popup-only state!');
             const boxes = overlay.querySelectorAll('.box');
             boxes.forEach(function(box) {
+                // Remove ALL click handlers and onclick attributes
+                box.onclick = null;
+                box.removeAttribute('onclick');
+                box.style.cursor = 'default';
+
                 // Remove no-button class
                 box.classList.remove('no-button');
 
                 // FORCE selected state
                 box.classList.add('selected');
+                box.className = box.className.replace(/\bbox\b/g, 'box selected').replace(/selected selected/g, 'selected');
 
                 // Show selected indicator (ringed circle)
                 const circleContainer = box.querySelector('.circlecontainer');
                 const simpleCircle = box.querySelector('.circle-container');
                 if (circleContainer) {
                     circleContainer.style.display = 'flex';
+                    circleContainer.style.cssText = 'display: flex !important;';
                 }
                 if (simpleCircle) {
                     simpleCircle.style.display = 'none';
+                    simpleCircle.style.cssText = 'display: none !important;';
                 }
 
                 // Find and force button visible
@@ -507,7 +534,7 @@
                     btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
                 }
 
-                console.log('[CBM Popup OPEN] Box forced to selected:', box.className);
+                console.log('[CBM Popup OPEN] Box setup complete:', box.className);
             });
 
             // Bind events

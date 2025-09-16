@@ -405,23 +405,50 @@
     display: none;
 }
 
-/* Force boxes to appear selected in popup */
+/* POPUP BOXES ARE ALWAYS SELECTED - NO OTHER STATE EXISTS */
 #cbm-popup-overlay .box,
-#cbm-popup-content .box {
+#cbm-popup-content .box,
+#cbm-popup-overlay .box.selected,
+#cbm-popup-content .box.selected,
+#cbm-popup-overlay .box:not(.selected),
+#cbm-popup-content .box:not(.selected) {
+    /* Always show selected gradient background */
     background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
     border: 2px solid rgba(222, 4, 164, 0.3) !important;
     opacity: 1 !important;
+    cursor: default !important;
+    pointer-events: auto !important;
 }
 
-/* Force selection indicators visible in popup */
+/* Popup boxes can't be clicked to change selection */
+#cbm-popup-overlay .box:hover,
+#cbm-popup-content .box:hover {
+    background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
+    border: 2px solid rgba(222, 4, 164, 0.3) !important;
+}
+
+/* Always show selected indicator in popup */
 #cbm-popup-overlay .box .circlecontainer,
-#cbm-popup-content .box .circlecontainer {
+#cbm-popup-content .box .circlecontainer,
+#cbm-popup-overlay .box.selected .circlecontainer,
+#cbm-popup-content .box.selected .circlecontainer,
+#cbm-popup-overlay .box:not(.selected) .circlecontainer,
+#cbm-popup-content .box:not(.selected) .circlecontainer {
     display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
+/* Never show unselected indicator in popup */
 #cbm-popup-overlay .box .circle-container,
-#cbm-popup-content .box .circle-container {
+#cbm-popup-content .box .circle-container,
+#cbm-popup-overlay .box.selected .circle-container,
+#cbm-popup-content .box.selected .circle-container,
+#cbm-popup-overlay .box:not(.selected) .circle-container,
+#cbm-popup-content .box:not(.selected) .circle-container {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
 }
 
 /* Override: Always show buttons in popup - ULTRA SPECIFIC */
