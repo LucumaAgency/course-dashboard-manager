@@ -161,13 +161,11 @@
                 window.showPopup = function(courseId) {
                     console.log('[CBM] showPopup called with:', courseId);
 
-                    // Check if our CBM popup exists
+                    // ALWAYS use CBM popup if we have cbm-popup-overlay on the page
                     const cbmPopupExists = document.getElementById('cbm-popup-overlay');
-                    const elementorPopupExists = document.getElementById('popup');
 
-                    // If courseId is provided OR we have CBM popup but no Elementor popup, use ours
-                    if (courseId || (cbmPopupExists && !elementorPopupExists)) {
-                        console.log('[CBM] Using CBM popup');
+                    if (cbmPopupExists) {
+                        console.log('[CBM] CBM popup exists - using it!');
                         // If no courseId provided, try to get it from the page
                         if (!courseId) {
                             const bodyClass = document.body.className;
@@ -178,15 +176,18 @@
                             }
                         }
                         return cbmShowPopup(courseId);
-                    } else if (elementorPopupExists && elementorShowPopup) {
-                        // Only use Elementor if their popup exists and we don't have CBM popup
-                        console.log('[CBM] Using Elementor popup');
-                        return elementorShowPopup.call(this);
-                    } else {
-                        // Default to our popup
-                        console.log('[CBM] Defaulting to CBM popup');
-                        return cbmShowPopup(courseId);
                     }
+
+                    // Only use Elementor if CBM popup doesn't exist
+                    const elementorPopupExists = document.getElementById('popup');
+                    if (elementorPopupExists && elementorShowPopup) {
+                        console.log('[CBM] No CBM popup found, using Elementor popup');
+                        return elementorShowPopup.call(this);
+                    }
+
+                    // Default: try to create CBM popup anyway
+                    console.log('[CBM] No popups found, attempting CBM popup');
+                    return cbmShowPopup(courseId);
                 };
 
                 clearInterval(overrideInterval);
