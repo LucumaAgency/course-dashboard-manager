@@ -6,9 +6,67 @@
 (function($) {
     'use strict';
 
-    // Removed: protectSelectedState - no longer needed since only selected state exists
+    // DIAGNOSTIC: Track button visibility
+    (function diagnoseButtons() {
+        console.log('[CBM DIAGNOSTIC] Starting button diagnostic');
+
+        // Check every 100ms for 3 seconds
+        let checkCount = 0;
+        const checker = setInterval(function() {
+            checkCount++;
+
+            const popupVisible = $('#cbm-popup-overlay').css('display') !== 'none';
+            if (!popupVisible) return;
+
+            const boxes = document.querySelectorAll('#cbm-popup-overlay .box, #cbm-popup-content .box');
+            boxes.forEach(function(box) {
+                const hasNoButton = box.classList.contains('no-button');
+                const button = box.querySelector('.add-to-cart-button');
+
+                if (button) {
+                    const computed = getComputedStyle(button);
+                    const isHidden = computed.display === 'none';
+
+                    if (isHidden || hasNoButton) {
+                        console.error('[CBM DIAGNOSTIC] Check #' + checkCount + ' - Button PROBLEM:');
+                        console.error('  Box classes:', box.className);
+                        console.error('  Has no-button:', hasNoButton);
+                        console.error('  Button display:', computed.display);
+                        console.error('  Button visibility:', computed.visibility);
+
+                        // FIX IT IMMEDIATELY
+                        box.classList.remove('no-button');
+                        button.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important;';
+                        console.warn('[CBM DIAGNOSTIC] Applied fix!');
+                    }
+                } else {
+                    console.error('[CBM DIAGNOSTIC] NO BUTTON FOUND in box!', box.className);
+                }
+            });
+
+            if (checkCount >= 30) { // 3 seconds
+                clearInterval(checker);
+                console.log('[CBM DIAGNOSTIC] Diagnostic complete');
+            }
+        }, 100);
+    })();
 
     // Removed ensureButtonsVisible - functionality moved inline to showPopup
+
+    // OVERRIDE: Block any attempt to add no-button class
+    const originalAdd = DOMTokenList.prototype.add;
+    DOMTokenList.prototype.add = function() {
+        for (let i = 0; i < arguments.length; i++) {
+            if (arguments[i] === 'no-button') {
+                const elem = this.parentElement || this.parentNode;
+                if (elem && (elem.closest('#cbm-popup-overlay') || elem.closest('#cbm-popup-content'))) {
+                    console.error('[CBM BLOCK] Prevented adding no-button class to popup element!');
+                    return this; // Don't add it
+                }
+            }
+        }
+        return originalAdd.apply(this, arguments);
+    };
 
     // IMMEDIATE: Run cleanup as soon as script loads, not waiting for DOM ready
     (function immediateCleanup() {
@@ -256,6 +314,9 @@
     }
     
     function showPopup(courseId) {
+        // Add class to body to indicate popup is active
+        document.body.classList.add('cbm-popup-active');
+
         // Use native DOM for maximum speed
         const overlay = document.getElementById('cbm-popup-overlay');
 
@@ -301,6 +362,42 @@
                     btn.style.opacity = '1';
                     btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
                 }
+            });
+
+            // ULTRA-AGGRESSIVE: Monitor for ANY changes that hide the button
+            const buttonObserver = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    // Check if no-button class was added
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        const target = mutation.target;
+                        if (target.classList && target.classList.contains('box') && target.classList.contains('no-button')) {
+                            target.classList.remove('no-button');
+                            console.warn('[CBM] Removed no-button class that was added to box');
+                        }
+                    }
+
+                    // Check if button was hidden via style
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        const target = mutation.target;
+                        if (target.classList && target.classList.contains('add-to-cart-button')) {
+                            const computed = window.getComputedStyle(target);
+                            if (computed.display === 'none' || computed.visibility === 'hidden' || computed.opacity === '0') {
+                                target.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
+                                console.warn('[CBM] Forced button visible after style change attempted to hide it');
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Observe all boxes and their children for changes
+            const boxes = overlay.querySelectorAll('.box');
+            boxes.forEach(function(box) {
+                buttonObserver.observe(box, {
+                    attributes: true,
+                    attributeFilter: ['class', 'style'],
+                    subtree: true
+                });
             });
 
             // Bind events
@@ -911,6 +1008,9 @@
     }
 
     function closePopup() {
+        // Remove popup active class from body
+        document.body.classList.remove('cbm-popup-active');
+
         const overlay = document.getElementById('cbm-popup-overlay');
         if (overlay) {
             overlay.style.display = 'none'; // Direct DOM for instant close

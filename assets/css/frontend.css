@@ -400,9 +400,17 @@
     margin-top: 15px;
 }
 
-/* No button state */
-.box.no-button .add-to-cart-button {
+/* No button state - ONLY hide in non-popup contexts */
+body:not(.cbm-popup-active) .box.no-button .add-to-cart-button {
     display: none;
+}
+
+/* OVERRIDE for popup - buttons ALWAYS visible even with no-button class */
+#cbm-popup-overlay .box.no-button .add-to-cart-button,
+#cbm-popup-content .box.no-button .add-to-cart-button {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* POPUP BOXES ARE ALWAYS SELECTED - NO OTHER STATE EXISTS */
