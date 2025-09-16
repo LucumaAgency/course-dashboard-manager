@@ -16,6 +16,17 @@
     opacity: 0.9;
 }
 
+/* Mobile Price with Seats Display */
+.mobile-price {
+    display: inline-block;
+}
+
+.mobile-seats {
+    color: #fff;
+    opacity: 0.85;
+    font-weight: 400;
+}
+
 /* Box Container */
 .course-boxes-container,
 .box-container {
