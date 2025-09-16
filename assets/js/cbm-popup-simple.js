@@ -6,9 +6,35 @@
 (function($) {
     'use strict';
     
+    // CRITICAL: Override any inline scripts that try to select dates
+    // This runs BEFORE document ready to intercept early selections
+    (function interceptEarlySelection() {
+        // Store original addEventListener to intercept popup events
+        const originalAddEventListener = Element.prototype.addEventListener;
+        Element.prototype.addEventListener = function(type, listener, options) {
+            // Wrap click handlers for date buttons
+            if (this.classList && this.classList.contains('date-btn')) {
+                const wrappedListener = function(event) {
+                    if (this.classList.contains('sold-out')) {
+                        console.warn('[CBM Popup INTERCEPTOR] Blocked click on sold-out date:', this.textContent);
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return false;
+                    }
+                    return listener.call(this, event);
+                };
+                return originalAddEventListener.call(this, type, wrappedListener, options);
+            }
+            return originalAddEventListener.call(this, type, listener, options);
+        };
+    })();
+
     // Wait for DOM ready
     $(document).ready(function() {
         console.log('[CBM Popup] Initializing simple popup system');
+
+        // IMMEDIATELY clean any pre-selected sold-out dates
+        $('.date-btn.selected.sold-out').removeClass('selected');
 
         // Debug: Check if pre-rendered popup exists
         const prerenderedPopup = $('#cbm-popup-overlay[data-prerendered="true"]');
@@ -51,6 +77,23 @@
 
         // Initialize popup triggers
         initializePopupTriggers();
+
+        // SAFETY NET: Periodically check and clean sold-out selections
+        setInterval(function() {
+            const soldOutSelected = $('.date-btn.selected.sold-out');
+            if (soldOutSelected.length > 0) {
+                console.warn('[CBM Popup CLEANUP] Found and removing sold-out selection:', soldOutSelected.text());
+                soldOutSelected.removeClass('selected');
+
+                // Auto-select first available date
+                const container = soldOutSelected.closest('.date-options');
+                const availableDate = container.find('.date-btn:not(.sold-out)').first();
+                if (availableDate.length > 0 && !container.find('.date-btn.selected').length) {
+                    availableDate.addClass('selected');
+                    console.log('[CBM Popup CLEANUP] Auto-selected available date:', availableDate.text());
+                }
+            }
+        }, 500); // Check every 500ms
     });
     
     function initializePopupTriggers() {
