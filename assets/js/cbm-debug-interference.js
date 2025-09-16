@@ -8,9 +8,9 @@
 
     console.log('%c[CBM DEBUG] Interference detector activated', 'background: #ff0000; color: #fff; padding: 5px;');
 
-    // Store original methods
-    const originalAddClass = Element.prototype.classList.add;
-    const originalRemoveClass = Element.prototype.classList.remove;
+    // Store original methods - use bind to preserve context
+    const originalAddClass = DOMTokenList.prototype.add;
+    const originalRemoveClass = DOMTokenList.prototype.remove;
     const originalSetAttribute = Element.prototype.setAttribute;
     const originalStyle = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style');
 
@@ -18,21 +18,25 @@
     const interferenceLog = [];
 
     // Override classList.add to track who adds no-button
-    Element.prototype.classList.add = function() {
+    DOMTokenList.prototype.add = function() {
+        // Check if any argument is 'no-button'
         for (let i = 0; i < arguments.length; i++) {
             if (arguments[i] === 'no-button') {
                 const stack = new Error().stack;
                 const caller = extractCaller(stack);
 
+                // Get the element that owns this classList
+                const element = this.parentElement || this.parentNode;
+
                 console.warn('%c[CBM INTERFERENCE DETECTED]', 'background: #ff6600; color: #fff; padding: 3px;');
-                console.warn('Element:', this);
+                console.warn('Element:', element);
                 console.warn('Attempted to add class:', arguments[i]);
                 console.warn('Called from:', caller);
                 console.warn('Full stack:', stack);
 
                 interferenceLog.push({
                     time: new Date().toISOString(),
-                    element: this.className,
+                    element: element ? element.className : 'unknown',
                     action: 'addClass',
                     value: 'no-button',
                     caller: caller,
@@ -40,9 +44,9 @@
                 });
 
                 // If it's in our popup, prevent it
-                if (this.closest && (this.closest('#cbm-popup-overlay') || this.closest('#cbm-popup-content'))) {
+                if (element && element.closest && (element.closest('#cbm-popup-overlay') || element.closest('#cbm-popup-content'))) {
                     console.error('%c[CBM BLOCKED]', 'background: #ff0000; color: #fff;', 'Prevented no-button addition in popup');
-                    return; // Don't add it
+                    return this; // Don't add it, return this for chaining
                 }
             }
         }

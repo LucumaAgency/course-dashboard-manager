@@ -391,8 +391,8 @@
             });
 
             // Observe all boxes and their children for changes
-            const boxes = overlay.querySelectorAll('.box');
-            boxes.forEach(function(box) {
+            const allBoxes = overlay.querySelectorAll('.box');
+            allBoxes.forEach(function(box) {
                 buttonObserver.observe(box, {
                     attributes: true,
                     attributeFilter: ['class', 'style'],
