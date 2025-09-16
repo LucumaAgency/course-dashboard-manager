@@ -68,6 +68,11 @@ add_action('init', function() {
     if (file_exists(CBM_PLUGIN_DIR . 'frontend/shortcode.php')) {
         require_once CBM_PLUGIN_DIR . 'frontend/shortcode.php';
     }
+
+    // Load mobile price shortcode
+    if (file_exists(CBM_PLUGIN_DIR . 'includes/shortcodes/mobile-price.php')) {
+        require_once CBM_PLUGIN_DIR . 'includes/shortcodes/mobile-price.php';
+    }
 });
 
 // Register course_group taxonomy
