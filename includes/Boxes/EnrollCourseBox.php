@@ -179,8 +179,18 @@ class EnrollCourseBox extends AbstractBox {
                 <hr class="divider">
                 
                 <?php echo $dates_html; ?>
-                
+
                 <?php echo $button_html; ?>
+
+                <?php
+                // Display remaining seats
+                $seats_remaining = $this->get_remaining_seats();
+                if ($seats_remaining !== false && $seats_remaining > 0) :
+                ?>
+                    <div class="seats-remaining-info">
+                        <p><?php echo esc_html($seats_remaining); ?> Remaining seats</p>
+                    </div>
+                <?php endif; ?>
             </div>
             <?php
             return $script . ob_get_clean();
