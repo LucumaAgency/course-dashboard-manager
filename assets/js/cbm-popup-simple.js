@@ -194,23 +194,40 @@
             console.log(`  Date ${index + 1}: "${$btn.text()}" - selected: ${$btn.hasClass('selected')}, sold-out: ${$btn.hasClass('sold-out')}`);
         });
 
-        // Tab switching (if tabs exist)
-        $(document).off('click', '.cbm-tab-btn').on('click', '.cbm-tab-btn', function(e) {
+        // Tab switching - ensure it works properly
+        $(document).off('click.cbmtab').on('click.cbmtab', '.cbm-tab-btn', function(e) {
             e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
 
             const $btn = $(this);
-            const tabIndex = $btn.data('tab');
-            console.log('[CBM Popup] Tab button clicked, tab index:', tabIndex);
+            const tabIndex = $btn.data('tab') || $btn.attr('data-tab');
 
-            // Update active states
-            $('.cbm-tab-btn').removeClass('active');
+            console.log('[CBM Popup] Tab button clicked, index:', tabIndex);
+
+            if (!tabIndex) {
+                console.error('[CBM Popup] No tab index found on button');
+                return false;
+            }
+
+            // Find popup content container
+            const $popupContent = $('#cbm-popup-content');
+
+            // Update active states for ALL tab buttons in popup
+            $popupContent.find('.cbm-tab-btn').removeClass('active');
             $btn.addClass('active');
 
-            // Switch panes - handle both numeric and string tab indices
-            $('.cbm-tab-pane').removeClass('active').hide();
-            const $targetPane = $(`.cbm-tab-pane[data-tab="${tabIndex}"]`);
-            $targetPane.addClass('active').show();
+            // Hide all panes first
+            $popupContent.find('.cbm-tab-pane').removeClass('active').hide();
+
+            // Show the selected pane
+            const $targetPane = $popupContent.find(`.cbm-tab-pane[data-tab="${tabIndex}"]`);
+            if ($targetPane.length > 0) {
+                $targetPane.addClass('active').show();
+                console.log('[CBM Popup] Showed pane for tab:', tabIndex);
+            } else {
+                console.error('[CBM Popup] Target pane not found for tab:', tabIndex);
+            }
 
             // Clean up any sold-out selections in the newly visible pane
             const $soldOutSelected = $targetPane.find('.date-btn.selected.sold-out');
@@ -280,6 +297,20 @@
 
             // Always re-bind events to ensure tabs work
             bindMinimalEvents();
+
+            // Force tab initialization after a small delay
+            setTimeout(function() {
+                const $tabs = $('#cbm-popup-content .cbm-tab-btn');
+                console.log('[CBM Popup] Found', $tabs.length, 'tab buttons after popup open');
+                if ($tabs.length > 0) {
+                    // Make sure Buy tab is active by default
+                    const $buyTab = $tabs.filter('[data-tab="buy"]');
+                    if ($buyTab.length > 0 && !$buyTab.hasClass('active')) {
+                        console.log('[CBM Popup] Activating Buy tab by default');
+                        $buyTab.trigger('click');
+                    }
+                }
+            }, 100);
 
             // Mark as bound but allow re-binding on next open
             overlay.setAttribute('data-events-bound', 'true');
@@ -703,36 +734,56 @@
     
     function bindTabEvents() {
         console.log('[CBM Popup] Binding tab events');
-        
+
+        // Use more specific selector and ensure we're targeting the right popup
+        const $popupContent = $('#cbm-popup-content');
+        if (!$popupContent.length) {
+            console.error('[CBM Popup] Popup content not found');
+            return;
+        }
+
+        // Remove any existing click handlers first
+        $popupContent.off('click', '.cbm-tab-btn');
+
         // Set Buy tab as active by default
-        const $buyTab = $('#cbm-popup-content').find('.cbm-tab-btn[data-tab="buy"]');
-        const $enrollTab = $('#cbm-popup-content').find('.cbm-tab-btn[data-tab="enroll"]');
-        
+        const $buyTab = $popupContent.find('.cbm-tab-btn[data-tab="buy"]');
+        const $enrollTab = $popupContent.find('.cbm-tab-btn[data-tab="enroll"]');
+
         if ($buyTab.length > 0) {
             $buyTab.addClass('active');
             $enrollTab.removeClass('active');
-            
+
             // Show buy pane, hide enroll pane
-            $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="buy"]').addClass('active');
-            $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="enroll"]').removeClass('active');
-            
+            $popupContent.find('.cbm-tab-pane[data-tab="buy"]').addClass('active');
+            $popupContent.find('.cbm-tab-pane[data-tab="enroll"]').removeClass('active');
+
             console.log('[CBM Popup] Buy tab selected by default');
         }
-        
-        $('#cbm-popup-content').find('.cbm-tab-btn').off('click').on('click', function() {
+
+        // Use event delegation for better reliability
+        $popupContent.on('click', '.cbm-tab-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             const $btn = $(this);
-            const tabIndex = $btn.data('tab');
-            
+            const tabIndex = $btn.data('tab') || $btn.attr('data-tab');
+
             console.log('[CBM Popup] Tab clicked:', tabIndex);
-            
-            // Update active states
-            $btn.siblings().removeClass('active');
+
+            if (!tabIndex) {
+                console.error('[CBM Popup] No tab index found');
+                return;
+            }
+
+            // Update active states for all tab buttons
+            $popupContent.find('.cbm-tab-btn').removeClass('active');
             $btn.addClass('active');
-            
+
             // Show corresponding content
-            $('#cbm-popup-content').find('.cbm-tab-pane').removeClass('active');
-            const $activePane = $('#cbm-popup-content').find('.cbm-tab-pane[data-tab="' + tabIndex + '"]');
+            $popupContent.find('.cbm-tab-pane').removeClass('active');
+            const $activePane = $popupContent.find('.cbm-tab-pane[data-tab="' + tabIndex + '"]');
             $activePane.addClass('active');
+
+            console.log('[CBM Popup] Active pane:', $activePane.length > 0 ? 'found' : 'not found');
             
             // Box is already selected, just ensure it stays that way
             const $box = $activePane.find('.box');
