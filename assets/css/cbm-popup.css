@@ -43,26 +43,12 @@
     background: #0e0d0f !important;
 }
 
-/* Close button */
+/* Close button - HIDDEN as requested */
 .cbm-popup-close {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 30px;
-    height: 30px;
-    background: transparent !important;
-    border: none;
-    font-size: 28px;
-    line-height: 1;
-    cursor: pointer;
-    color: #999;
-    z-index: 100000;
-    transition: color 0.3s ease;
+    display: none !important; /* Hide the X button */
 }
 
-.cbm-popup-close:hover {
-    color: #fff;
-}
+/* Users can close by clicking outside the popup (on the overlay) */
 
 /* Content wrapper */
 .cbm-popup-content {
