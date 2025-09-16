@@ -6,6 +6,36 @@
 (function($) {
     'use strict';
 
+    // IMMEDIATE BUTTON FORCER: Keep buttons visible no matter what
+    (function forceButtonsVisible() {
+        console.log('[CBM Popup BUTTON FORCE] Starting aggressive button visibility enforcer');
+
+        // Check every 50ms
+        setInterval(function() {
+            // Only check if popup is visible
+            const popup = document.getElementById('cbm-popup-overlay');
+            if (!popup || popup.style.display === 'none') return;
+
+            // Force all buttons in popup to be visible
+            const buttons = document.querySelectorAll('#cbm-popup-content .add-to-cart-button, #cbm-popup-overlay .add-to-cart-button');
+            buttons.forEach(function(btn) {
+                if (btn.style.display === 'none' || getComputedStyle(btn).display === 'none') {
+                    console.warn('[CBM Popup BUTTON FORCE] Button was hidden, forcing visible!');
+                    btn.style.display = 'flex';
+                    btn.style.visibility = 'visible';
+                    btn.style.opacity = '1';
+                }
+
+                // Remove no-button class from parent box
+                const box = btn.closest('.box');
+                if (box && box.classList.contains('no-button')) {
+                    console.warn('[CBM Popup BUTTON FORCE] Removing no-button class');
+                    box.classList.remove('no-button');
+                }
+            });
+        }, 50);
+    })();
+
     // IMMEDIATE: Run cleanup as soon as script loads, not waiting for DOM ready
     (function immediateCleanup() {
         // Check every 10ms for sold-out selections in the first second
@@ -214,13 +244,22 @@
             $box.find('.circlecontainer').show();
             $box.find('.circle-container').hide();
 
-            // Ensure add-to-cart button is visible
-            $box.find('.add-to-cart-button').show();
+            // ULTRA FORCE add-to-cart button to be visible
+            const $button = $box.find('.add-to-cart-button');
+            $button.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
 
             // Remove any click handlers on the boxes themselves
             $box.off('click');
             $box.css('cursor', 'default');
         });
+
+        // Re-force buttons visible after a delay (in case something tries to hide them)
+        setTimeout(function() {
+            $('#cbm-popup-content .add-to-cart-button').each(function() {
+                $(this).attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
+            });
+            console.log('[CBM Popup] Re-forced all buttons visible');
+        }, 500);
 
         // Date selection (keep this simple too)
         $(document).on('click', '#cbm-popup-content .date-btn:not(.sold-out):not(:disabled)', function(e) {
@@ -297,8 +336,10 @@
                     $box.find('.circlecontainer').show();
                     $box.find('.circle-container').hide();
 
-                    // Force button to be visible
-                    $box.find('.add-to-cart-button').show().css('display', 'flex');
+                    // ULTRA FORCE button to be visible with inline styles
+                    const $button = $box.find('.add-to-cart-button');
+                    $button.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
+                    console.log('[CBM Popup] Forced button visible with inline styles');
                 });
 
                 console.log('[CBM Popup] Initialized with Buy tab active and buttons visible');
