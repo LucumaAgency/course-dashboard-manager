@@ -48,9 +48,17 @@ window.selectBox = function(element, boxType, courseId) {
 
     console.log('[CBM] Frontend jQuery code initializing...');
 
+    // Prevent clicks on sold-out dates
+    $('body').on('click', '.date-btn.sold-out', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('[CBM] Sold-out date clicked - preventing selection');
+        return false;
+    });
+
     // Date selection handler - use event delegation with document
     // Using body instead of document for better compatibility
-    $('body').on('click', '.date-btn:not(.sold-out)', function(e) {
+    $('body').on('click', '.date-btn:not(.sold-out):not(:disabled)', function(e) {
         e.preventDefault();
         e.stopPropagation();
         
@@ -332,8 +340,16 @@ window.selectBox = function(element, boxType, courseId) {
         setTimeout(function() {
             console.log('[CBM] Re-binding date button handlers');
             
+            // Prevent sold-out date selection
+            $('.date-btn.sold-out').off('click.cbm').on('click.cbm', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[CBM] Sold-out date clicked (direct) - preventing');
+                return false;
+            });
+
             // Direct binding to existing date buttons
-            $('.date-btn:not(.sold-out)').off('click.cbm').on('click.cbm', function(e) {
+            $('.date-btn:not(.sold-out):not(:disabled)').off('click.cbm').on('click.cbm', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 
