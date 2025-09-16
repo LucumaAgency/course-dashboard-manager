@@ -183,126 +183,49 @@
         });
     }
     
-    // Minimal event binding for pre-rendered content
+    // Simple and direct tab handling for popup
     function bindMinimalEvents() {
-        console.log('[CBM Popup] Binding minimal events for pre-rendered content');
+        console.log('[CBM Popup] Binding events for popup');
 
-        // DEBUG: Check current state before binding
-        console.log('[CBM Popup DEBUG] Before binding - checking date states:');
-        $('.date-btn').each(function(index) {
-            const $btn = $(this);
-            console.log(`  Date ${index + 1}: "${$btn.text()}" - selected: ${$btn.hasClass('selected')}, sold-out: ${$btn.hasClass('sold-out')}`);
-        });
-
-        // DEBUG: Check what tab buttons exist
-        console.log('[CBM Popup DEBUG] Tab buttons found:', $('.cbm-tab-btn').length);
-        $('.cbm-tab-btn').each(function(index) {
-            console.log(`  Tab ${index}: data-tab="${$(this).data('tab')}" text="${$(this).text()}" classes="${$(this).attr('class')}"`);
-        });
-
-        // Clear ALL previous handlers first
-        $(document).off('click.cbmtab');
-        $(document).off('click', '.cbm-tab-btn');
-        $('#cbm-popup-content').off('click', '.cbm-tab-btn');
-        $('.cbm-tab-btn').off('click');
-
-        // Tab switching - use multiple binding methods to ensure it works
-        console.log('[CBM Popup DEBUG] Setting up tab click handlers');
-
-        // Method 1: Direct binding
-        $('.cbm-tab-btn').on('click', function(e) {
-            console.log('[CBM Popup DEBUG] Direct tab click detected!');
+        // SIMPLE TAB SWITCHING
+        $(document).on('click', '#cbm-popup-content .cbm-tab-btn', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            handleTabClick($(this));
+
+            const tabName = $(this).attr('data-tab');
+            console.log('[CBM Popup] Tab clicked:', tabName);
+
+            // Update tab buttons
+            $('#cbm-popup-content .cbm-tab-btn').removeClass('active');
+            $(this).addClass('active');
+
+            // Update tab panes
+            $('#cbm-popup-content .cbm-tab-pane').hide().removeClass('active');
+            $('#cbm-popup-content .cbm-tab-pane[data-tab="' + tabName + '"]').show().addClass('active');
+
+            console.log('[CBM Popup] Switched to tab:', tabName);
         });
 
-        // Method 2: Document delegation
-        $(document).on('click.cbmtab', '.cbm-tab-btn', function(e) {
-            console.log('[CBM Popup DEBUG] Delegated tab click detected!');
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            handleTabClick($(this));
-            return false;
-        });
-
-        // Method 3: Specific to popup content
-        $('#cbm-popup-content').on('click', '.cbm-tab-btn', function(e) {
-            console.log('[CBM Popup DEBUG] Popup-specific tab click detected!');
-            e.preventDefault();
-            e.stopPropagation();
-            handleTabClick($(this));
-        });
-
-        function handleTabClick($btn) {
-            const tabIndex = $btn.data('tab') || $btn.attr('data-tab');
-
-            console.log('[CBM Popup TAB CLICK] Button clicked:', $btn[0]);
-            console.log('[CBM Popup TAB CLICK] Tab index:', tabIndex);
-            console.log('[CBM Popup TAB CLICK] Button text:', $btn.text());
-            console.log('[CBM Popup TAB CLICK] Button classes:', $btn.attr('class'));
-
-            if (!tabIndex) {
-                console.error('[CBM Popup TAB CLICK] ERROR: No tab index found!');
-                return;
-            }
-
-            // Find popup content container
-            const $popupContent = $('#cbm-popup-content');
-            console.log('[CBM Popup TAB CLICK] Popup content found:', $popupContent.length > 0);
-
-            // Find all tab buttons and panes
-            const $allButtons = $popupContent.find('.cbm-tab-btn');
-            const $allPanes = $popupContent.find('.cbm-tab-pane');
-            console.log('[CBM Popup TAB CLICK] Found', $allButtons.length, 'buttons and', $allPanes.length, 'panes');
-
-            // Update button states
-            $allButtons.removeClass('active');
-            $btn.addClass('active');
-            console.log('[CBM Popup TAB CLICK] Updated button active states');
-
-            // Update pane visibility
-            $allPanes.each(function() {
-                const $pane = $(this);
-                const paneTab = $pane.data('tab') || $pane.attr('data-tab');
-                console.log(`[CBM Popup TAB CLICK] Checking pane with tab="${paneTab}"`);
-
-                if (paneTab == tabIndex) {
-                    $pane.addClass('active').show();
-                    console.log(`[CBM Popup TAB CLICK] SHOWING pane for tab: ${paneTab}`);
-                } else {
-                    $pane.removeClass('active').hide();
-                    console.log(`[CBM Popup TAB CLICK] Hiding pane for tab: ${paneTab}`);
-                }
-            });
-
-            // Clean up sold-out selections in the active pane
-            const $activePane = $popupContent.find(`.cbm-tab-pane[data-tab="${tabIndex}"]`);
-            if ($activePane.length > 0) {
-                console.log('[CBM Popup TAB CLICK] Active pane found, checking for sold-out dates');
-                const $soldOutSelected = $activePane.find('.date-btn.selected.sold-out');
-                if ($soldOutSelected.length > 0) {
-                    console.warn('[CBM Popup TAB CLICK] Removing sold-out selections');
-                    $soldOutSelected.removeClass('selected');
-                }
-            }
-
-            console.log('[CBM Popup TAB CLICK] Tab switch complete!');
-        }
-        
-        // DEBUG: Monitor ALL clicks in popup
-        $('#cbm-popup-overlay').on('click', function(e) {
-            console.log('[CBM Popup CLICK DEBUG] Click detected on:', e.target);
-            console.log('[CBM Popup CLICK DEBUG] Target classes:', e.target.className);
-            console.log('[CBM Popup CLICK DEBUG] Is tab button:', $(e.target).hasClass('cbm-tab-btn'));
-            console.log('[CBM Popup CLICK DEBUG] Parent is tab button:', $(e.target).closest('.cbm-tab-btn').length > 0);
-        });
-
-        // Date selection
-        $('.date-btn:not(.sold-out)').off('click').on('click', function() {
-            $(this).siblings().removeClass('selected');
+        // Ensure all boxes in popup are always selected
+        $('#cbm-popup-content .box').each(function() {
             $(this).addClass('selected');
+            $(this).find('.circlecontainer').show();
+            $(this).find('.circle-container').hide();
+            // Remove any click handlers on the boxes themselves
+            $(this).off('click');
+            $(this).css('cursor', 'default');
+        });
+
+        // Date selection (keep this simple too)
+        $(document).on('click', '#cbm-popup-content .date-btn:not(.sold-out):not(:disabled)', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const $box = $(this).closest('.box');
+            $box.find('.date-btn').removeClass('selected');
+            $(this).addClass('selected');
+
+            console.log('[CBM Popup] Date selected:', $(this).text());
         });
         
         // Add to cart
@@ -347,34 +270,28 @@
             // CRITICAL: Clean up any pre-selected sold-out dates BEFORE binding events
             cleanupSoldOutSelections();
 
-            // Always re-bind events to ensure tabs work
-            console.log('[CBM Popup OPEN] About to bind minimal events');
+            // Bind events
             bindMinimalEvents();
 
-            // Force tab initialization after a small delay
+            // Initialize tabs - Buy tab active by default
             setTimeout(function() {
-                console.log('[CBM Popup DELAYED INIT] Checking tabs after delay...');
-                const $tabs = $('#cbm-popup-content .cbm-tab-btn');
-                console.log('[CBM Popup DELAYED INIT] Found', $tabs.length, 'tab buttons');
+                // Ensure Buy tab is active
+                $('#cbm-popup-content .cbm-tab-btn[data-tab="buy"]').addClass('active');
+                $('#cbm-popup-content .cbm-tab-btn[data-tab="enroll"]').removeClass('active');
 
-                $tabs.each(function(index) {
-                    const $tab = $(this);
-                    console.log(`[CBM Popup DELAYED INIT] Tab ${index}: data-tab="${$tab.data('tab')}" text="${$tab.text()}" active="${$tab.hasClass('active')}"`);
+                // Show Buy pane, hide Enroll pane
+                $('#cbm-popup-content .cbm-tab-pane[data-tab="buy"]').show().addClass('active');
+                $('#cbm-popup-content .cbm-tab-pane[data-tab="enroll"]').hide().removeClass('active');
+
+                // Ensure all boxes are selected
+                $('#cbm-popup-content .box').each(function() {
+                    $(this).addClass('selected');
+                    $(this).find('.circlecontainer').show();
+                    $(this).find('.circle-container').hide();
                 });
 
-                // Test if clicking works programmatically
-                if ($tabs.length > 0) {
-                    console.log('[CBM Popup DELAYED INIT] Testing programmatic click...');
-                    const $enrollTab = $tabs.filter('[data-tab="enroll"]');
-                    if ($enrollTab.length > 0) {
-                        console.log('[CBM Popup DELAYED INIT] Found enroll tab, attempting programmatic click');
-                        // Try multiple click methods
-                        $enrollTab[0].click(); // Native click
-                        $enrollTab.trigger('click'); // jQuery trigger
-                        $enrollTab.click(); // jQuery click
-                    }
-                }
-            }, 500);
+                console.log('[CBM Popup] Initialized with Buy tab active');
+            }, 100);
 
             // Mark as bound but allow re-binding on next open
             overlay.setAttribute('data-events-bound', 'true');
@@ -702,207 +619,28 @@
     }
     
     function initializeBoxScripts() {
-        console.log('[CBM Popup] Initializing box scripts');
-        
-        // Check if popup is pre-rendered
-        const isPrerendered = $('#cbm-popup-overlay').attr('data-prerendered') === 'true';
-        console.log('[CBM Popup] Is pre-rendered:', isPrerendered);
-        
-        // Check if tabs already exist (from pre-rendering)
-        const $existingTabs = $('#cbm-popup-content').find('.cbm-tabs');
-        
-        if (isPrerendered && $existingTabs.length > 0) {
-            console.log('[CBM Popup] Using pre-rendered tabs, skipping recreation');
-            // Just bind events for pre-rendered content
-            bindTabEvents();
-        } else {
-            // Fallback: create tabs if not pre-rendered
-            const $content = $('#cbm-popup-content');
-            const $boxes = $content.find('.box');
-            console.log('[CBM Popup] Found boxes:', $boxes.length);
-            
-            if ($boxes.length > 1) {
-                console.log('[CBM Popup] Multiple boxes detected, creating tabs');
-                createTabs($boxes);
-                bindTabEvents();
-            }
-        }
-        
-        // ALWAYS keep ALL boxes in selected state in popup
-        const $allBoxes = $('#cbm-popup-content').find('.box');
-        $allBoxes.each(function() {
+        // For pre-rendered popups, just ensure proper state
+        console.log('[CBM Popup] Initializing popup state');
+
+        // Ensure all boxes are always selected in popup
+        $('#cbm-popup-content .box').each(function() {
             const $box = $(this);
             $box.addClass('selected');
             $box.removeClass('no-button');
             $box.find('.circlecontainer').show();
             $box.find('.circle-container').hide();
-            
-            // Make sure the add-to-cart button exists for enroll boxes
-            if ($box.hasClass('enroll-course') && $box.find('.add-to-cart-button').length === 0) {
-                // For enroll boxes, the product ID should be from the existing button's data-product-id
-                // or from a hidden input, not from date buttons
-                let productId = null;
-                
-                // First check if there's a disabled/hidden button with product ID
-                const $hiddenButton = $box.find('button[data-product-id]');
-                if ($hiddenButton.length > 0) {
-                    productId = $hiddenButton.data('product-id');
-                }
-                
-                // If not, check data attributes on the box
-                if (!productId) {
-                    productId = $box.data('product-id') || $box.attr('data-product-id');
-                }
-                
-                // Check for course ID as fallback
-                if (!productId) {
-                    const courseId = $box.data('course-id') || $box.attr('data-course-id');
-                    // You may need to get the actual product ID from course ID
-                    // For now, we'll use course ID if available
-                    if (courseId) {
-                        // Log warning
-                        console.warn('[CBM Popup] Using course ID as product ID:', courseId);
-                        productId = courseId;
-                    }
-                }
-                
-                if (productId) {
-                    const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
-                                     '<span class="button-text">Enroll Now</span>' +
-                                     '</button>';
-                    $box.append(buttonHtml);
-                    console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);
-                } else {
-                    console.error('[CBM Popup] Could not find product ID for enroll box');
-                }
-            }
-            
-            // Remove onclick handler completely - no selection changes in popup
+
+            // Remove onclick handlers - boxes can't be deselected in popup
             $box.removeAttr('onclick');
-            $box.css('cursor', 'default'); // Remove pointer cursor since it's not clickable
-            
-            // Prevent any click events on the box itself (but allow on children like buttons)
-            $box.off('click').on('click', function(e) {
-                if (e.target === this) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('[CBM Popup] Box click prevented - boxes always stay selected');
-                }
-            });
+            $box.css('cursor', 'default');
+            $box.off('click');
         });
-        console.log('[CBM Popup] All boxes set to selected state with onclick disabled');
-        
-        // Initialize other box scripts
+
+        // Initialize box interactions
         initializeBoxInteractions();
     }
     
-    function bindTabEvents() {
-        console.log('[CBM Popup] Binding tab events');
-
-        // Use more specific selector and ensure we're targeting the right popup
-        const $popupContent = $('#cbm-popup-content');
-        if (!$popupContent.length) {
-            console.error('[CBM Popup] Popup content not found');
-            return;
-        }
-
-        // Remove any existing click handlers first
-        $popupContent.off('click', '.cbm-tab-btn');
-
-        // Set Buy tab as active by default
-        const $buyTab = $popupContent.find('.cbm-tab-btn[data-tab="buy"]');
-        const $enrollTab = $popupContent.find('.cbm-tab-btn[data-tab="enroll"]');
-
-        if ($buyTab.length > 0) {
-            $buyTab.addClass('active');
-            $enrollTab.removeClass('active');
-
-            // Show buy pane, hide enroll pane
-            $popupContent.find('.cbm-tab-pane[data-tab="buy"]').addClass('active');
-            $popupContent.find('.cbm-tab-pane[data-tab="enroll"]').removeClass('active');
-
-            console.log('[CBM Popup] Buy tab selected by default');
-        }
-
-        // Use event delegation for better reliability
-        $popupContent.on('click', '.cbm-tab-btn', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            const $btn = $(this);
-            const tabIndex = $btn.data('tab') || $btn.attr('data-tab');
-
-            console.log('[CBM Popup] Tab clicked:', tabIndex);
-
-            if (!tabIndex) {
-                console.error('[CBM Popup] No tab index found');
-                return;
-            }
-
-            // Update active states for all tab buttons
-            $popupContent.find('.cbm-tab-btn').removeClass('active');
-            $btn.addClass('active');
-
-            // Show corresponding content
-            $popupContent.find('.cbm-tab-pane').removeClass('active');
-            const $activePane = $popupContent.find('.cbm-tab-pane[data-tab="' + tabIndex + '"]');
-            $activePane.addClass('active');
-
-            console.log('[CBM Popup] Active pane:', $activePane.length > 0 ? 'found' : 'not found');
-            
-            // Box is already selected, just ensure it stays that way
-            const $box = $activePane.find('.box');
-            if ($box.length > 0) {
-                // Keep selected state
-                $box.addClass('selected');
-                $box.removeClass('no-button');
-                $box.find('.circlecontainer').show();
-                $box.find('.circle-container').hide();
-                
-                // Make sure the add-to-cart button exists, if not add it
-                if ($box.find('.add-to-cart-button').length === 0) {
-                    // Check if this is an enroll box that needs a button
-                    if ($box.hasClass('enroll-course')) {
-                        // For enroll boxes, get the product ID properly
-                        let productId = null;
-                        
-                        // First check if there's a disabled/hidden button with product ID
-                        const $hiddenButton = $box.find('button[data-product-id]');
-                        if ($hiddenButton.length > 0) {
-                            productId = $hiddenButton.data('product-id');
-                        }
-                        
-                        // If not, check data attributes on the box
-                        if (!productId) {
-                            productId = $box.data('product-id') || $box.attr('data-product-id');
-                        }
-                        
-                        // Check for course ID as fallback
-                        if (!productId) {
-                            const courseId = $box.data('course-id') || $box.attr('data-course-id');
-                            if (courseId) {
-                                console.warn('[CBM Popup] Using course ID as product ID:', courseId);
-                                productId = courseId;
-                            }
-                        }
-                        
-                        if (productId) {
-                            const buttonHtml = '<button class="add-to-cart-button" data-product-id="' + productId + '">' +
-                                             '<span class="button-text">Enroll Now</span>' +
-                                             '</button>';
-                            $box.append(buttonHtml);
-                            console.log('[CBM Popup] Added missing Enroll button with product ID:', productId);
-                        } else {
-                            console.error('[CBM Popup] Could not find product ID for enroll box');
-                        }
-                    }
-                }
-                
-                console.log('[CBM Popup] Box remains selected in tab:', tabIndex);
-            }
-            
-            console.log('[CBM Popup] Switched to tab:', tabIndex);
-        });
-    }
+    // Removed bindTabEvents - functionality now in bindMinimalEvents for simplicity
     
     function initializeBoxInteractions() {
         console.log('[CBM Popup] Initializing box interactions');
