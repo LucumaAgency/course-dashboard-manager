@@ -6,182 +6,22 @@
 (function($) {
     'use strict';
 
-    // ULTRA IMMEDIATE: Protect selected state from the very beginning
-    (function protectSelectedState() {
-        console.log('[CBM SELECTED PROTECTOR] Starting protection');
+    // Removed: protectSelectedState - no longer needed since only selected state exists
 
-        // Check every 10ms for first 2 seconds
-        let protectCount = 0;
-        const protector = setInterval(function() {
-            protectCount++;
-
-            // Find all popup boxes
-            const popupBoxes = document.querySelectorAll('#cbm-popup-overlay .box, #cbm-popup-content .box');
-            popupBoxes.forEach(function(box) {
-                if (!box.classList.contains('selected')) {
-                    console.error('[CBM SELECTED PROTECTOR] Box lost selected class at check #' + protectCount + '! Re-adding!');
-                    box.classList.add('selected');
-
-                    // Log what removed it
-                    console.trace('[CBM SELECTED PROTECTOR] Stack trace of deselection:');
-                }
-            });
-
-            if (protectCount > 200) { // 2 seconds
-                clearInterval(protector);
-                console.log('[CBM SELECTED PROTECTOR] Initial protection phase complete');
+    // Simple button visibility check - only runs once on popup open
+    function ensureButtonsVisible() {
+        const buttons = document.querySelectorAll('#cbm-popup-content .add-to-cart-button, #cbm-popup-overlay .add-to-cart-button');
+        buttons.forEach(function(btn) {
+            // Remove no-button class from parent if exists
+            const box = btn.closest('.box');
+            if (box && box.classList.contains('no-button')) {
+                box.classList.remove('no-button');
             }
-        }, 10);
-    })();
-
-    // IMMEDIATE BUTTON FORCER: Keep buttons visible no matter what
-    (function forceButtonsVisible() {
-        console.log('[CBM Popup BUTTON FORCE] Starting ULTRA aggressive button visibility enforcer');
-
-        let forceCount = 0;
-
-        // Check every 20ms for the first 5 seconds, then every 100ms
-        function forceButtons() {
-            forceCount++;
-
-            // Debug what's happening
-            const boxes = document.querySelectorAll('#cbm-popup-content .box, #cbm-popup-overlay .box');
-            boxes.forEach(function(box) {
-                // Log current state
-                if (forceCount % 50 === 1) { // Log every second
-                    console.log('[CBM BUTTON DEBUG] Box classes:', box.className);
-                }
-
-                // FORCE remove no-button class
-                if (box.classList.contains('no-button')) {
-                    console.warn('[CBM BUTTON FORCE] REMOVING no-button class at check #' + forceCount);
-                    box.classList.remove('no-button');
-                    box.className = box.className.replace(/no-button/g, ''); // Double force
-                }
-
-                // FORCE box to be selected ALWAYS
-                if (!box.classList.contains('selected')) {
-                    console.error('[CBM BUTTON FORCE] Box DESELECTED at check #' + forceCount + ', RE-SELECTING!');
-                    box.classList.add('selected');
-                    // Also force via direct manipulation
-                    box.className = box.className + ' selected';
-                    box.setAttribute('class', box.className);
-                }
-
-                // ALWAYS ensure selected indicator is visible
-                const circleContainer = box.querySelector('.circlecontainer');
-                const simpleCircle = box.querySelector('.circle-container');
-                if (circleContainer) {
-                    if (circleContainer.style.display !== 'flex') {
-                        console.warn('[CBM BUTTON FORCE] Fixing circle indicator visibility');
-                        circleContainer.style.display = 'flex';
-                        circleContainer.style.cssText = 'display: flex !important;';
-                    }
-                }
-                if (simpleCircle) {
-                    if (simpleCircle.style.display !== 'none') {
-                        simpleCircle.style.display = 'none';
-                    }
-                }
-
-                // Find button in this box
-                const btn = box.querySelector('.add-to-cart-button');
-                if (btn) {
-                    const isHidden = btn.style.display === 'none' ||
-                                   getComputedStyle(btn).display === 'none' ||
-                                   btn.offsetParent === null;
-
-                    if (isHidden) {
-                        console.error('[CBM BUTTON FORCE] Button HIDDEN at check #' + forceCount + ', FORCING VISIBLE!');
-                        // Nuclear option - override everything
-                        btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; height: 40px !important;');
-                        btn.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; height: 40px !important;';
-                    }
-                } else if (forceCount % 50 === 1) {
-                    console.error('[CBM BUTTON FORCE] NO BUTTON FOUND in box!');
-                }
-            });
-
-            // Adjust frequency after initial aggressive phase
-            if (forceCount < 250) {
-                setTimeout(forceButtons, 20); // Every 20ms for first 5 seconds
-            } else {
-                setTimeout(forceButtons, 100); // Then every 100ms
-            }
-        }
-
-        // Start the force loop
-        forceButtons();
-
-        // Intercept ALL attempts to modify classes and styles
-        const originalSetAttribute = Element.prototype.setAttribute;
-        Element.prototype.setAttribute = function(name, value) {
-            // Block no-button class
-            if (name === 'class' && value && value.includes('no-button')) {
-                console.error('[CBM INTERCEPT] Blocked attempt to add no-button class!');
-                value = value.replace(/no-button/g, '').trim();
-            }
-
-            // PREVENT removing selected class from popup boxes
-            if (name === 'class' && this.classList && this.classList.contains('box')) {
-                const inPopup = this.closest('#cbm-popup-overlay') || this.closest('#cbm-popup-content');
-                if (inPopup) {
-                    if (!value.includes('selected')) {
-                        console.error('[CBM INTERCEPT] Blocked attempt to deselect box in popup!');
-                        value = value + ' selected';
-                    }
-                }
-            }
-
-            // Block hiding buttons
-            if (name === 'style' && this.classList && this.classList.contains('add-to-cart-button')) {
-                if (value && value.includes('none')) {
-                    console.error('[CBM INTERCEPT] Blocked attempt to hide button!');
-                    return;
-                }
-            }
-            return originalSetAttribute.call(this, name, value);
-        };
-
-        // Also intercept classList operations
-        const originalRemove = DOMTokenList.prototype.remove;
-        DOMTokenList.prototype.remove = function() {
-            const element = this.parentElement || this.parentNode;
-            if (element) {
-                const inPopup = element.closest('#cbm-popup-overlay') || element.closest('#cbm-popup-content');
-
-                // Prevent removing 'selected' from popup boxes
-                for (let i = 0; i < arguments.length; i++) {
-                    if (arguments[i] === 'selected' && element.classList.contains('box') && inPopup) {
-                        console.error('[CBM INTERCEPT] Blocked classList.remove("selected") on popup box!');
-                        return; // Don't remove it
-                    }
-                }
-            }
-            return originalRemove.apply(this, arguments);
-        };
-
-        // Intercept className property changes
-        Object.defineProperty(Element.prototype, 'className', {
-            get: function() {
-                return this.getAttribute('class') || '';
-            },
-            set: function(value) {
-                const inPopup = this.closest('#cbm-popup-overlay') || this.closest('#cbm-popup-content');
-                if (this.classList && this.classList.contains('box') && inPopup) {
-                    if (!value.includes('selected')) {
-                        console.error('[CBM INTERCEPT] Blocked className change removing selected!');
-                        value = value + ' selected';
-                    }
-                    if (value.includes('no-button')) {
-                        value = value.replace(/no-button/g, '');
-                    }
-                }
-                this.setAttribute('class', value);
-            },
-            configurable: true
+            // Ensure button is visible
+            btn.style.display = 'flex';
+            btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
         });
-    })();
+    }
 
     // IMMEDIATE: Run cleanup as soon as script loads, not waiting for DOM ready
     (function immediateCleanup() {
@@ -374,7 +214,6 @@
     
     // Simple and direct tab handling for popup
     function bindMinimalEvents() {
-        console.log('[CBM Popup] Binding events for popup');
 
         // SIMPLE TAB SWITCHING
         $(document).on('click', '#cbm-popup-content .cbm-tab-btn', function(e) {
@@ -382,7 +221,6 @@
             e.stopPropagation();
 
             const tabName = $(this).attr('data-tab');
-            console.log('[CBM Popup] Tab clicked:', tabName);
 
             // Update tab buttons
             $('#cbm-popup-content .cbm-tab-btn').removeClass('active');
@@ -391,50 +229,15 @@
             // Update tab panes
             $('#cbm-popup-content .cbm-tab-pane').hide().removeClass('active');
             $('#cbm-popup-content .cbm-tab-pane[data-tab="' + tabName + '"]').show().addClass('active');
-
-            console.log('[CBM Popup] Switched to tab:', tabName);
         });
 
-        // Ensure all boxes in popup are ALWAYS selected and buttons visible
-        function forceBoxState() {
-            $('#cbm-popup-content .box, #cbm-popup-overlay .box').each(function() {
-                const $box = $(this);
-
-                // FORCE selected state
-                if (!$box.hasClass('selected')) {
-                    console.log('[CBM Popup] Forcing box to selected state');
-                    $box.addClass('selected');
-                }
-
-                $box.removeClass('no-button'); // Remove no-button class
-
-                // Force selection indicator
-                $box.find('.circlecontainer').show().css('display', 'flex');
-                $box.find('.circle-container').hide();
-
-                // ULTRA FORCE add-to-cart button to be visible
-                const $button = $box.find('.add-to-cart-button');
-                $button.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
-
-                // Remove any click handlers on the boxes themselves
-                $box.off('click');
-                $box.css('cursor', 'default');
-            });
-        }
-
-        // Force immediately and repeatedly
-        forceBoxState();
-        setTimeout(forceBoxState, 100);
-        setTimeout(forceBoxState, 300);
-        setTimeout(forceBoxState, 500);
-
-        // Re-force buttons visible after a delay (in case something tries to hide them)
-        setTimeout(function() {
-            $('#cbm-popup-content .add-to-cart-button').each(function() {
-                $(this).attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
-            });
-            console.log('[CBM Popup] Re-forced all buttons visible');
-        }, 500);
+        // Ensure buttons remain visible (one-time check)
+        $('#cbm-popup-content .box, #cbm-popup-overlay .box').each(function() {
+            const $box = $(this);
+            $box.removeClass('no-button');
+            $box.off('click');
+            $box.css('cursor', 'default');
+        });
 
         // Date selection (keep this simple too)
         $(document).on('click', '#cbm-popup-content .date-btn:not(.sold-out):not(:disabled)', function(e) {
@@ -444,8 +247,6 @@
             const $box = $(this).closest('.box');
             $box.find('.date-btn').removeClass('selected');
             $(this).addClass('selected');
-
-            console.log('[CBM Popup] Date selected:', $(this).text());
         });
         
         // Add to cart
@@ -466,26 +267,17 @@
         const overlay = document.getElementById('cbm-popup-overlay');
 
         if (overlay && overlay.getAttribute('data-prerendered') === 'true') {
-            console.log('[CBM Popup DEBUG] ===== POPUP OPENING =====');
-
             // OVERRIDE selectBox function for popup - make it do NOTHING
+            // selectBox is the function from PHP that handles box selection on main page
+            // In popup, we don't want ANY selection changes
             window.originalSelectBox = window.selectBox;
             window.selectBox = function(element, boxType, courseId) {
-                console.log('[CBM Popup] SelectBox called but IGNORED - boxes always selected in popup');
-                return false; // Do nothing
+                // Do nothing - boxes can't change state in popup
+                return false;
             };
 
-            // DEBUG: Check initial state IMMEDIATELY
-            const allDates = overlay.querySelectorAll('.date-btn');
-            console.log('[CBM Popup DEBUG] Initial state - found', allDates.length, 'dates:');
-            allDates.forEach(function(btn, index) {
-                console.log(`  Initial Date ${index + 1}: "${btn.textContent}" - selected: ${btn.classList.contains('selected')}, sold-out: ${btn.classList.contains('sold-out')}`);
-            });
-
-            // Pre-rendered popup - show instantly with no jQuery overhead
-            console.time('[CBM Popup] Show time');
+            // Show popup
             overlay.style.display = 'block';
-            console.timeEnd('[CBM Popup] Show time');
 
             // ULTRA CRITICAL: Immediate cleanup with native DOM (faster than jQuery)
             const immediateSoldOut = overlay.querySelectorAll('.date-btn.selected.sold-out');
@@ -497,45 +289,20 @@
             // CRITICAL: Clean up any pre-selected sold-out dates BEFORE binding events
             cleanupSoldOutSelections();
 
-            // IMMEDIATE: Force ALL boxes to selected state and remove click handlers
-            console.log('[CBM Popup OPEN] Setting up popup-only state!');
+            // Setup popup boxes - remove click handlers and ensure buttons visible
             const boxes = overlay.querySelectorAll('.box');
             boxes.forEach(function(box) {
-                // Remove ALL click handlers and onclick attributes
+                // Remove click handlers - boxes can't be clicked in popup
                 box.onclick = null;
                 box.removeAttribute('onclick');
                 box.style.cursor = 'default';
 
-                // Remove no-button class
+                // Remove no-button class if present
                 box.classList.remove('no-button');
-
-                // FORCE selected state
-                box.classList.add('selected');
-                box.className = box.className.replace(/\bbox\b/g, 'box selected').replace(/selected selected/g, 'selected');
-
-                // Show selected indicator (ringed circle)
-                const circleContainer = box.querySelector('.circlecontainer');
-                const simpleCircle = box.querySelector('.circle-container');
-                if (circleContainer) {
-                    circleContainer.style.display = 'flex';
-                    circleContainer.style.cssText = 'display: flex !important;';
-                }
-                if (simpleCircle) {
-                    simpleCircle.style.display = 'none';
-                    simpleCircle.style.cssText = 'display: none !important;';
-                }
-
-                // Find and force button visible
-                const btn = box.querySelector('.add-to-cart-button');
-                if (btn) {
-                    btn.style.display = 'flex';
-                    btn.style.visibility = 'visible';
-                    btn.style.opacity = '1';
-                    btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
-                }
-
-                console.log('[CBM Popup OPEN] Box setup complete:', box.className);
             });
+
+            // Ensure all buttons are visible
+            ensureButtonsVisible();
 
             // Bind events
             bindMinimalEvents();
