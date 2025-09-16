@@ -12,8 +12,8 @@
         // Store original addEventListener to intercept popup events
         const originalAddEventListener = Element.prototype.addEventListener;
         Element.prototype.addEventListener = function(type, listener, options) {
-            // Wrap click handlers for date buttons
-            if (this.classList && this.classList.contains('date-btn')) {
+            // Only intercept clicks on date buttons, NOT tabs or other elements
+            if (this.classList && this.classList.contains('date-btn') && type === 'click') {
                 const wrappedListener = function(event) {
                     if (this.classList.contains('sold-out')) {
                         console.warn('[CBM Popup INTERCEPTOR] Blocked click on sold-out date:', this.textContent);
@@ -25,6 +25,7 @@
                 };
                 return originalAddEventListener.call(this, type, wrappedListener, options);
             }
+            // For all other elements (including tabs), use original listener
             return originalAddEventListener.call(this, type, listener, options);
         };
     })();
@@ -133,16 +134,22 @@
         });
 
         // Tab switching (if tabs exist)
-        $('.cbm-tab-btn').off('click').on('click', function() {
+        $('.cbm-tab-btn').off('click').on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
             const tabIndex = $(this).data('tab');
-            
+            console.log('[CBM Popup] Tab button clicked, tab index:', tabIndex);
+
             // Update active states
             $('.cbm-tab-btn').removeClass('active');
             $(this).addClass('active');
-            
-            // Switch panes
+
+            // Switch panes - handle both numeric and string tab indices
             $('.cbm-tab-pane').removeClass('active').hide();
             $(`.cbm-tab-pane[data-tab="${tabIndex}"]`).addClass('active').show();
+
+            console.log('[CBM Popup] Tab switched to:', tabIndex);
         });
         
         // Date selection
@@ -186,11 +193,11 @@
             // CRITICAL: Clean up any pre-selected sold-out dates BEFORE binding events
             cleanupSoldOutSelections();
 
-            // Only bind minimal events if not already bound
-            if (!overlay.hasAttribute('data-events-bound')) {
-                bindMinimalEvents();
-                overlay.setAttribute('data-events-bound', 'true');
-            }
+            // Always re-bind events to ensure tabs work
+            bindMinimalEvents();
+
+            // Mark as bound but allow re-binding on next open
+            overlay.setAttribute('data-events-bound', 'true');
 
             return; // Exit early - no further processing needed
         }
