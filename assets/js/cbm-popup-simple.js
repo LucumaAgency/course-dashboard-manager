@@ -87,19 +87,22 @@
     function showPopup(courseId) {
         // Use native DOM for maximum speed
         const overlay = document.getElementById('cbm-popup-overlay');
-        
+
         if (overlay && overlay.getAttribute('data-prerendered') === 'true') {
             // Pre-rendered popup - show instantly with no jQuery overhead
             console.time('[CBM Popup] Show time');
             overlay.style.display = 'block';
             console.timeEnd('[CBM Popup] Show time');
-            
+
+            // CRITICAL: Clean up any pre-selected sold-out dates BEFORE binding events
+            cleanupSoldOutSelections();
+
             // Only bind minimal events if not already bound
             if (!overlay.hasAttribute('data-events-bound')) {
                 bindMinimalEvents();
                 overlay.setAttribute('data-events-bound', 'true');
             }
-            
+
             return; // Exit early - no further processing needed
         }
         
@@ -608,6 +611,9 @@
     function initializeBoxInteractions() {
         console.log('[CBM Popup] Initializing box interactions');
 
+        // FIRST: Clean up any pre-selected sold-out dates
+        cleanupSoldOutSelections();
+
         // Debug: Map all dates and their states
         debugDateStates();
 
@@ -806,6 +812,31 @@
         });
     }
     
+    function cleanupSoldOutSelections() {
+        console.log('[CBM Popup] Cleaning up sold-out date selections');
+
+        // Find all selected dates that are sold out and remove selection
+        const soldOutSelected = document.querySelectorAll('.date-btn.selected.sold-out');
+        soldOutSelected.forEach(function(btn) {
+            console.log('[CBM Popup] Removing selection from sold-out date:', btn.dataset.date || btn.textContent);
+            btn.classList.remove('selected');
+        });
+
+        // Auto-select first available (non sold-out) date if none selected
+        const containers = document.querySelectorAll('#cbm-popup-content .date-options');
+        containers.forEach(function(container) {
+            const selectedDates = container.querySelectorAll('.date-btn.selected:not(.sold-out)');
+            if (selectedDates.length === 0) {
+                // No valid date selected, find first available
+                const availableDate = container.querySelector('.date-btn:not(.sold-out)');
+                if (availableDate) {
+                    console.log('[CBM Popup] Auto-selecting first available date:', availableDate.dataset.date || availableDate.textContent);
+                    availableDate.classList.add('selected');
+                }
+            }
+        });
+    }
+
     function closePopup() {
         const overlay = document.getElementById('cbm-popup-overlay');
         if (overlay) {
