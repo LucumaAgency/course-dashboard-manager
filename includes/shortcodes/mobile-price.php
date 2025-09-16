@@ -81,66 +81,64 @@ function mobile_price_shortcode($atts) {
     // Get remaining seats if applicable
     $seats_html = '';
 
-    // Check if we should show seats (only for enroll/enroll-buy states)
-    $box_state = get_post_meta($course_id, 'box_state', true);
-    $show_seats = in_array($box_state, ['enroll-course', 'enroll-buy']);
+    // Always try to show seats if there's an enroll product configured
+    // Get enroll product ID
+    $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
 
-    if ($show_seats) {
-        // Get enroll product ID
-        $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
+    // If not found, try the linked product ID (for backward compatibility)
+    if (!$enroll_product_id) {
+        $enroll_product_id = get_post_meta($course_id, 'linked_product_id', true);
+    }
 
-        // If not found, try the linked product ID (for backward compatibility)
-        if (!$enroll_product_id) {
-            $enroll_product_id = get_post_meta($course_id, 'linked_product_id', true);
-        }
+    // Also check if there's an enroll price configured
+    $has_enroll_price = cbm_get_field('enroll_price', $course_id, 0) > 0;
 
-        if ($enroll_product_id) {
-            // Get the first available date from course_dates
-            $dates = cbm_get_field('course_dates', $course_id) ?: [];
+    if ($enroll_product_id || $has_enroll_price) {
+        // Get the first available date from course_dates
+        $dates = cbm_get_field('course_dates', $course_id) ?: [];
 
-            if (!empty($dates)) {
-                $first_date = null;
-                $initial_stock = 10; // Default stock
+        if (!empty($dates)) {
+            $first_date = null;
+            $initial_stock = 10; // Default stock
 
-                foreach ($dates as $date_entry) {
-                    if (!empty($date_entry['date'])) {
-                        $first_date = sanitize_text_field($date_entry['date']);
-                        $initial_stock = isset($date_entry['stock']) ? intval($date_entry['stock']) : 10;
-                        break;
+            foreach ($dates as $date_entry) {
+                if (!empty($date_entry['date'])) {
+                    $first_date = sanitize_text_field($date_entry['date']);
+                    $initial_stock = isset($date_entry['stock']) ? intval($date_entry['stock']) : 10;
+                    break;
+                }
+            }
+
+            if ($first_date && $enroll_product_id && function_exists('wc_get_orders')) {
+                // Calculate sold seats for this date
+                $args = [
+                    'status' => ['wc-completed'],
+                    'limit' => -1,
+                ];
+
+                $orders = wc_get_orders($args);
+                $sales_count = 0;
+
+                foreach ($orders as $order) {
+                    foreach ($order->get_items() as $item) {
+                        $item_product_id = $item->get_product_id();
+                        $start_date = $item->get_meta('Start Date');
+                        $quantity = $item->get_quantity();
+
+                        if ($item_product_id == $enroll_product_id &&
+                            strcasecmp(trim($start_date), trim($first_date)) === 0) {
+                            $sales_count += $quantity;
+                        }
                     }
                 }
 
-                if ($first_date && function_exists('wc_get_orders')) {
-                    // Calculate sold seats for this date
-                    $args = [
-                        'status' => ['wc-completed'],
-                        'limit' => -1,
-                    ];
+                $seats_remaining = max(0, $initial_stock - $sales_count);
 
-                    $orders = wc_get_orders($args);
-                    $sales_count = 0;
-
-                    foreach ($orders as $order) {
-                        foreach ($order->get_items() as $item) {
-                            $item_product_id = $item->get_product_id();
-                            $start_date = $item->get_meta('Start Date');
-                            $quantity = $item->get_quantity();
-
-                            if ($item_product_id == $enroll_product_id &&
-                                strcasecmp(trim($start_date), trim($first_date)) === 0) {
-                                $sales_count += $quantity;
-                            }
-                        }
-                    }
-
-                    $seats_remaining = max(0, $initial_stock - $sales_count);
-
-                    if ($seats_remaining > 0) {
-                        $seats_html = sprintf(
-                            '<span class="mobile-seats" style="display: block; font-size: 14px; margin-top: 5px;">%d Remaining seats</span>',
-                            $seats_remaining
-                        );
-                    }
+                if ($seats_remaining > 0) {
+                    $seats_html = sprintf(
+                        '<span class="mobile-seats" style="display: block; font-size: 14px; margin-top: 5px;">%d Remaining seats</span>',
+                        $seats_remaining
+                    );
                 }
             }
         }
