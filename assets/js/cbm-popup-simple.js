@@ -670,11 +670,30 @@
             addToCart($button, productId, selectedDate);
         });
         
-        // Auto-select first date if only one
+        // Auto-select dates intelligently
         $('#cbm-popup-content').find('.box, .cbm-tab-pane').each(function() {
-            const $dates = $(this).find('.date-btn:not(.sold-out)');
-            if ($dates.length === 1) {
-                $dates.first().click();
+            const $container = $(this);
+            const $availableDates = $container.find('.date-btn:not(.sold-out)');
+            const $selectedDate = $container.find('.date-btn.selected');
+
+            // If there's already a selected date that is NOT sold out, leave it
+            if ($selectedDate.length > 0 && !$selectedDate.hasClass('sold-out')) {
+                console.log('[CBM Popup] Date already selected and available:', $selectedDate.data('date'));
+                return; // Continue to next container
+            }
+
+            // If the selected date IS sold out, remove selection
+            if ($selectedDate.length > 0 && $selectedDate.hasClass('sold-out')) {
+                console.log('[CBM Popup] Removing sold-out date selection:', $selectedDate.data('date'));
+                $selectedDate.removeClass('selected');
+            }
+
+            // Auto-select first available date if there are any
+            if ($availableDates.length > 0) {
+                console.log('[CBM Popup] Auto-selecting first available date');
+                $availableDates.first().click();
+            } else {
+                console.log('[CBM Popup] No available dates to select');
             }
         });
     }
