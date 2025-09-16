@@ -43,12 +43,32 @@
     background: #0e0d0f !important;
 }
 
-/* Close button - HIDDEN as requested */
+/* Close button - OUTSIDE the black box */
 .cbm-popup-close {
-    display: none !important; /* Hide the X button */
+    position: fixed !important; /* Fixed positioning relative to viewport */
+    top: 20px !important;
+    right: 20px !important;
+    width: 40px !important;
+    height: 40px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 50% !important;
+    font-size: 24px !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    color: #fff !important;
+    z-index: 100001 !important; /* Above the popup container */
+    transition: all 0.3s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
-/* Users can close by clicking outside the popup (on the overlay) */
+.cbm-popup-close:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: #fff !important;
+    transform: scale(1.1) !important;
+}
 
 /* Content wrapper */
 .cbm-popup-content {
@@ -218,12 +238,13 @@
         padding: 20px 15px;
     }
     
+    /* Keep close button in corner on mobile too */
     .cbm-popup-close {
-        top: 10px;
-        right: 10px;
-        width: 25px;
-        height: 25px;
-        font-size: 24px;
+        top: 10px !important;
+        right: 10px !important;
+        width: 35px !important;
+        height: 35px !important;
+        font-size: 20px !important;
     }
     
     /* Tab buttons on mobile */

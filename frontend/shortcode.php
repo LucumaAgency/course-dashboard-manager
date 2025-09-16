@@ -104,8 +104,8 @@ function prerender_popup_content() {
         // Still try to render an empty popup structure for testing
         ?>
         <div id="cbm-popup-overlay" class="cbm-popup-overlay" style="display:none;" data-prerendered="true" data-debug="no-box">
+            <button id="cbm-popup-close" class="cbm-popup-close">&times;</button>
             <div id="cbm-popup-container" class="cbm-popup-container">
-                <button id="cbm-popup-close" class="cbm-popup-close">&times;</button>
                 <div id="cbm-popup-content" class="cbm-popup-content">
                     <!-- Box will be loaded via AJAX -->
                 </div>
@@ -138,8 +138,8 @@ function prerender_popup_content() {
     // Output the complete pre-rendered popup
     ?>
     <div id="cbm-popup-overlay" class="cbm-popup-overlay" style="display:none;" data-prerendered="true" data-has-tabs="<?php echo $has_tabs ? 'true' : 'false'; ?>">
+        <button id="cbm-popup-close" class="cbm-popup-close">&times;</button>
         <div id="cbm-popup-container" class="cbm-popup-container">
-            <button id="cbm-popup-close" class="cbm-popup-close">&times;</button>
             <div id="cbm-popup-content" class="cbm-popup-content">
                 <?php echo $final_html; ?>
             </div>
