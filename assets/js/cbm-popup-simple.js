@@ -206,14 +206,20 @@
             console.log('[CBM Popup] Switched to tab:', tabName);
         });
 
-        // Ensure all boxes in popup are always selected
+        // Ensure all boxes in popup are always selected and buttons visible
         $('#cbm-popup-content .box').each(function() {
-            $(this).addClass('selected');
-            $(this).find('.circlecontainer').show();
-            $(this).find('.circle-container').hide();
+            const $box = $(this);
+            $box.addClass('selected');
+            $box.removeClass('no-button'); // IMPORTANT: Remove no-button class to show buttons
+            $box.find('.circlecontainer').show();
+            $box.find('.circle-container').hide();
+
+            // Ensure add-to-cart button is visible
+            $box.find('.add-to-cart-button').show();
+
             // Remove any click handlers on the boxes themselves
-            $(this).off('click');
-            $(this).css('cursor', 'default');
+            $box.off('click');
+            $box.css('cursor', 'default');
         });
 
         // Date selection (keep this simple too)
@@ -283,14 +289,19 @@
                 $('#cbm-popup-content .cbm-tab-pane[data-tab="buy"]').show().addClass('active');
                 $('#cbm-popup-content .cbm-tab-pane[data-tab="enroll"]').hide().removeClass('active');
 
-                // Ensure all boxes are selected
+                // Ensure all boxes are selected and buttons visible
                 $('#cbm-popup-content .box').each(function() {
-                    $(this).addClass('selected');
-                    $(this).find('.circlecontainer').show();
-                    $(this).find('.circle-container').hide();
+                    const $box = $(this);
+                    $box.addClass('selected');
+                    $box.removeClass('no-button'); // Remove no-button class
+                    $box.find('.circlecontainer').show();
+                    $box.find('.circle-container').hide();
+
+                    // Force button to be visible
+                    $box.find('.add-to-cart-button').show().css('display', 'flex');
                 });
 
-                console.log('[CBM Popup] Initialized with Buy tab active');
+                console.log('[CBM Popup] Initialized with Buy tab active and buttons visible');
             }, 100);
 
             // Mark as bound but allow re-binding on next open

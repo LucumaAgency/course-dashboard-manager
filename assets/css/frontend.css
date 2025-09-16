@@ -405,6 +405,18 @@
     display: none;
 }
 
+/* Override: Always show buttons in popup */
+#cbm-popup-content .box .add-to-cart-button,
+#cbm-popup-overlay .box .add-to-cart-button {
+    display: flex !important;
+}
+
+/* Ensure no-button class doesn't hide buttons in popup */
+#cbm-popup-content .box.no-button .add-to-cart-button,
+#cbm-popup-overlay .box.no-button .add-to-cart-button {
+    display: flex !important;
+}
+
 /* Enroll-Buy Combo Styles */
 .enroll-buy-combo {
     width: 100%;
