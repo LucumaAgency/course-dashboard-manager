@@ -290,24 +290,6 @@
 
             console.log('[CBM Popup TAB CLICK] Tab switch complete!');
         }
-
-            // Clean up any sold-out selections in the newly visible pane
-            const $soldOutSelected = $targetPane.find('.date-btn.selected.sold-out');
-            if ($soldOutSelected.length > 0) {
-                console.warn('[CBM Popup] Removing sold-out selection in tab:', tabIndex);
-                $soldOutSelected.removeClass('selected');
-
-                // Auto-select first available date in this tab
-                const $availableDate = $targetPane.find('.date-btn:not(.sold-out)').first();
-                if ($availableDate.length > 0) {
-                    $availableDate.addClass('selected');
-                    console.log('[CBM Popup] Auto-selected available date in tab:', $availableDate.text());
-                }
-            }
-
-            console.log('[CBM Popup] Tab switched to:', tabIndex);
-            return false;
-        });
         
         // DEBUG: Monitor ALL clicks in popup
         $('#cbm-popup-overlay').on('click', function(e) {
