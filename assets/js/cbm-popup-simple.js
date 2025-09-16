@@ -253,7 +253,7 @@
             console.log('[CBM Popup] Course ID:', courseId);
             
             // Show popup with course boxes
-            showPopup(courseId);
+            cbmShowPopup(courseId);
         });
     }
     
@@ -313,7 +313,7 @@
         });
     }
     
-    function showPopup(courseId) {
+    function cbmShowPopup(courseId) {
         // Add class to body to indicate popup is active
         document.body.classList.add('cbm-popup-active');
 
@@ -1076,11 +1076,17 @@
         console.log('[CBM Popup DEBUG] ========== END DATE STATE DEBUG ==========');
     }
 
-    // Expose for external use
+    // Expose for external use with CBM namespace
     window.CBMPopup = {
-        show: showPopup,
+        show: cbmShowPopup,
         close: closePopup,
         debugDates: debugDateStates
     };
+
+    // IMPORTANT: Only set global showPopup if it doesn't exist
+    // This prevents conflicts with Elementor's showPopup
+    if (typeof window.showPopup === 'undefined') {
+        window.showPopup = cbmShowPopup;
+    }
 
 })(jQuery);
