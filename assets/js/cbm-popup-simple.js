@@ -5,7 +5,41 @@
 
 (function($) {
     'use strict';
-    
+
+    // IMMEDIATE: Run cleanup as soon as script loads, not waiting for DOM ready
+    (function immediateCleanup() {
+        // Check every 10ms for sold-out selections in the first second
+        let checks = 0;
+        const maxChecks = 100;
+        const immediateChecker = setInterval(function() {
+            checks++;
+
+            // Use native DOM for speed
+            const soldOutSelected = document.querySelectorAll('.date-btn.selected.sold-out');
+            if (soldOutSelected.length > 0) {
+                console.warn('[CBM Popup IMMEDIATE] Found and removing sold-out selections:', soldOutSelected.length);
+                soldOutSelected.forEach(function(btn) {
+                    btn.classList.remove('selected');
+                });
+
+                // Select first available
+                const containers = document.querySelectorAll('.date-options');
+                containers.forEach(function(container) {
+                    const available = container.querySelector('.date-btn:not(.sold-out)');
+                    if (available && !container.querySelector('.date-btn.selected')) {
+                        available.classList.add('selected');
+                        console.log('[CBM Popup IMMEDIATE] Selected available date:', available.textContent);
+                    }
+                });
+            }
+
+            if (checks >= maxChecks) {
+                clearInterval(immediateChecker);
+                console.log('[CBM Popup IMMEDIATE] Stopped immediate checker after', checks, 'checks');
+            }
+        }, 10); // Check every 10ms
+    })();
+
     // CRITICAL: Override any inline scripts that try to select dates
     // This runs BEFORE document ready to intercept early selections
     (function interceptEarlySelection() {
@@ -29,6 +63,25 @@
             return originalAddEventListener.call(this, type, listener, options);
         };
     })();
+
+    // Override console.log temporarily to catch and block unwanted messages
+    const originalConsoleLog = console.log;
+    console.log = function(...args) {
+        // Block specific messages about default date selection
+        const message = args.join(' ');
+        if (message.includes('Default selected date in popup') ||
+            message.includes('Popup opened, initializing')) {
+            console.warn('[CBM Popup BLOCKED] Intercepted message:', message);
+            return; // Don't log it
+        }
+        originalConsoleLog.apply(console, args);
+    };
+
+    // Restore original console.log after 2 seconds
+    setTimeout(function() {
+        console.log = originalConsoleLog;
+        console.info('[CBM Popup] Console.log restored');
+    }, 2000);
 
     // Wait for DOM ready
     $(document).ready(function() {
@@ -214,6 +267,13 @@
             console.time('[CBM Popup] Show time');
             overlay.style.display = 'block';
             console.timeEnd('[CBM Popup] Show time');
+
+            // ULTRA CRITICAL: Immediate cleanup with native DOM (faster than jQuery)
+            const immediateSoldOut = overlay.querySelectorAll('.date-btn.selected.sold-out');
+            if (immediateSoldOut.length > 0) {
+                console.warn('[CBM Popup SHOW] Immediately removing', immediateSoldOut.length, 'sold-out selections');
+                immediateSoldOut.forEach(btn => btn.classList.remove('selected'));
+            }
 
             // CRITICAL: Clean up any pre-selected sold-out dates BEFORE binding events
             cleanupSoldOutSelections();
