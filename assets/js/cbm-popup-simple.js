@@ -159,15 +159,32 @@
 
                 // Override with our wrapper
                 window.showPopup = function(courseId) {
-                    // If called with no arguments or looking for id="popup"
-                    if (!courseId && document.getElementById('popup')) {
-                        console.log('[CBM] Calling Elementor showPopup');
-                        if (elementorShowPopup) {
-                            return elementorShowPopup.call(this);
+                    console.log('[CBM] showPopup called with:', courseId);
+
+                    // Check if our CBM popup exists
+                    const cbmPopupExists = document.getElementById('cbm-popup-overlay');
+                    const elementorPopupExists = document.getElementById('popup');
+
+                    // If courseId is provided OR we have CBM popup but no Elementor popup, use ours
+                    if (courseId || (cbmPopupExists && !elementorPopupExists)) {
+                        console.log('[CBM] Using CBM popup');
+                        // If no courseId provided, try to get it from the page
+                        if (!courseId) {
+                            const bodyClass = document.body.className;
+                            const match = bodyClass.match(/postid-(\d+)/);
+                            if (match) {
+                                courseId = match[1];
+                                console.log('[CBM] Detected course ID from page:', courseId);
+                            }
                         }
+                        return cbmShowPopup(courseId);
+                    } else if (elementorPopupExists && elementorShowPopup) {
+                        // Only use Elementor if their popup exists and we don't have CBM popup
+                        console.log('[CBM] Using Elementor popup');
+                        return elementorShowPopup.call(this);
                     } else {
-                        // It's for our popup
-                        console.log('[CBM] Redirecting to cbmShowPopup');
+                        // Default to our popup
+                        console.log('[CBM] Defaulting to CBM popup');
                         return cbmShowPopup(courseId);
                     }
                 };
