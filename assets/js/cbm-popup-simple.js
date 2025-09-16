@@ -6,6 +6,34 @@
 (function($) {
     'use strict';
 
+    // ULTRA IMMEDIATE: Protect selected state from the very beginning
+    (function protectSelectedState() {
+        console.log('[CBM SELECTED PROTECTOR] Starting protection');
+
+        // Check every 10ms for first 2 seconds
+        let protectCount = 0;
+        const protector = setInterval(function() {
+            protectCount++;
+
+            // Find all popup boxes
+            const popupBoxes = document.querySelectorAll('#cbm-popup-overlay .box, #cbm-popup-content .box');
+            popupBoxes.forEach(function(box) {
+                if (!box.classList.contains('selected')) {
+                    console.error('[CBM SELECTED PROTECTOR] Box lost selected class at check #' + protectCount + '! Re-adding!');
+                    box.classList.add('selected');
+
+                    // Log what removed it
+                    console.trace('[CBM SELECTED PROTECTOR] Stack trace of deselection:');
+                }
+            });
+
+            if (protectCount > 200) { // 2 seconds
+                clearInterval(protector);
+                console.log('[CBM SELECTED PROTECTOR] Initial protection phase complete');
+            }
+        }, 10);
+    })();
+
     // IMMEDIATE BUTTON FORCER: Keep buttons visible no matter what
     (function forceButtonsVisible() {
         console.log('[CBM Popup BUTTON FORCE] Starting ULTRA aggressive button visibility enforcer');
@@ -31,18 +59,27 @@
                     box.className = box.className.replace(/no-button/g, ''); // Double force
                 }
 
-                // FORCE box to be selected (especially for buy-course)
+                // FORCE box to be selected ALWAYS
                 if (!box.classList.contains('selected')) {
-                    console.warn('[CBM BUTTON FORCE] Box not selected, FORCING selected state!');
+                    console.error('[CBM BUTTON FORCE] Box DESELECTED at check #' + forceCount + ', RE-SELECTING!');
                     box.classList.add('selected');
+                    // Also force via direct manipulation
+                    box.className = box.className + ' selected';
+                    box.setAttribute('class', box.className);
+                }
 
-                    // Show selected indicator
-                    const circleContainer = box.querySelector('.circlecontainer');
-                    const simpleCircle = box.querySelector('.circle-container');
-                    if (circleContainer) {
+                // ALWAYS ensure selected indicator is visible
+                const circleContainer = box.querySelector('.circlecontainer');
+                const simpleCircle = box.querySelector('.circle-container');
+                if (circleContainer) {
+                    if (circleContainer.style.display !== 'flex') {
+                        console.warn('[CBM BUTTON FORCE] Fixing circle indicator visibility');
                         circleContainer.style.display = 'flex';
+                        circleContainer.style.cssText = 'display: flex !important;';
                     }
-                    if (simpleCircle) {
+                }
+                if (simpleCircle) {
+                    if (simpleCircle.style.display !== 'none') {
                         simpleCircle.style.display = 'none';
                     }
                 }
@@ -76,13 +113,27 @@
         // Start the force loop
         forceButtons();
 
-        // Also intercept style changes
+        // Intercept ALL attempts to modify classes and styles
         const originalSetAttribute = Element.prototype.setAttribute;
         Element.prototype.setAttribute = function(name, value) {
+            // Block no-button class
             if (name === 'class' && value && value.includes('no-button')) {
                 console.error('[CBM INTERCEPT] Blocked attempt to add no-button class!');
                 value = value.replace(/no-button/g, '').trim();
             }
+
+            // PREVENT removing selected class from popup boxes
+            if (name === 'class' && this.classList && this.classList.contains('box')) {
+                const inPopup = this.closest('#cbm-popup-overlay') || this.closest('#cbm-popup-content');
+                if (inPopup) {
+                    if (!value.includes('selected')) {
+                        console.error('[CBM INTERCEPT] Blocked attempt to deselect box in popup!');
+                        value = value + ' selected';
+                    }
+                }
+            }
+
+            // Block hiding buttons
             if (name === 'style' && this.classList && this.classList.contains('add-to-cart-button')) {
                 if (value && value.includes('none')) {
                     console.error('[CBM INTERCEPT] Blocked attempt to hide button!');
@@ -91,6 +142,45 @@
             }
             return originalSetAttribute.call(this, name, value);
         };
+
+        // Also intercept classList operations
+        const originalRemove = DOMTokenList.prototype.remove;
+        DOMTokenList.prototype.remove = function() {
+            const element = this.parentElement || this.parentNode;
+            if (element) {
+                const inPopup = element.closest('#cbm-popup-overlay') || element.closest('#cbm-popup-content');
+
+                // Prevent removing 'selected' from popup boxes
+                for (let i = 0; i < arguments.length; i++) {
+                    if (arguments[i] === 'selected' && element.classList.contains('box') && inPopup) {
+                        console.error('[CBM INTERCEPT] Blocked classList.remove("selected") on popup box!');
+                        return; // Don't remove it
+                    }
+                }
+            }
+            return originalRemove.apply(this, arguments);
+        };
+
+        // Intercept className property changes
+        Object.defineProperty(Element.prototype, 'className', {
+            get: function() {
+                return this.getAttribute('class') || '';
+            },
+            set: function(value) {
+                const inPopup = this.closest('#cbm-popup-overlay') || this.closest('#cbm-popup-content');
+                if (this.classList && this.classList.contains('box') && inPopup) {
+                    if (!value.includes('selected')) {
+                        console.error('[CBM INTERCEPT] Blocked className change removing selected!');
+                        value = value + ' selected';
+                    }
+                    if (value.includes('no-button')) {
+                        value = value.replace(/no-button/g, '');
+                    }
+                }
+                this.setAttribute('class', value);
+            },
+            configurable: true
+        });
     })();
 
     // IMMEDIATE: Run cleanup as soon as script loads, not waiting for DOM ready
