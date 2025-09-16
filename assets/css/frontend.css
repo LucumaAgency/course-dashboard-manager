@@ -405,16 +405,26 @@
     display: none;
 }
 
-/* Override: Always show buttons in popup */
+/* Override: Always show buttons in popup - ULTRA SPECIFIC */
+#cbm-popup-overlay .box .add-to-cart-button,
+#cbm-popup-overlay .box.no-button .add-to-cart-button,
+#cbm-popup-overlay .buy-course .add-to-cart-button,
+#cbm-popup-overlay .buy-course.no-button .add-to-cart-button,
+#cbm-popup-overlay .enroll-course .add-to-cart-button,
+#cbm-popup-overlay .enroll-course.no-button .add-to-cart-button,
 #cbm-popup-content .box .add-to-cart-button,
-#cbm-popup-overlay .box .add-to-cart-button {
-    display: flex !important;
-}
-
-/* Ensure no-button class doesn't hide buttons in popup */
 #cbm-popup-content .box.no-button .add-to-cart-button,
-#cbm-popup-overlay .box.no-button .add-to-cart-button {
+#cbm-popup-content .buy-course .add-to-cart-button,
+#cbm-popup-content .buy-course.no-button .add-to-cart-button,
+#cbm-popup-content .enroll-course .add-to-cart-button,
+#cbm-popup-content .enroll-course.no-button .add-to-cart-button,
+body #cbm-popup-overlay .box.no-button .add-to-cart-button,
+body #cbm-popup-content .box.no-button .add-to-cart-button {
     display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    min-height: 40px !important;
 }
 
 /* Enroll-Buy Combo Styles */

@@ -8,32 +8,73 @@
 
     // IMMEDIATE BUTTON FORCER: Keep buttons visible no matter what
     (function forceButtonsVisible() {
-        console.log('[CBM Popup BUTTON FORCE] Starting aggressive button visibility enforcer');
+        console.log('[CBM Popup BUTTON FORCE] Starting ULTRA aggressive button visibility enforcer');
 
-        // Check every 50ms
-        setInterval(function() {
-            // Only check if popup is visible
-            const popup = document.getElementById('cbm-popup-overlay');
-            if (!popup || popup.style.display === 'none') return;
+        let forceCount = 0;
 
-            // Force all buttons in popup to be visible
-            const buttons = document.querySelectorAll('#cbm-popup-content .add-to-cart-button, #cbm-popup-overlay .add-to-cart-button');
-            buttons.forEach(function(btn) {
-                if (btn.style.display === 'none' || getComputedStyle(btn).display === 'none') {
-                    console.warn('[CBM Popup BUTTON FORCE] Button was hidden, forcing visible!');
-                    btn.style.display = 'flex';
-                    btn.style.visibility = 'visible';
-                    btn.style.opacity = '1';
+        // Check every 20ms for the first 5 seconds, then every 100ms
+        function forceButtons() {
+            forceCount++;
+
+            // Debug what's happening
+            const boxes = document.querySelectorAll('#cbm-popup-content .box, #cbm-popup-overlay .box');
+            boxes.forEach(function(box) {
+                // Log current state
+                if (forceCount % 50 === 1) { // Log every second
+                    console.log('[CBM BUTTON DEBUG] Box classes:', box.className);
                 }
 
-                // Remove no-button class from parent box
-                const box = btn.closest('.box');
-                if (box && box.classList.contains('no-button')) {
-                    console.warn('[CBM Popup BUTTON FORCE] Removing no-button class');
+                // FORCE remove no-button class
+                if (box.classList.contains('no-button')) {
+                    console.warn('[CBM BUTTON FORCE] REMOVING no-button class at check #' + forceCount);
                     box.classList.remove('no-button');
+                    box.className = box.className.replace(/no-button/g, ''); // Double force
+                }
+
+                // Find button in this box
+                const btn = box.querySelector('.add-to-cart-button');
+                if (btn) {
+                    const isHidden = btn.style.display === 'none' ||
+                                   getComputedStyle(btn).display === 'none' ||
+                                   btn.offsetParent === null;
+
+                    if (isHidden) {
+                        console.error('[CBM BUTTON FORCE] Button HIDDEN at check #' + forceCount + ', FORCING VISIBLE!');
+                        // Nuclear option - override everything
+                        btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; height: 40px !important;');
+                        btn.style.cssText = 'display: flex !important; visibility: visible !important; opacity: 1 !important; width: 100% !important; height: 40px !important;';
+                    }
+                } else if (forceCount % 50 === 1) {
+                    console.error('[CBM BUTTON FORCE] NO BUTTON FOUND in box!');
                 }
             });
-        }, 50);
+
+            // Adjust frequency after initial aggressive phase
+            if (forceCount < 250) {
+                setTimeout(forceButtons, 20); // Every 20ms for first 5 seconds
+            } else {
+                setTimeout(forceButtons, 100); // Then every 100ms
+            }
+        }
+
+        // Start the force loop
+        forceButtons();
+
+        // Also intercept style changes
+        const originalSetAttribute = Element.prototype.setAttribute;
+        Element.prototype.setAttribute = function(name, value) {
+            if (name === 'class' && value && value.includes('no-button')) {
+                console.error('[CBM INTERCEPT] Blocked attempt to add no-button class!');
+                value = value.replace(/no-button/g, '').trim();
+            }
+            if (name === 'style' && this.classList && this.classList.contains('add-to-cart-button')) {
+                if (value && value.includes('none')) {
+                    console.error('[CBM INTERCEPT] Blocked attempt to hide button!');
+                    return;
+                }
+            }
+            return originalSetAttribute.call(this, name, value);
+        };
     })();
 
     // IMMEDIATE: Run cleanup as soon as script loads, not waiting for DOM ready
@@ -314,6 +355,23 @@
 
             // CRITICAL: Clean up any pre-selected sold-out dates BEFORE binding events
             cleanupSoldOutSelections();
+
+            // IMMEDIATE: Force buttons visible RIGHT when popup opens
+            console.log('[CBM Popup OPEN] Forcing buttons visible immediately!');
+            const boxes = overlay.querySelectorAll('.box');
+            boxes.forEach(function(box) {
+                // Remove no-button class
+                box.classList.remove('no-button');
+
+                // Find and force button visible
+                const btn = box.querySelector('.add-to-cart-button');
+                if (btn) {
+                    btn.style.display = 'flex';
+                    btn.style.visibility = 'visible';
+                    btn.style.opacity = '1';
+                    btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
+                }
+            });
 
             // Bind events
             bindMinimalEvents();
