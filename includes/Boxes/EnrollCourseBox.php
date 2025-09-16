@@ -94,11 +94,28 @@ class EnrollCourseBox extends AbstractBox {
                 
                 // Calculate available seats
                 $sold = 0;
-                if ($this->course_product_id && function_exists('calculate_seats_sold')) {
-                    $sold = calculate_seats_sold($this->course_product_id, $date);
+                if ($this->course_product_id && function_exists('wc_get_orders')) {
+                    // Calculate sold seats directly here
+                    $orders = wc_get_orders([
+                        'status' => ['wc-completed'],
+                        'limit' => -1,
+                    ]);
+
+                    foreach ($orders as $order) {
+                        foreach ($order->get_items() as $item) {
+                            if ($item->get_product_id() == $this->course_product_id &&
+                                strcasecmp(trim($item->get_meta('Start Date')), trim($date)) === 0) {
+                                $sold += $item->get_quantity();
+                            }
+                        }
+                    }
                 }
+
                 $available = max(0, $stock - $sold);
                 $is_sold_out = ($available <= 0);
+
+                // Debug logging
+                error_log('[EnrollCourseBox DEBUG] Date: ' . $date . ', Stock: ' . $stock . ', Sold: ' . $sold . ', Available: ' . $available . ', Sold Out: ' . ($is_sold_out ? 'YES' : 'NO'));
                 
                 if (!$is_sold_out) {
                     $all_sold_out = false;

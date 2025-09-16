@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.9.1
+ * Version: 1.9.2
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.9.1');
+define('CBM_VERSION', '1.9.2');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -4388,6 +4388,75 @@ function cbm_get_course_boxes() {
     error_log('[CBM Popup] HTML generated, length: ' . strlen($html));
     
     wp_send_json_success(['html' => $html, 'course_id' => $course_id]);
+}
+
+// AJAX handler for debugging date seats data
+add_action('wp_ajax_cbm_debug_date_seats', 'cbm_debug_date_seats');
+add_action('wp_ajax_nopriv_cbm_debug_date_seats', 'cbm_debug_date_seats');
+function cbm_debug_date_seats() {
+    $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
+
+    if (!$course_id) {
+        wp_send_json_error('No course ID provided');
+    }
+
+    error_log('[CBM Debug] Fetching seat data for course: ' . $course_id);
+
+    // Get dates and stock info
+    $dates_data = [];
+    $dates = cbm_get_field('course_dates', $course_id) ?: [];
+
+    // Get enroll product ID
+    $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
+    if (!$enroll_product_id) {
+        $enroll_product_id = get_post_meta($course_id, 'linked_product_id', true);
+    }
+
+    foreach ($dates as $date_entry) {
+        if (!empty($date_entry['date'])) {
+            $date = sanitize_text_field($date_entry['date']);
+            $initial_stock = isset($date_entry['stock']) ? intval($date_entry['stock']) : 10;
+
+            // Calculate sold seats
+            $sold = 0;
+            if ($enroll_product_id && function_exists('wc_get_orders')) {
+                $orders = wc_get_orders([
+                    'status' => ['wc-completed'],
+                    'limit' => -1,
+                ]);
+
+                foreach ($orders as $order) {
+                    foreach ($order->get_items() as $item) {
+                        $item_product_id = $item->get_product_id();
+                        $start_date = $item->get_meta('Start Date');
+
+                        if ($item_product_id == $enroll_product_id &&
+                            strcasecmp(trim($start_date), trim($date)) === 0) {
+                            $sold += $item->get_quantity();
+                        }
+                    }
+                }
+            }
+
+            $remaining = $initial_stock - $sold;
+
+            $dates_data[] = [
+                'date' => $date,
+                'initial_stock' => $initial_stock,
+                'sold' => $sold,
+                'remaining' => $remaining
+            ];
+
+            error_log('[CBM Debug] Date: ' . $date . ', Stock: ' . $initial_stock . ', Sold: ' . $sold . ', Remaining: ' . $remaining);
+        }
+    }
+
+    wp_send_json_success([
+        'course_id' => $course_id,
+        'enroll_product_id' => $enroll_product_id,
+        'dates' => $dates_data,
+        'box_state' => get_post_meta($course_id, 'box_state', true)
+    ]);
 }
 
 // Enqueue global scripts and styles

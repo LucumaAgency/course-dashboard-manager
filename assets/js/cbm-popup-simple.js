@@ -607,7 +607,10 @@
     
     function initializeBoxInteractions() {
         console.log('[CBM Popup] Initializing box interactions');
-        
+
+        // Debug: Map all dates and their states
+        debugDateStates();
+
         // Re-initialize date selection
         $('#cbm-popup-content').find('.date-btn:not(.sold-out)').off('click').on('click', function(e) {
             e.preventDefault();
@@ -671,31 +674,66 @@
         });
         
         // Auto-select dates intelligently
+        console.log('[CBM Popup DEBUG] ========== AUTO-SELECT DATES START ==========');
         $('#cbm-popup-content').find('.box, .cbm-tab-pane').each(function() {
             const $container = $(this);
+            const containerType = $container.hasClass('box') ? 'box' : 'tab-pane';
+            const containerClasses = $container.attr('class');
+
+            console.log('[CBM Popup DEBUG] Processing container:', containerType, 'Classes:', containerClasses);
+
+            // Get ALL date buttons
+            const $allDates = $container.find('.date-btn');
             const $availableDates = $container.find('.date-btn:not(.sold-out)');
+            const $soldOutDates = $container.find('.date-btn.sold-out');
             const $selectedDate = $container.find('.date-btn.selected');
+
+            console.log('[CBM Popup DEBUG] Total dates found:', $allDates.length);
+            console.log('[CBM Popup DEBUG] Available dates:', $availableDates.length);
+            console.log('[CBM Popup DEBUG] Sold-out dates:', $soldOutDates.length);
+            console.log('[CBM Popup DEBUG] Selected dates:', $selectedDate.length);
+
+            // Log each date details
+            $allDates.each(function(index) {
+                const $btn = $(this);
+                const dateText = $btn.data('date') || $btn.text();
+                const classes = $btn.attr('class');
+                const isSoldOut = $btn.hasClass('sold-out');
+                const isSelected = $btn.hasClass('selected');
+                const isDisabled = $btn.prop('disabled');
+
+                console.log(`[CBM Popup DEBUG] Date ${index + 1}:`, {
+                    text: dateText,
+                    classes: classes,
+                    soldOut: isSoldOut,
+                    selected: isSelected,
+                    disabled: isDisabled,
+                    element: $btn[0]
+                });
+            });
 
             // If there's already a selected date that is NOT sold out, leave it
             if ($selectedDate.length > 0 && !$selectedDate.hasClass('sold-out')) {
-                console.log('[CBM Popup] Date already selected and available:', $selectedDate.data('date'));
+                console.log('[CBM Popup DEBUG] ✓ Date already selected and available:', $selectedDate.data('date'));
                 return; // Continue to next container
             }
 
             // If the selected date IS sold out, remove selection
             if ($selectedDate.length > 0 && $selectedDate.hasClass('sold-out')) {
-                console.log('[CBM Popup] Removing sold-out date selection:', $selectedDate.data('date'));
+                console.log('[CBM Popup DEBUG] ⚠️ REMOVING sold-out date selection:', $selectedDate.data('date'));
                 $selectedDate.removeClass('selected');
             }
 
             // Auto-select first available date if there are any
             if ($availableDates.length > 0) {
-                console.log('[CBM Popup] Auto-selecting first available date');
-                $availableDates.first().click();
+                const firstAvailable = $availableDates.first();
+                console.log('[CBM Popup DEBUG] Auto-selecting first available date:', firstAvailable.data('date') || firstAvailable.text());
+                firstAvailable.click();
             } else {
-                console.log('[CBM Popup] No available dates to select');
+                console.log('[CBM Popup DEBUG] ❌ No available dates to select');
             }
         });
+        console.log('[CBM Popup DEBUG] ========== AUTO-SELECT DATES END ==========');
     }
     
     function addToCart($button, productId, selectedDate) {
@@ -774,11 +812,71 @@
             overlay.style.display = 'none'; // Direct DOM for instant close
         }
     }
-    
+
+    function debugDateStates() {
+        console.log('[CBM Popup DEBUG] ========== DATE STATE DEBUG ==========');
+
+        // Get course ID from popup content
+        const $firstBox = $('#cbm-popup-content').find('.box').first();
+        const courseId = $firstBox.data('course-id') || $firstBox.attr('data-course-id');
+
+        if (courseId) {
+            console.log('[CBM Popup DEBUG] Course ID:', courseId);
+
+            // Fetch seats data via AJAX
+            $.ajax({
+                url: window.cbm_ajax.ajax_url || '/wp-admin/admin-ajax.php',
+                type: 'POST',
+                data: {
+                    action: 'cbm_debug_date_seats',
+                    course_id: courseId,
+                    nonce: window.cbm_ajax.nonce || ''
+                },
+                success: function(response) {
+                    if (response.success && response.data) {
+                        console.log('[CBM Popup DEBUG] SEATS DATA:', response.data);
+
+                        // Log each date's seat info
+                        if (response.data.dates) {
+                            response.data.dates.forEach(function(dateInfo, index) {
+                                console.log(`[CBM Popup DEBUG] Date ${index + 1}: "${dateInfo.date}"`, {
+                                    initial_stock: dateInfo.initial_stock,
+                                    sold: dateInfo.sold,
+                                    remaining: dateInfo.remaining,
+                                    should_be_sold_out: dateInfo.remaining <= 0
+                                });
+                            });
+                        }
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('[CBM Popup DEBUG] Failed to fetch seats data:', error);
+                }
+            });
+        }
+
+        // Debug current DOM state
+        $('#cbm-popup-content').find('.date-btn').each(function(index) {
+            const $btn = $(this);
+            console.log(`[CBM Popup DEBUG] DOM Date ${index + 1}:`, {
+                text: $btn.text(),
+                data_date: $btn.data('date'),
+                has_sold_out_class: $btn.hasClass('sold-out'),
+                has_selected_class: $btn.hasClass('selected'),
+                is_disabled: $btn.prop('disabled'),
+                parent_classes: $btn.parent().attr('class'),
+                html: $btn[0].outerHTML.substring(0, 100) + '...'
+            });
+        });
+
+        console.log('[CBM Popup DEBUG] ========== END DATE STATE DEBUG ==========');
+    }
+
     // Expose for external use
     window.CBMPopup = {
         show: showPopup,
-        close: closePopup
+        close: closePopup,
+        debugDates: debugDateStates
     };
-    
+
 })(jQuery);
