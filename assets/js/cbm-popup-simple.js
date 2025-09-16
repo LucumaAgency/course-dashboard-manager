@@ -31,6 +31,22 @@
                     box.className = box.className.replace(/no-button/g, ''); // Double force
                 }
 
+                // FORCE box to be selected (especially for buy-course)
+                if (!box.classList.contains('selected')) {
+                    console.warn('[CBM BUTTON FORCE] Box not selected, FORCING selected state!');
+                    box.classList.add('selected');
+
+                    // Show selected indicator
+                    const circleContainer = box.querySelector('.circlecontainer');
+                    const simpleCircle = box.querySelector('.circle-container');
+                    if (circleContainer) {
+                        circleContainer.style.display = 'flex';
+                    }
+                    if (simpleCircle) {
+                        simpleCircle.style.display = 'none';
+                    }
+                }
+
                 // Find button in this box
                 const btn = box.querySelector('.add-to-cart-button');
                 if (btn) {
@@ -277,22 +293,38 @@
             console.log('[CBM Popup] Switched to tab:', tabName);
         });
 
-        // Ensure all boxes in popup are always selected and buttons visible
-        $('#cbm-popup-content .box').each(function() {
-            const $box = $(this);
-            $box.addClass('selected');
-            $box.removeClass('no-button'); // IMPORTANT: Remove no-button class to show buttons
-            $box.find('.circlecontainer').show();
-            $box.find('.circle-container').hide();
+        // Ensure all boxes in popup are ALWAYS selected and buttons visible
+        function forceBoxState() {
+            $('#cbm-popup-content .box, #cbm-popup-overlay .box').each(function() {
+                const $box = $(this);
 
-            // ULTRA FORCE add-to-cart button to be visible
-            const $button = $box.find('.add-to-cart-button');
-            $button.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
+                // FORCE selected state
+                if (!$box.hasClass('selected')) {
+                    console.log('[CBM Popup] Forcing box to selected state');
+                    $box.addClass('selected');
+                }
 
-            // Remove any click handlers on the boxes themselves
-            $box.off('click');
-            $box.css('cursor', 'default');
-        });
+                $box.removeClass('no-button'); // Remove no-button class
+
+                // Force selection indicator
+                $box.find('.circlecontainer').show().css('display', 'flex');
+                $box.find('.circle-container').hide();
+
+                // ULTRA FORCE add-to-cart button to be visible
+                const $button = $box.find('.add-to-cart-button');
+                $button.attr('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
+
+                // Remove any click handlers on the boxes themselves
+                $box.off('click');
+                $box.css('cursor', 'default');
+            });
+        }
+
+        // Force immediately and repeatedly
+        forceBoxState();
+        setTimeout(forceBoxState, 100);
+        setTimeout(forceBoxState, 300);
+        setTimeout(forceBoxState, 500);
 
         // Re-force buttons visible after a delay (in case something tries to hide them)
         setTimeout(function() {
@@ -356,12 +388,25 @@
             // CRITICAL: Clean up any pre-selected sold-out dates BEFORE binding events
             cleanupSoldOutSelections();
 
-            // IMMEDIATE: Force buttons visible RIGHT when popup opens
-            console.log('[CBM Popup OPEN] Forcing buttons visible immediately!');
+            // IMMEDIATE: Force buttons visible and boxes selected RIGHT when popup opens
+            console.log('[CBM Popup OPEN] Forcing buttons visible and boxes selected immediately!');
             const boxes = overlay.querySelectorAll('.box');
             boxes.forEach(function(box) {
                 // Remove no-button class
                 box.classList.remove('no-button');
+
+                // FORCE selected state
+                box.classList.add('selected');
+
+                // Show selected indicator (ringed circle)
+                const circleContainer = box.querySelector('.circlecontainer');
+                const simpleCircle = box.querySelector('.circle-container');
+                if (circleContainer) {
+                    circleContainer.style.display = 'flex';
+                }
+                if (simpleCircle) {
+                    simpleCircle.style.display = 'none';
+                }
 
                 // Find and force button visible
                 const btn = box.querySelector('.add-to-cart-button');
@@ -371,6 +416,8 @@
                     btn.style.opacity = '1';
                     btn.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
                 }
+
+                console.log('[CBM Popup OPEN] Box forced to selected:', box.className);
             });
 
             // Bind events

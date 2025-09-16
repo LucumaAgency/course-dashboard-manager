@@ -405,6 +405,25 @@
     display: none;
 }
 
+/* Force boxes to appear selected in popup */
+#cbm-popup-overlay .box,
+#cbm-popup-content .box {
+    background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
+    border: 2px solid rgba(222, 4, 164, 0.3) !important;
+    opacity: 1 !important;
+}
+
+/* Force selection indicators visible in popup */
+#cbm-popup-overlay .box .circlecontainer,
+#cbm-popup-content .box .circlecontainer {
+    display: flex !important;
+}
+
+#cbm-popup-overlay .box .circle-container,
+#cbm-popup-content .box .circle-container {
+    display: none !important;
+}
+
 /* Override: Always show buttons in popup - ULTRA SPECIFIC */
 #cbm-popup-overlay .box .add-to-cart-button,
 #cbm-popup-overlay .box.no-button .add-to-cart-button,
