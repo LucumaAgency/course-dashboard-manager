@@ -321,6 +321,23 @@
         const overlay = document.getElementById('cbm-popup-overlay');
 
         if (overlay && overlay.getAttribute('data-prerendered') === 'true') {
+            // CRITICAL: Override classList.add BEFORE showing popup
+            // This prevents Elementor from adding no-button class
+            const originalAdd = DOMTokenList.prototype.add;
+            DOMTokenList.prototype.add = function() {
+                // Block no-button class on any element in our popup
+                for (let i = 0; i < arguments.length; i++) {
+                    if (arguments[i] === 'no-button') {
+                        const elem = this.parentElement || this.parentNode;
+                        if (elem && (elem.closest('#cbm-popup-overlay') || elem.closest('#cbm-popup-content'))) {
+                            console.warn('[CBM] BLOCKED no-button class in popup');
+                            return this; // Don't add it
+                        }
+                    }
+                }
+                return originalAdd.apply(this, arguments);
+            };
+
             // OVERRIDE selectBox function for popup - make it do NOTHING
             // selectBox is the function from PHP that handles box selection on main page
             // In popup, we don't want ANY selection changes
@@ -332,6 +349,34 @@
 
             // Show popup
             overlay.style.display = 'block';
+
+            // IMMEDIATELY remove no-button class from all boxes
+            // Do this multiple times to counteract Elementor's attempts
+            function removeNoButtonClass() {
+                const allBoxes = overlay.querySelectorAll('.box');
+                allBoxes.forEach(function(box) {
+                    if (box.classList.contains('no-button')) {
+                        console.log('[CBM] Removing no-button class from box');
+                        box.classList.remove('no-button');
+                        // Force button visible
+                        const btn = box.querySelector('.add-to-cart-button');
+                        if (btn) {
+                            btn.style.display = 'flex';
+                            btn.style.visibility = 'visible';
+                        }
+                    }
+                });
+            }
+
+            // Run immediately
+            removeNoButtonClass();
+
+            // Run again after Elementor's timeout (they use setTimeout)
+            setTimeout(removeNoButtonClass, 10);
+            setTimeout(removeNoButtonClass, 50);
+            setTimeout(removeNoButtonClass, 100);
+            setTimeout(removeNoButtonClass, 200);
+            setTimeout(removeNoButtonClass, 500);
 
             // ULTRA CRITICAL: Immediate cleanup with native DOM (faster than jQuery)
             const immediateSoldOut = overlay.querySelectorAll('.date-btn.selected.sold-out');

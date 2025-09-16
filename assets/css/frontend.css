@@ -401,7 +401,8 @@
 }
 
 /* No button state - ONLY hide in non-popup contexts */
-body:not(.cbm-popup-active) .box.no-button .add-to-cart-button {
+/* NEVER hide buttons in popup, regardless of no-button class */
+body:not(.cbm-popup-active) .box.no-button:not(#cbm-popup-overlay .box):not(#cbm-popup-content .box) .add-to-cart-button {
     display: none;
 }
 
