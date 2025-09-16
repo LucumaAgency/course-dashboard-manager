@@ -238,45 +238,8 @@ class EnrollBuyBox extends AbstractBox {
                         });
                     });
                     
-                    // Tab switching for mobile
-                    const tabButtons = container.querySelectorAll('.cbm-tab-btn');
-                    const tabPanes = container.querySelectorAll('.cbm-tab-pane');
-                    
-                    tabButtons.forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const targetTab = this.dataset.tab;
-                            
-                            // Update buttons
-                            tabButtons.forEach(b => b.classList.remove('active'));
-                            this.classList.add('active');
-                            
-                            // Update panes and box selection states
-                            tabPanes.forEach(pane => {
-                                const paneBox = pane.querySelector('.box');
-                                if (pane.dataset.tab === targetTab) {
-                                    pane.classList.add('active');
-                                    // Select the box in the active tab (show ringed circle)
-                                    if (paneBox) {
-                                        paneBox.classList.add('selected');
-                                        const circleContainer = paneBox.querySelector('.circlecontainer');
-                                        const circle = paneBox.querySelector('.circle-container');
-                                        if (circleContainer) circleContainer.style.display = 'flex';
-                                        if (circle) circle.style.display = 'none';
-                                    }
-                                } else {
-                                    pane.classList.remove('active');
-                                    // Deselect the box in inactive tabs (show simple circle)
-                                    if (paneBox) {
-                                        paneBox.classList.remove('selected');
-                                        const circleContainer = paneBox.querySelector('.circlecontainer');
-                                        const circle = paneBox.querySelector('.circle-container');
-                                        if (circleContainer) circleContainer.style.display = 'none';
-                                        if (circle) circle.style.display = 'flex';
-                                    }
-                                }
-                            });
-                        });
-                    });
+                    // Tab switching is handled by cbm-popup-simple.js
+                    // No inline handlers needed - they conflict with jQuery event delegation
             }
             
             // Initialize on DOMContentLoaded and also immediately
