@@ -145,6 +145,43 @@
         console.info('[CBM Popup] Console.log restored');
     }, 2000);
 
+    // CRITICAL: Override Elementor's showPopup immediately
+    // This must happen BEFORE DOM ready
+    (function() {
+        // Store Elementor's showPopup if it exists
+        let elementorShowPopup = null;
+
+        // Check periodically for Elementor's showPopup and override it
+        const overrideInterval = setInterval(function() {
+            if (window.showPopup && window.showPopup !== cbmShowPopup) {
+                console.log('[CBM] Found Elementor showPopup, storing it');
+                elementorShowPopup = window.showPopup;
+
+                // Override with our wrapper
+                window.showPopup = function(courseId) {
+                    // If called with no arguments or looking for id="popup"
+                    if (!courseId && document.getElementById('popup')) {
+                        console.log('[CBM] Calling Elementor showPopup');
+                        if (elementorShowPopup) {
+                            return elementorShowPopup.call(this);
+                        }
+                    } else {
+                        // It's for our popup
+                        console.log('[CBM] Redirecting to cbmShowPopup');
+                        return cbmShowPopup(courseId);
+                    }
+                };
+
+                clearInterval(overrideInterval);
+            }
+        }, 10);
+
+        // Stop checking after 5 seconds
+        setTimeout(function() {
+            clearInterval(overrideInterval);
+        }, 5000);
+    })();
+
     // Wait for DOM ready
     $(document).ready(function() {
         // Override jQuery removeClass for popup boxes
@@ -213,6 +250,17 @@
 
         // Initialize popup triggers
         initializePopupTriggers();
+
+        // Fix any inline onclick handlers that call showPopup with course IDs
+        $('[onclick*="showPopup"]').each(function() {
+            const onclick = $(this).attr('onclick');
+            // If it's calling showPopup with a number, it's probably for our popup
+            if (onclick && onclick.match(/showPopup\(\s*\d+\s*\)/)) {
+                console.log('[CBM] Fixing onclick to use CBMPopup.show:', onclick);
+                const newOnclick = onclick.replace(/showPopup\(/, 'CBMPopup.show(');
+                $(this).attr('onclick', newOnclick);
+            }
+        });
 
         // SAFETY NET: Periodically check and clean sold-out selections
         setInterval(function() {
