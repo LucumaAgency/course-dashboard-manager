@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.9.24
+ * Version: 1.9.25
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.9.24');
+define('CBM_VERSION', '1.9.25');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -4524,6 +4524,17 @@ function cbm_enqueue_popup_assets() {
         wp_enqueue_script('cbm-popup-simple');
         // wp_enqueue_script('cbm-popup-auto'); // Commented out - using simple version
         wp_enqueue_style('cbm-popup');
+
+        // Add debug script only if WP_DEBUG is enabled or query param exists
+        if ((defined('WP_DEBUG') && WP_DEBUG) || isset($_GET['cbm_debug'])) {
+            wp_enqueue_script(
+                'cbm-debug-interference',
+                CBM_PLUGIN_URL . 'assets/js/cbm-debug-interference.js',
+                array(),
+                CBM_VERSION,
+                true
+            );
+        }
     }
 }
 
