@@ -262,6 +262,11 @@
         flex-direction: column;
         padding: 20px;
     }
+
+    /* Reduce min-height for enroll box on tablet */
+    .cbm-popup-container .enroll-course {
+        min-height: 300px;
+    }
 }
 
 /* Very small screens */
@@ -280,6 +285,11 @@
     
     .cbm-tabs-header {
         margin-bottom: 15px;
+    }
+
+    /* Remove min-height for enroll box on small mobile - adapt to content */
+    .cbm-popup-container .enroll-course {
+        min-height: auto;
     }
 }
 
@@ -341,9 +351,9 @@ body.cbm-popup-open {
     height: auto !important;
 }
 
-/* Enroll course box - with min-height */
+/* Enroll course box - with responsive min-height */
 .cbm-popup-container .enroll-course {
-    min-height: 400px;
+    min-height: 400px; /* Desktop: mantener altura completa */
 }
 
 .cbm-popup-container .box:not(.selected) {
@@ -393,57 +403,8 @@ body.cbm-popup-open {
     border-color: #DE04A4 !important;
 }
 
-/* Box styles within popup */
-.cbm-popup-container .box {
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    padding: 20px;
-    background: #fff;
-    position: relative;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    margin-bottom: 20px;
-    min-height: 400px; /* Ensure minimum height for content */
-    display: flex;
-    flex-direction: column;
-}
-
-.cbm-popup-container .box:last-child {
-    margin-bottom: 0;
-}
-
-.cbm-popup-container .box:hover {
-    border-color: #0073aa;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.cbm-popup-container .box.selected {
-    background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
-    border: 2px solid transparent;
-}
-
-/* Date buttons in popup */
-.cbm-popup-container .date-btn {
-    padding: 8px 16px;
-    margin: 5px;
-    border: 1px solid #ddd;
-    background: #fff;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.cbm-popup-container .date-btn:hover {
-    border-color: #DE04A4 !important;
-    background: #DE04A4 !important;
-    color: white !important;
-}
-
-.cbm-popup-container .date-btn.selected {
-    background: #DE04A4 !important;
-    color: white !important;
-    border-color: #DE04A4 !important;
-}
+/* Box styles within popup - NOTE: Specific box styles defined above (lines 349-368) */
+/* Removed duplicate .box general styles to avoid conflicts with specific enroll/buy rules */
 
 /* Ensure trigger button is visible */
 .cbm-popup-trigger {
