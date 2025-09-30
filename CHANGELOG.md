@@ -1,5 +1,40 @@
 # Changelog - Course Box Manager
 
+## [1.9.37] - 2025-09-30
+
+### Changed
+- **Price Priority:** WooCommerce is now the primary source for prices
+  - Priority 1: WooCommerce product price (active, regular, sale)
+  - Priority 2: ACF custom fields (`course_price`, `enroll_price`)
+  - Priority 3: Default constants (749.99 / 1249.99)
+
+- **Dynamic Currency:** Replaced hardcoded "USD" with WooCommerce currency
+  - Uses `get_woocommerce_currency()` for dynamic currency display
+  - Fallback to "USD" if WooCommerce not available
+
+### Added
+- **New helper methods in AbstractBox:**
+  - `get_price_with_priority()`: Centralized price fetching logic
+  - `get_currency()`: Get WooCommerce currency dynamically
+  - `validate_price()`: Validate price values
+  - `DEFAULT_BUY_PRICE` and `DEFAULT_ENROLL_PRICE` constants
+
+### Improved
+- **All Box types updated:**
+  - BuyCourseBox: Uses new pricing system
+  - EnrollCourseBox: Uses new pricing system
+  - EnrollBuyBox: Handles both products with new system
+- Better logging for price source debugging
+- Consistent price handling across all box types
+
+### Technical Details
+- WooCommerce product prices take precedence over ACF fields
+- Sale prices automatically detected and displayed
+- Cleaner, more maintainable code structure
+- Reduced code duplication
+
+---
+
 ## [1.9.36] - 2025-09-30
 
 ### Fixed
