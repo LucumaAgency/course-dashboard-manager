@@ -51,31 +51,30 @@ class EnrollCourseBox extends AbstractBox {
             }
         </script>';
         
-        // Get actual price and stock status from WooCommerce product if available
-        $display_price = $this->enroll_price;
-        $regular_price = $this->enroll_regular_price;
-        $sale_price = $this->enroll_sale_price;
-        $product_in_stock = !$this->is_out_of_stock; // Use the property that might be set by parent
+        // Get price with WooCommerce priority
+        $price_data = $this->get_price_with_priority(
+            $this->course_product_id,
+            'enroll_price',
+            self::DEFAULT_ENROLL_PRICE
+        );
+
+        $display_price = $price_data['price'];
+        $regular_price = $price_data['regular'];
+        $sale_price = $price_data['sale'];
+        $currency = $this->get_currency();
+
+        // Check stock status
+        $product_in_stock = !$this->is_out_of_stock;
         $product = null;
-        
+
         if ($this->course_product_id && function_exists('wc_get_product')) {
             $product = wc_get_product($this->course_product_id);
-            if ($product) {
-                $display_price = $product->get_price();
-                // Only get prices if not already set by parent
-                if ($regular_price === null) {
-                    $regular_price = $product->get_regular_price();
-                }
-                if ($sale_price === null) {
-                    $sale_price = $product->get_sale_price();
-                }
-                // Only check product stock if not already marked as out of stock
-                if (!$this->is_out_of_stock) {
-                    $product_in_stock = $product->is_in_stock();
-                }
-                error_log('[EnrollCourseBox] Product ID: ' . $this->course_product_id . ', Price: ' . $display_price . ', WC Stock: ' . ($product_in_stock ? 'in stock' : 'out of stock') . ', is_out_of_stock property: ' . ($this->is_out_of_stock ? 'true' : 'false'));
+            if ($product && !$this->is_out_of_stock) {
+                $product_in_stock = $product->is_in_stock();
             }
         }
+
+        error_log('[EnrollCourseBox] Product ID: ' . $this->course_product_id . ', Price: ' . $display_price . ' ' . $currency . ' from ' . $price_data['source'] . ', WC Stock: ' . ($product_in_stock ? 'in stock' : 'out of stock'));
         
         // Prepare dates HTML and check if all sold out
         $dates_html = '';
@@ -183,10 +182,10 @@ class EnrollCourseBox extends AbstractBox {
                         <h3>Enroll in the Live Course</h3>
                         <div class="price-container">
                             <?php if ($sale_price && $regular_price && $sale_price < $regular_price) : ?>
-                                <p class="regular-price strikethrough"><?php echo $this->format_price($regular_price); ?> USD</p>
-                                <p class="sale-price"><?php echo $this->format_price($sale_price); ?> USD</p>
+                                <p class="regular-price strikethrough"><?php echo $this->format_price($regular_price); ?> <?php echo esc_html($currency); ?></p>
+                                <p class="sale-price"><?php echo $this->format_price($sale_price); ?> <?php echo esc_html($currency); ?></p>
                             <?php else : ?>
-                                <p class="regular-price"><?php echo $this->format_price($display_price); ?> USD</p>
+                                <p class="regular-price"><?php echo $this->format_price($display_price); ?> <?php echo esc_html($currency); ?></p>
                             <?php endif; ?>
                         </div>
                         <p class="description">Join weekly live sessions with feedback and expert mentorship. Pay Once.</p>

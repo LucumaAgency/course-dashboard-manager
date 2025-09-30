@@ -41,49 +41,40 @@ class EnrollBuyBox extends AbstractBox {
             $this->enroll_product_id = $this->course_product_id;
         }
         
-        // Get prices from the actual WooCommerce products
-        $this->buy_price = $this->course_price; // Default
-        $this->buy_regular_price = null;
-        $this->buy_sale_price = null;
-        
-        if ($this->buy_product_id && function_exists('wc_get_product')) {
-            $buy_product = wc_get_product($this->buy_product_id);
-            if ($buy_product) {
-                // Use get_price() which returns the active price (sale or regular)
-                $this->buy_price = $buy_product->get_price();
-                $this->buy_regular_price = $buy_product->get_regular_price();
-                $this->buy_sale_price = $buy_product->get_sale_price();
-                
-                error_log('[EnrollBuyBox] Buy Product found - Regular: ' . $this->buy_regular_price . ', Sale: ' . $this->buy_sale_price . ', Active Price: ' . $this->buy_price);
-            } else {
-                error_log('[EnrollBuyBox] Buy Product NOT found for ID: ' . $this->buy_product_id);
-            }
-        } else {
-            error_log('[EnrollBuyBox] No buy_product_id set or WooCommerce not available');
-        }
-        
-        // Get enroll price and stock status from product
-        $this->enroll_price = $this->course_price; // Default to course price
-        $this->enroll_regular_price = null;
-        $this->enroll_sale_price = null;
+        // Get buy price with WooCommerce priority
+        $buy_price_data = $this->get_price_with_priority(
+            $this->buy_product_id,
+            'course_price',
+            self::DEFAULT_BUY_PRICE
+        );
+
+        $this->buy_price = $buy_price_data['price'];
+        $this->buy_regular_price = $buy_price_data['regular'];
+        $this->buy_sale_price = $buy_price_data['sale'];
+
+        error_log('[EnrollBuyBox] Buy price: ' . $this->buy_price . ' from ' . $buy_price_data['source']);
+
+        // Get enroll price with WooCommerce priority
+        $enroll_price_data = $this->get_price_with_priority(
+            $this->enroll_product_id,
+            'enroll_price',
+            self::DEFAULT_ENROLL_PRICE
+        );
+
+        $this->enroll_price = $enroll_price_data['price'];
+        $this->enroll_regular_price = $enroll_price_data['regular'];
+        $this->enroll_sale_price = $enroll_price_data['sale'];
+
+        // Get stock status
         $this->enroll_in_stock = true; // Default
-        
         if ($this->enroll_product_id && function_exists('wc_get_product')) {
             $enroll_product = wc_get_product($this->enroll_product_id);
             if ($enroll_product) {
-                // Use get_price() which returns the active price (sale or regular)
-                $this->enroll_price = $enroll_product->get_price();
-                $this->enroll_regular_price = $enroll_product->get_regular_price();
-                $this->enroll_sale_price = $enroll_product->get_sale_price();
                 $this->enroll_in_stock = $enroll_product->is_in_stock();
-                error_log('[EnrollBuyBox] Enroll Product found - Regular: ' . $this->enroll_regular_price . ', Sale: ' . $this->enroll_sale_price . ', Active Price: ' . $this->enroll_price);
-                error_log('[EnrollBuyBox] Enroll Product WC Stock: ' . ($this->enroll_in_stock ? 'in stock' : 'out of stock'));
-            } else {
-                error_log('[EnrollBuyBox] Enroll Product NOT found for ID: ' . $this->enroll_product_id);
             }
-        } else {
-            error_log('[EnrollBuyBox] No enroll_product_id set or WooCommerce not available');
         }
+
+        error_log('[EnrollBuyBox] Enroll price: ' . $this->enroll_price . ' from ' . $enroll_price_data['source'] . ', Stock: ' . ($this->enroll_in_stock ? 'in stock' : 'out of stock'));
         
         // Get enroll dates - these are stored as course_dates
         $this->enroll_dates = cbm_get_field('course_dates', $this->course_id) ?: $this->available_dates_full;

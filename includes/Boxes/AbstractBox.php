@@ -8,6 +8,10 @@
 namespace CourseBoxManager\Boxes;
 
 abstract class AbstractBox {
+    // Price defaults - only used as last resort fallback
+    const DEFAULT_BUY_PRICE = 749.99;
+    const DEFAULT_ENROLL_PRICE = 1249.99;
+
     protected $course_id;
     protected $course;
     protected $box_state;
@@ -154,7 +158,77 @@ abstract class AbstractBox {
         // Final fallback
         return sprintf($this->price_format, $price ?: 0);
     }
-    
+
+    /**
+     * Get price from WooCommerce product with fallback to ACF
+     * PRIORITY: WooCommerce Product > ACF Field > Default Constant
+     *
+     * @param int $product_id WooCommerce product ID
+     * @param string $acf_field_name ACF field name to use as fallback
+     * @param float $default_fallback Default value if all else fails
+     * @return array ['price' => float, 'regular' => float|null, 'sale' => float|null, 'source' => string]
+     */
+    protected function get_price_with_priority($product_id, $acf_field_name, $default_fallback) {
+        $result = [
+            'price' => $default_fallback,
+            'regular' => null,
+            'sale' => null,
+            'source' => 'default'
+        ];
+
+        // PRIORITY 1: Try WooCommerce product
+        if ($product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($product_id);
+            if ($product) {
+                $result['price'] = $product->get_price();
+                $result['regular'] = $product->get_regular_price();
+                $result['sale'] = $product->get_sale_price();
+                $result['source'] = 'woocommerce';
+
+                error_log("[CBM Price] Using WooCommerce price for product {$product_id}: {$result['price']} (regular: {$result['regular']}, sale: {$result['sale']})");
+                return $result;
+            }
+        }
+
+        // PRIORITY 2: Try ACF field
+        $acf_price = cbm_get_field($acf_field_name, $this->course_id, null);
+        if ($acf_price !== null && is_numeric($acf_price) && $acf_price > 0) {
+            $result['price'] = floatval($acf_price);
+            $result['source'] = 'acf';
+
+            error_log("[CBM Price] Using ACF field '{$acf_field_name}' for course {$this->course_id}: {$result['price']}");
+            return $result;
+        }
+
+        // PRIORITY 3: Use default constant
+        error_log("[CBM Price] Using default fallback for course {$this->course_id}: {$default_fallback}");
+        return $result;
+    }
+
+    /**
+     * Get WooCommerce currency symbol
+     * @return string
+     */
+    protected function get_currency() {
+        if (function_exists('get_woocommerce_currency')) {
+            return get_woocommerce_currency();
+        }
+        return 'USD'; // Fallback
+    }
+
+    /**
+     * Validate price value
+     * @param mixed $price
+     * @return float
+     */
+    protected function validate_price($price) {
+        if (!is_numeric($price) || $price < 0) {
+            error_log("[CBM Price] Invalid price value: {$price}");
+            return 0;
+        }
+        return floatval($price);
+    }
+
     /**
      * Format date display - returns text as-is for text dates
      * @param string $date

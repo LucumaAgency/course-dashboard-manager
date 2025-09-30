@@ -51,27 +51,19 @@ class BuyCourseBox extends AbstractBox {
             }
         </script>';
         
-        // Get actual price from WooCommerce product if available
-        $display_price = $this->course_price;
-        $regular_price = $this->buy_regular_price;
-        $sale_price = $this->buy_sale_price;
-        
-        if ($this->course_product_id && function_exists('wc_get_product')) {
-            $product = wc_get_product($this->course_product_id);
-            if ($product) {
-                $display_price = $product->get_price();
-                // Only get prices if not already set by parent
-                if ($regular_price === null) {
-                    $regular_price = $product->get_regular_price();
-                }
-                if ($sale_price === null) {
-                    $sale_price = $product->get_sale_price();
-                }
-                error_log('[BuyCourseBox] Using WooCommerce price: ' . $display_price . ' for product ID: ' . $this->course_product_id);
-            }
-        }
-        
-        error_log('[BuyCourseBox] Rendering with price: ' . $display_price . ' and product ID: ' . $this->course_product_id);
+        // Get price with WooCommerce priority
+        $price_data = $this->get_price_with_priority(
+            $this->course_product_id,
+            'course_price',
+            self::DEFAULT_BUY_PRICE
+        );
+
+        $display_price = $price_data['price'];
+        $regular_price = $price_data['regular'];
+        $sale_price = $price_data['sale'];
+        $currency = $this->get_currency();
+
+        error_log('[BuyCourseBox] Rendering with price: ' . $display_price . ' ' . $currency . ' from ' . $price_data['source'] . ' (product ID: ' . $this->course_product_id . ')');
         
         // For buy course, we don't check seats - it's always available unless explicitly set to soldout
         $button_html = $this->render_add_to_cart_button('Buy Course');
@@ -96,10 +88,10 @@ class BuyCourseBox extends AbstractBox {
                         <h3>Buy This Course</h3>
                         <div class="price-container">
                             <?php if ($sale_price && $regular_price && $sale_price < $regular_price) : ?>
-                                <p class="regular-price strikethrough"><?php echo $this->format_price($regular_price); ?> USD</p>
-                                <p class="sale-price"><?php echo $this->format_price($sale_price); ?> USD</p>
+                                <p class="regular-price strikethrough"><?php echo $this->format_price($regular_price); ?> <?php echo esc_html($currency); ?></p>
+                                <p class="sale-price"><?php echo $this->format_price($sale_price); ?> <?php echo esc_html($currency); ?></p>
                             <?php else : ?>
-                                <p class="regular-price"><?php echo $this->format_price($display_price); ?> USD</p>
+                                <p class="regular-price"><?php echo $this->format_price($display_price); ?> <?php echo esc_html($currency); ?></p>
                             <?php endif; ?>
                         </div>
                         <p class="description">Pay once. Get instant access to the full course.</p>
