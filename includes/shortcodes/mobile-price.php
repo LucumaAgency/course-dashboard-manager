@@ -21,66 +21,109 @@ function mobile_price_shortcode($atts) {
 
     $course_id = intval($atts['course_id']);
 
-    // Get course price (buy price) - try multiple fields
-    $course_price = cbm_get_field('course_price', $course_id, null);
-    if ($course_price === null) {
-        $course_price = get_post_meta($course_id, 'course_price', true);
-    }
+    // Determine box state to know which price to show
+    $box_state = get_post_meta($course_id, 'box_state', true) ?: 'enroll-course';
 
-    // Get webinar/enroll price - try multiple fields
-    $webinar_price = cbm_get_field('enroll_price', $course_id, null);
-    if ($webinar_price === null) {
-        $webinar_price = get_post_meta($course_id, 'enroll_price', true);
-    }
+    error_log('[mobile_price] Course ' . $course_id . ', box_state: ' . $box_state);
 
-    // Also check WooCommerce products if linked
     $prices_to_compare = [];
 
-    // Add course price if valid
-    if (is_numeric($course_price) && $course_price > 0) {
-        $prices_to_compare[] = floatval($course_price);
-    }
+    // For enroll-buy state: get both prices and show the minimum
+    if ($box_state === 'enroll-buy') {
+        // Get buy price with WooCommerce priority
+        $buy_product_id = get_post_meta($course_id, 'buy_product_id', true);
+        if ($buy_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($buy_product_id);
+            if ($product) {
+                $buy_price = $product->get_price();
+                if (is_numeric($buy_price) && $buy_price > 0) {
+                    $prices_to_compare[] = floatval($buy_price);
+                    error_log('[mobile_price] Buy product ' . $buy_product_id . ': ' . $buy_price);
+                }
+            }
+        }
 
-    // Add webinar price if valid
-    if (is_numeric($webinar_price) && $webinar_price > 0) {
-        $prices_to_compare[] = floatval($webinar_price);
-    }
+        // Get enroll price with WooCommerce priority
+        $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
+        if ($enroll_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($enroll_product_id);
+            if ($product) {
+                $enroll_price = $product->get_price();
+                if (is_numeric($enroll_price) && $enroll_price > 0) {
+                    $prices_to_compare[] = floatval($enroll_price);
+                    error_log('[mobile_price] Enroll product ' . $enroll_product_id . ': ' . $enroll_price);
+                }
+            }
+        }
 
-    // Check buy product price
-    $buy_product_id = get_post_meta($course_id, 'linked_product_id', true);
-    if ($buy_product_id && function_exists('wc_get_product')) {
-        $product = wc_get_product($buy_product_id);
-        if ($product) {
-            $product_price = $product->get_price();
-            if (is_numeric($product_price) && $product_price > 0) {
-                $prices_to_compare[] = floatval($product_price);
+        // Fallback to ACF if no WooCommerce products
+        if (empty($prices_to_compare)) {
+            $course_price = cbm_get_field('course_price', $course_id, null);
+            $enroll_price = cbm_get_field('enroll_price', $course_id, null);
+
+            if (is_numeric($course_price) && $course_price > 0) {
+                $prices_to_compare[] = floatval($course_price);
+            }
+            if (is_numeric($enroll_price) && $enroll_price > 0) {
+                $prices_to_compare[] = floatval($enroll_price);
+            }
+        }
+    }
+    // For buy-course state: get buy price only
+    elseif ($box_state === 'buy-course') {
+        $buy_product_id = get_post_meta($course_id, 'buy_product_id', true);
+        if (!$buy_product_id) {
+            $buy_product_id = get_post_meta($course_id, 'linked_product_id', true);
+        }
+
+        if ($buy_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($buy_product_id);
+            if ($product) {
+                $buy_price = $product->get_price();
+                if (is_numeric($buy_price) && $buy_price > 0) {
+                    $prices_to_compare[] = floatval($buy_price);
+                }
+            }
+        }
+
+        // Fallback to ACF
+        if (empty($prices_to_compare)) {
+            $course_price = cbm_get_field('course_price', $course_id, 749.99);
+            if (is_numeric($course_price) && $course_price > 0) {
+                $prices_to_compare[] = floatval($course_price);
+            }
+        }
+    }
+    // For enroll-course state: get enroll price only
+    else {
+        $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
+        if (!$enroll_product_id) {
+            $enroll_product_id = get_post_meta($course_id, 'linked_product_id', true);
+        }
+
+        if ($enroll_product_id && function_exists('wc_get_product')) {
+            $product = wc_get_product($enroll_product_id);
+            if ($product) {
+                $enroll_price = $product->get_price();
+                if (is_numeric($enroll_price) && $enroll_price > 0) {
+                    $prices_to_compare[] = floatval($enroll_price);
+                }
+            }
+        }
+
+        // Fallback to ACF
+        if (empty($prices_to_compare)) {
+            $enroll_price = cbm_get_field('enroll_price', $course_id, 1249.99);
+            if (is_numeric($enroll_price) && $enroll_price > 0) {
+                $prices_to_compare[] = floatval($enroll_price);
             }
         }
     }
 
-    // Check enroll product price
-    $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
-    if ($enroll_product_id && function_exists('wc_get_product')) {
-        $product = wc_get_product($enroll_product_id);
-        if ($product) {
-            $product_price = $product->get_price();
-            if (is_numeric($product_price) && $product_price > 0) {
-                $prices_to_compare[] = floatval($product_price);
-            }
-        }
-    }
-
-    // Get the minimum price
+    // Get the minimum price from the relevant products
     $price = !empty($prices_to_compare) ? min($prices_to_compare) : 0;
 
-    // If still no price, try to get from webinar_price shortcode as fallback
-    if ($price == 0 && shortcode_exists('webinar_price')) {
-        $webinar_price_html = do_shortcode('[webinar_price]');
-        // Extract numeric price from the shortcode output if possible
-        if (preg_match('/[\d,]+\.?\d*/', $webinar_price_html, $matches)) {
-            $price = floatval(str_replace(',', '', $matches[0]));
-        }
-    }
+    error_log('[mobile_price] Final price: ' . $price . ' (from ' . count($prices_to_compare) . ' prices)');
 
     // Format the price
     $formatted_price = number_format($price, 2, '.', ',');
