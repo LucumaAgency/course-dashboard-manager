@@ -52,6 +52,9 @@ class EnrollCourseBox extends AbstractBox {
         </script>';
         
         // Get price with WooCommerce priority
+        error_log('[EnrollCourseBox] RENDER START - enroll_price property: ' . $this->enroll_price . ', course_price: ' . $this->course_price . ', product_id: ' . $this->course_product_id);
+        error_log('[EnrollCourseBox] RENDER START - enroll_regular_price: ' . var_export($this->enroll_regular_price, true) . ', enroll_sale_price: ' . var_export($this->enroll_sale_price, true));
+
         $price_data = $this->get_price_with_priority(
             $this->course_product_id,
             'enroll_price',
@@ -74,7 +77,7 @@ class EnrollCourseBox extends AbstractBox {
             }
         }
 
-        error_log('[EnrollCourseBox] Product ID: ' . $this->course_product_id . ', Price: ' . $display_price . ' ' . $currency . ' from ' . $price_data['source'] . ', WC Stock: ' . ($product_in_stock ? 'in stock' : 'out of stock'));
+        error_log('[EnrollCourseBox] RENDER FINAL - display: ' . $display_price . ', regular: ' . var_export($regular_price, true) . ', sale: ' . var_export($sale_price, true) . ', currency: ' . $currency . ', source: ' . $price_data['source'] . ', stock: ' . ($product_in_stock ? 'in stock' : 'out of stock'));
         
         // Prepare dates HTML and check if all sold out
         $dates_html = '';

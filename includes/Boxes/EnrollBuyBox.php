@@ -117,10 +117,20 @@ class EnrollBuyBox extends AbstractBox {
     }
     
     public function render() {
+        // Debug: Log prices before rendering
+        error_log('[EnrollBuyBox] RENDER - Buy Product ID: ' . $this->buy_product_id . ', Buy Price: ' . $this->buy_price);
+        error_log('[EnrollBuyBox] RENDER - Enroll Product ID: ' . $this->enroll_product_id . ', Enroll Price: ' . $this->enroll_price);
+        error_log('[EnrollBuyBox] RENDER - BuyBox product_id: ' . $this->buyBox->course_product_id . ', price: ' . $this->buyBox->course_price);
+        error_log('[EnrollBuyBox] RENDER - EnrollBox product_id: ' . $this->enrollBox->course_product_id . ', price: ' . $this->enrollBox->enroll_price);
+
         ob_start();
         ?>
-        <div class="<?php echo esc_attr($this->get_box_classes()); ?>" 
-             data-course-id="<?php echo esc_attr($this->course_id); ?>">
+        <div class="<?php echo esc_attr($this->get_box_classes()); ?>"
+             data-course-id="<?php echo esc_attr($this->course_id); ?>"
+             data-buy-product-id="<?php echo esc_attr($this->buy_product_id); ?>"
+             data-enroll-product-id="<?php echo esc_attr($this->enroll_product_id); ?>"
+             data-buy-price="<?php echo esc_attr($this->buy_price); ?>"
+             data-enroll-price="<?php echo esc_attr($this->enroll_price); ?>">
             
             <!-- Mobile: Render as tabs -->
             <div class="cbm-tabs-wrapper mobile-only">
@@ -157,7 +167,61 @@ class EnrollBuyBox extends AbstractBox {
             function initEnrollBuyCombo() {
                 const container = document.querySelector('.enroll-buy-combo[data-course-id="<?php echo esc_js($this->course_id); ?>"]');
                 if (!container) return;
-                
+
+                // DEBUG: Log price information
+                console.group('[CBM EnrollBuyBox] Price Debug - Course <?php echo esc_js($this->course_id); ?>');
+                console.log('Container data attributes:', {
+                    courseId: container.dataset.courseId,
+                    buyProductId: container.dataset.buyProductId,
+                    enrollProductId: container.dataset.enrollProductId,
+                    buyPrice: container.dataset.buyPrice,
+                    enrollPrice: container.dataset.enrollPrice
+                });
+
+                // Check actual rendered prices in DOM
+                const buyBoxPrices = container.querySelectorAll('.buy-box-wrapper .price-container, [data-tab="buy"] .price-container');
+                const enrollBoxPrices = container.querySelectorAll('.enroll-box-wrapper .price-container, [data-tab="enroll"] .price-container');
+
+                console.log('Buy Box Prices in DOM:');
+                buyBoxPrices.forEach((priceContainer, index) => {
+                    const regularPrice = priceContainer.querySelector('.regular-price');
+                    const salePrice = priceContainer.querySelector('.sale-price');
+                    console.log(`  Buy Box ${index + 1}:`, {
+                        regular: regularPrice ? regularPrice.textContent.trim() : 'none',
+                        sale: salePrice ? salePrice.textContent.trim() : 'none'
+                    });
+                });
+
+                console.log('Enroll Box Prices in DOM:');
+                enrollBoxPrices.forEach((priceContainer, index) => {
+                    const regularPrice = priceContainer.querySelector('.regular-price');
+                    const salePrice = priceContainer.querySelector('.sale-price');
+                    console.log(`  Enroll Box ${index + 1}:`, {
+                        regular: regularPrice ? regularPrice.textContent.trim() : 'none',
+                        sale: salePrice ? salePrice.textContent.trim() : 'none'
+                    });
+                });
+
+                // Check product IDs in each box
+                const buyBox = container.querySelector('.buy-box-wrapper .box, [data-tab="buy"] .box');
+                const enrollBox = container.querySelector('.enroll-box-wrapper .box, [data-tab="enroll"] .box');
+
+                if (buyBox) {
+                    console.log('Buy Box data:', {
+                        productId: buyBox.dataset.productId,
+                        courseId: buyBox.dataset.courseId
+                    });
+                }
+
+                if (enrollBox) {
+                    console.log('Enroll Box data:', {
+                        productId: enrollBox.dataset.productId,
+                        courseId: enrollBox.dataset.courseId
+                    });
+                }
+
+                console.groupEnd();
+
                 // Setup box selection behavior
                 const boxes = container.querySelectorAll('.box');
                 

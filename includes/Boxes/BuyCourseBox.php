@@ -52,6 +52,9 @@ class BuyCourseBox extends AbstractBox {
         </script>';
         
         // Get price with WooCommerce priority
+        error_log('[BuyCourseBox] RENDER START - course_price property: ' . $this->course_price . ', product_id: ' . $this->course_product_id);
+        error_log('[BuyCourseBox] RENDER START - buy_regular_price: ' . var_export($this->buy_regular_price, true) . ', buy_sale_price: ' . var_export($this->buy_sale_price, true));
+
         $price_data = $this->get_price_with_priority(
             $this->course_product_id,
             'course_price',
@@ -63,7 +66,7 @@ class BuyCourseBox extends AbstractBox {
         $sale_price = $price_data['sale'];
         $currency = $this->get_currency();
 
-        error_log('[BuyCourseBox] Rendering with price: ' . $display_price . ' ' . $currency . ' from ' . $price_data['source'] . ' (product ID: ' . $this->course_product_id . ')');
+        error_log('[BuyCourseBox] RENDER FINAL - display: ' . $display_price . ', regular: ' . var_export($regular_price, true) . ', sale: ' . var_export($sale_price, true) . ', currency: ' . $currency . ', source: ' . $price_data['source']);
         
         // For buy course, we don't check seats - it's always available unless explicitly set to soldout
         $button_html = $this->render_add_to_cart_button('Buy Course');
