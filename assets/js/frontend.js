@@ -8,7 +8,7 @@ console.log('[CBM] Defining selectBox function...');
 
 window.selectBox = function(element, boxType, courseId) {
     console.log('[CBM] selectBox called', boxType, courseId);
-    
+
     // Wait for jQuery if not loaded yet
     if (typeof jQuery === 'undefined') {
         console.error('[CBM] jQuery not loaded, waiting...');
@@ -17,29 +17,27 @@ window.selectBox = function(element, boxType, courseId) {
         }, 100);
         return;
     }
-    
+
     const $ = jQuery;
     const $box = $(element);
-    
-    // Toggle selection
+
+    // Don't allow deselection - boxes can't be turned off once selected
     if ($box.hasClass('selected')) {
-        // Deselect: show simple circle (inactive state)
-        $box.removeClass('selected');
-        $box.find('.circlecontainer').hide();
-        $box.find('.circle-container').show();
-    } else {
-        // Deselect siblings: show simple circle for them
-        $box.siblings('.box').removeClass('selected');
-        $box.siblings('.box').find('.circlecontainer').hide();
-        $box.siblings('.box').find('.circle-container').show();
-        
-        // Select this box: show ringed circle (active state)
-        $box.addClass('selected');
-        $box.find('.circlecontainer').show();
-        $box.find('.circle-container').hide();
-        
-        // Don't auto-select dates - let the user choose
+        console.log('[CBM] Box already selected - ignoring click');
+        return; // Do nothing if already selected
     }
+
+    // Deselect siblings: show simple circle for them
+    $box.siblings('.box').removeClass('selected');
+    $box.siblings('.box').find('.circlecontainer').hide();
+    $box.siblings('.box').find('.circle-container').show();
+
+    // Select this box: show ringed circle (active state)
+    $box.addClass('selected');
+    $box.find('.circlecontainer').show();
+    $box.find('.circle-container').hide();
+
+    // Don't auto-select dates - let the user choose
 };
 
 // jQuery-dependent code
