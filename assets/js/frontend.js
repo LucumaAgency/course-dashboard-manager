@@ -390,21 +390,27 @@ window.selectBox = function(element, boxType, courseId) {
                 if ($(e.target).closest('.add-to-cart-button, .date-btn').length) {
                     return;
                 }
-                
+
                 const $clickedBox = $(this);
-                
+
+                // Don't allow deselection - if already selected, ignore click
+                if ($clickedBox.hasClass('selected')) {
+                    console.log('[CBM] Box already selected - ignoring click');
+                    return;
+                }
+
                 // Deselect all boxes in this container
                 $boxes.removeClass('selected');
                 $boxes.find('.circlecontainer').hide();
                 $boxes.find('.circle-container').show();
-                
+
                 // Select the clicked box
                 $clickedBox.addClass('selected');
                 $clickedBox.find('.circlecontainer').show();
                 $clickedBox.find('.circle-container').hide();
-                
+
                 // Don't auto-select any dates - let the user choose
-                
+
                 console.log('[CBM] Box selected:', $clickedBox.closest('.buy-box-wrapper, .enroll-box-wrapper').attr('class'));
             });
             
