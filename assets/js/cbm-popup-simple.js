@@ -409,7 +409,16 @@
             // In popup, we don't want ANY selection changes
             window.originalSelectBox = window.selectBox;
             window.selectBox = function(element, boxType, courseId) {
-                // Do nothing - boxes can't change state in popup
+                // Check if we're in popup context
+                const $element = $(element);
+                if ($element.closest('#cbm-popup-overlay, #cbm-popup-content').length > 0) {
+                    console.log('[CBM Popup] Blocked selectBox call in popup - boxes cannot be deselected');
+                    return false; // Do nothing - boxes can't change state in popup
+                }
+                // If not in popup, use original function
+                if (window.originalSelectBox) {
+                    return window.originalSelectBox(element, boxType, courseId);
+                }
                 return false;
             };
 
