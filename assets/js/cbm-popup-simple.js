@@ -556,15 +556,24 @@
                 }
             });
 
-            // ULTRA-AGGRESSIVE: Monitor for ANY changes that hide the button
+            // ULTRA-AGGRESSIVE: Monitor for ANY changes that hide the button OR remove selected class
             const buttonObserver = new MutationObserver(function(mutations) {
                 mutations.forEach(function(mutation) {
-                    // Check if no-button class was added
+                    // Check if no-button class was added OR selected class was removed
                     if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                         const target = mutation.target;
+
+                        // Fix no-button class
                         if (target.classList && target.classList.contains('box') && target.classList.contains('no-button')) {
                             target.classList.remove('no-button');
-                            console.warn('[CBM] Removed no-button class that was added to box');
+                            console.warn('[CBM Popup Observer] Removed no-button class that was added to box');
+                        }
+
+                        // CRITICAL: Force selected class back on boxes
+                        if (target.classList && target.classList.contains('box') && !target.classList.contains('selected')) {
+                            target.classList.add('selected');
+                            console.error('[CBM Popup Observer] FORCED selected class back on box - something tried to remove it!');
+                            console.trace(); // Show stack trace to identify culprit
                         }
                     }
 
@@ -575,7 +584,7 @@
                             const computed = window.getComputedStyle(target);
                             if (computed.display === 'none' || computed.visibility === 'hidden' || computed.opacity === '0') {
                                 target.setAttribute('style', 'display: flex !important; visibility: visible !important; opacity: 1 !important;');
-                                console.warn('[CBM] Forced button visible after style change attempted to hide it');
+                                console.warn('[CBM Popup Observer] Forced button visible after style change attempted to hide it');
                             }
                         }
                     }
