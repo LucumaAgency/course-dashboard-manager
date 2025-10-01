@@ -362,12 +362,31 @@
             setTimeout(function() {
                 $('#cbm-popup-content .cbm-tab-pane[data-tab="' + tabName + '"] .box').each(function() {
                     const $box = $(this);
+                    const box = this;
+
                     $box.addClass('selected');
                     $box.removeClass('no-button');
 
                     // Remove and prevent click handlers
-                    this.onclick = null;
-                    this.removeAttribute('onclick');
+                    box.onclick = null;
+                    box.removeAttribute('onclick');
+
+                    // Add protection for clicks and touches
+                    const preventBoxInteraction = function(e) {
+                        if (e.target === box || e.target.closest('.statebox, .selection-indicator')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.stopImmediatePropagation();
+                            console.log('[CBM Popup Tab] Blocked ' + e.type + ' on box in tab:', tabName);
+                            return false;
+                        }
+                    };
+
+                    // Block both click and touch events
+                    box.addEventListener('click', preventBoxInteraction, true);
+                    box.addEventListener('touchstart', preventBoxInteraction, true);
+                    box.addEventListener('touchend', preventBoxInteraction, true);
+                    box.addEventListener('touchmove', preventBoxInteraction, true);
 
                     console.log('[CBM Popup] Protected box in tab:', tabName);
                 });
@@ -506,17 +525,23 @@
                 box.removeAttribute('onclick');
                 box.style.cursor = 'default';
 
-                // Add event listener to prevent any clicks on the box itself
-                box.addEventListener('click', function(e) {
-                    // Only prevent if clicking the box directly, not buttons inside
+                // Add event listeners to prevent any clicks/touches on the box itself
+                const preventBoxInteraction = function(e) {
+                    // Only prevent if clicking/touching the box directly, not buttons inside
                     if (e.target === box || e.target.closest('.statebox, .selection-indicator')) {
                         e.preventDefault();
                         e.stopPropagation();
                         e.stopImmediatePropagation();
-                        console.log('[CBM Popup] Blocked click on box - boxes cannot be deselected in popup');
+                        console.log('[CBM Popup] Blocked ' + e.type + ' on box - boxes cannot be deselected in popup');
                         return false;
                     }
-                }, true); // Use capture phase to catch it early
+                };
+
+                // Block both click and touch events
+                box.addEventListener('click', preventBoxInteraction, true); // Use capture phase
+                box.addEventListener('touchstart', preventBoxInteraction, true);
+                box.addEventListener('touchend', preventBoxInteraction, true);
+                box.addEventListener('touchmove', preventBoxInteraction, true);
 
                 // Remove no-button class if present
                 box.classList.remove('no-button');
