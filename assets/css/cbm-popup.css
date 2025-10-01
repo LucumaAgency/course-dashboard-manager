@@ -356,25 +356,19 @@ body.cbm-popup-open {
     min-height: 400px; /* Desktop: mantener altura completa */
 }
 
-.cbm-popup-container .box:not(.selected) {
-    background: #0E0D0F !important;
-    border: 2px solid rgba(155, 159, 170, 0.24) !important;
-}
-
-.cbm-popup-container .box.selected {
+/* POPUP BOXES: Always show as selected - no unselected state exists */
+.cbm-popup-container .box {
     background: linear-gradient(116.47deg, rgba(242, 46, 190, 0.24) 17.65%, rgba(170, 0, 212, 0.12) 84.4%) !important;
-    border: 2px solid transparent;
+    border: 2px solid rgba(222, 4, 164, 0.3) !important;
     padding: 15px;
+    opacity: 1 !important;
+    cursor: default !important;
 }
 
-/* Ensure buttons are visible in popup when box is selected */
-.cbm-popup-container .box.selected .add-to-cart-button {
+/* Ensure buttons are always visible in popup */
+.cbm-popup-container .box .add-to-cart-button {
     display: flex !important;
-}
-
-.cbm-popup-container .box:not(.selected) .add-to-cart-button {
-    display: flex !important;
-    background-color: #cc3071;
+    visibility: visible !important;
 }
 
 /* Date buttons in popup */
