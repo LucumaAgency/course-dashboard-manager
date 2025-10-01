@@ -68,6 +68,23 @@
         return originalAdd.apply(this, arguments);
     };
 
+    // OVERRIDE: Block any attempt to remove selected class from boxes in popup
+    const originalRemove = DOMTokenList.prototype.remove;
+    DOMTokenList.prototype.remove = function() {
+        for (let i = 0; i < arguments.length; i++) {
+            if (arguments[i] === 'selected') {
+                const elem = this.parentElement || this.parentNode;
+                // Only block if it's a .box element inside popup (not date-btn)
+                if (elem && elem.classList && elem.classList.contains('box') &&
+                    (elem.closest('#cbm-popup-overlay') || elem.closest('#cbm-popup-content'))) {
+                    console.error('[CBM BLOCK] Prevented removing selected class from popup box!');
+                    return this; // Don't remove it
+                }
+            }
+        }
+        return originalRemove.apply(this, arguments);
+    };
+
     // IMMEDIATE: Run cleanup as soon as script loads, not waiting for DOM ready
     (function immediateCleanup() {
         // Check every 10ms for sold-out selections in the first second
@@ -340,6 +357,21 @@
             // Update tab panes
             $('#cbm-popup-content .cbm-tab-pane').hide().removeClass('active');
             $('#cbm-popup-content .cbm-tab-pane[data-tab="' + tabName + '"]').show().addClass('active');
+
+            // After tab switch, ensure all boxes in the new tab are selected and protected
+            setTimeout(function() {
+                $('#cbm-popup-content .cbm-tab-pane[data-tab="' + tabName + '"] .box').each(function() {
+                    const $box = $(this);
+                    $box.addClass('selected');
+                    $box.removeClass('no-button');
+
+                    // Remove and prevent click handlers
+                    this.onclick = null;
+                    this.removeAttribute('onclick');
+
+                    console.log('[CBM Popup] Protected box in tab:', tabName);
+                });
+            }, 10);
         });
 
         // Ensure buttons remain visible
@@ -466,10 +498,25 @@
             // Setup popup boxes - remove click handlers and ensure buttons visible
             const boxes = overlay.querySelectorAll('.box');
             boxes.forEach(function(box) {
+                // FORCE selected state
+                box.classList.add('selected');
+
                 // Remove click handlers - boxes can't be clicked in popup
                 box.onclick = null;
                 box.removeAttribute('onclick');
                 box.style.cursor = 'default';
+
+                // Add event listener to prevent any clicks on the box itself
+                box.addEventListener('click', function(e) {
+                    // Only prevent if clicking the box directly, not buttons inside
+                    if (e.target === box || e.target.closest('.statebox, .selection-indicator')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        console.log('[CBM Popup] Blocked click on box - boxes cannot be deselected in popup');
+                        return false;
+                    }
+                }, true); // Use capture phase to catch it early
 
                 // Remove no-button class if present
                 box.classList.remove('no-button');
