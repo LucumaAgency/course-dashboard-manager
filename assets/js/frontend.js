@@ -46,14 +46,11 @@ window.selectBox = function(element, boxType, courseId) {
 
     console.log('[CBM] Frontend jQuery code initializing...');
 
-    // Helper function to format price with currency
+    // Helper function to format price with currency (matching WooCommerce format)
     function formatPrice(price) {
-        // Try to use WooCommerce currency format if available
-        if (typeof woocommerce_price_format !== 'undefined') {
-            return woocommerce_price_format.replace('%v', parseFloat(price).toFixed(2));
-        }
-        // Default to USD format
-        return '$' + parseFloat(price).toFixed(2);
+        const formattedPrice = parseFloat(price).toFixed(2);
+        // Return in WooCommerce format: <span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">$</span>499.99</bdi></span>
+        return '<span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">$</span>' + formattedPrice + ' <span class="woocommerce-Price-currencySymbol">USD</span></bdi></span>';
     }
 
     // Prevent clicks on sold-out dates
