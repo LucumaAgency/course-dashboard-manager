@@ -1,8 +1,9 @@
 <?php
 /**
  * Course Dashboard Manager - Tables Page
- * 
+ *
  * Displays the course groups and tables management interface
+ * Version: 1.9.38 - Individual product_id per row support
  */
 
 // Prevent direct access
