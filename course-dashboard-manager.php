@@ -1522,31 +1522,58 @@ function course_box_tables_page() {
                                                          enrollRows[0].querySelector('.enroll-product-select, select').value : '';
                             saveData.enroll_dates = JSON.stringify(enrollDates);
                         } else {
-                            // Collect data for other states
+                            // Collect data for other states (enroll-course, soldout, countdown, etc.)
                             const tableRows = document.querySelectorAll('#table-body tr.course-row');
                             const dates = [];
-                            
+
                             tableRows.forEach(row => {
                                 const dateInput = row.querySelector('.inline-edit-date');
+                                const productSelect = row.querySelector('.inline-edit-product, select');
                                 const stockInput = row.querySelector('.inline-edit-stock');
                                 const buttonText = row.querySelector('.inline-edit-button-text');
-                                
+                                const stmCourseSelect = row.querySelector('.inline-edit-stm-course');
+                                const regularPriceInput = row.querySelector('.inline-edit-regular-price');
+                                const salePriceInput = row.querySelector('.inline-edit-sale-price');
+
                                 if (dateInput && dateInput.value) {
-                                    dates.push({
+                                    const dateData = {
                                         date: dateInput.value,
                                         stock: stockInput ? stockInput.value : 20,
                                         button_text: buttonText ? buttonText.value : ''
-                                    });
+                                    };
+
+                                    // Include product_id if exists
+                                    if (productSelect && productSelect.value) {
+                                        dateData.product_id = productSelect.value;
+                                        console.log('[CBM Debug] Save All - Date:', dateData.date, 'Product ID:', dateData.product_id);
+                                    } else {
+                                        console.warn('[CBM Debug] Save All - Date:', dateData.date, 'NO PRODUCT FOUND');
+                                    }
+
+                                    // Include STM course if exists
+                                    if (stmCourseSelect && stmCourseSelect.value) {
+                                        dateData.stm_course_id = stmCourseSelect.value;
+                                    }
+
+                                    // Include prices if exist
+                                    if (regularPriceInput && regularPriceInput.value) {
+                                        dateData.regular_price = regularPriceInput.value;
+                                    }
+                                    if (salePriceInput && salePriceInput.value) {
+                                        dateData.sale_price = salePriceInput.value;
+                                    }
+
+                                    dates.push(dateData);
                                 }
                             });
-                            
+
                             if (dates.length > 0) {
                                 saveData.dates = JSON.stringify(dates);
                             }
-                            
-                            // Get product if visible
+
+                            // Get product if visible (fallback for backwards compatibility)
                             const productSelect = document.querySelector('#table-body .inline-edit-product');
-                            if (productSelect) {
+                            if (productSelect && productSelect.value) {
                                 saveData.linked_product_id = productSelect.value;
                             }
                         }
