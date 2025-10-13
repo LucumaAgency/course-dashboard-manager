@@ -1,0 +1,46 @@
+{
+  "version": "1.9.37",
+  "export_date": "2025-10-13 15:51:38",
+  "group": {
+    "name": "Producer-Driven AI Filmmaking",
+    "slug": "producer-driven-ai-filmmaking",
+    "description": ""
+  },
+  "group_settings": {
+    "box_state": "enroll-course",
+    "instructor_id": "",
+    "selling_page_id": 59225
+  },
+  "course_ids": [
+    59225
+  ],
+  "table_data": [
+    {
+      "date": "Sept 30th @ 6pm PST",
+      "product_id": "62790",
+      "stm_course_id": "61944",
+      "stock": 0,
+      "button_text": "Enroll Now",
+      "regular_price": "699.99",
+      "sale_price": "499.99"
+    },
+    {
+      "date": "Oct 26th @ 6pm PST",
+      "product_id": "62790",
+      "stm_course_id": "61944",
+      "stock": 20,
+      "button_text": "Enroll Now",
+      "regular_price": "699.99",
+      "sale_price": "499.99"
+    },
+    {
+      "date": "Oct 27th @ 6pm PST",
+      "product_id": "62790",
+      "stm_course_id": "61944",
+      "stock": 20,
+      "button_text": "Enroll Now",
+      "regular_price": "699.99",
+      "sale_price": "499.99"
+    }
+  ]
+}
