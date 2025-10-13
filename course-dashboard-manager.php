@@ -3700,11 +3700,15 @@ function save_group_settings() {
                                         $price_updated = true;
                                     }
 
-                                    if (isset($date_info['sale_price']) && $date_info['sale_price'] !== '') {
-                                        if (floatval($date_info['sale_price']) > 0) {
-                                            $product->set_sale_price(floatval($date_info['sale_price']));
+                                    // Handle sale_price: always update if provided (even if empty to clear)
+                                    if (isset($date_info['sale_price'])) {
+                                        $sale_price_value = floatval($date_info['sale_price']);
+                                        if ($sale_price_value > 0) {
+                                            $product->set_sale_price($sale_price_value);
                                         } else {
+                                            // Clear sale price if 0 or empty
                                             $product->set_sale_price('');
+                                            delete_post_meta($product_id, '_sale_price');
                                         }
                                         $price_updated = true;
                                     }
@@ -3982,7 +3986,17 @@ function save_table_row_data() {
     $date_index = sanitize_text_field($_POST['date_index']);
     $product_id = intval($_POST['product_id']);
     $regular_price = isset($_POST['regular_price']) ? floatval($_POST['regular_price']) : null;
-    $sale_price = isset($_POST['sale_price']) ? floatval($_POST['sale_price']) : null;
+
+    // Handle sale_price: empty string should be treated as "clear the sale price"
+    $sale_price = null;
+    if (isset($_POST['sale_price'])) {
+        $sale_price_raw = trim($_POST['sale_price']);
+        if ($sale_price_raw === '' || $sale_price_raw === '0') {
+            $sale_price = 0; // Clear sale price
+        } else {
+            $sale_price = floatval($sale_price_raw);
+        }
+    }
     $instructor_id = intval($_POST['instructor_id']);
     $stock = intval($_POST['stock']);
     $button_text = sanitize_text_field($_POST['button_text']);
@@ -4031,16 +4045,19 @@ function save_table_row_data() {
                     $price_updated = true;
                     error_log('[CBM Debug] Updated product ' . $product_id . ' regular price to: ' . $regular_price);
                 }
-                
-                // Update sale price if provided
-                if ($sale_price !== null && $sale_price !== '') {
+
+                // Update sale price: always update if provided (even if 0 to clear)
+                if ($sale_price !== null) {
                     if ($sale_price > 0) {
                         $product->set_sale_price($sale_price);
+                        error_log('[CBM Debug] Updated product ' . $product_id . ' sale price to: ' . $sale_price);
                     } else {
-                        $product->set_sale_price(''); // Clear sale price if 0 or empty
+                        // Clear sale price if 0 or empty
+                        $product->set_sale_price('');
+                        delete_post_meta($product_id, '_sale_price');
+                        error_log('[CBM Debug] Cleared sale price for product ' . $product_id);
                     }
                     $price_updated = true;
-                    error_log('[CBM Debug] Updated product ' . $product_id . ' sale price to: ' . $sale_price);
                 }
                 
                 if ($price_updated) {
