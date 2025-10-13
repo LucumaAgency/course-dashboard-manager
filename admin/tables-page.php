@@ -244,6 +244,7 @@ if (!defined('ABSPATH')) {
             
             <!-- Hidden data for JavaScript -->
             <script>
+                console.log('[CBM Debug] Page loading - checking coursesData...');
                 var coursesData = <?php 
                     $courses_json = [];
                     $all_products = [];
@@ -291,6 +292,10 @@ if (!defined('ABSPATH')) {
                     }
                     echo json_encode($courses_json);
                 ?>;
+                console.log('[CBM Debug] Loaded coursesData:', coursesData);
+                if (coursesData && coursesData.length > 0 && coursesData[0].dates) {
+                    console.log('[CBM Debug] First course dates:', coursesData[0].dates);
+                }
                 var allProducts = <?php echo json_encode($all_products); ?>;
                 var groupId = <?php echo intval($group_id); ?>;
             </script>
@@ -586,6 +591,12 @@ if (!defined('ABSPATH')) {
                         const rowProductId = (dateInfo && dateInfo.date && dateInfo.date.product_id)
                                              ? dateInfo.date.product_id
                                              : course.product_id;
+
+                        // Debug logging
+                        console.log('[CBM Debug] Rendering row - Date:', dateInfo ? dateInfo.date.date : 'new',
+                                   'dateInfo.date.product_id:', dateInfo && dateInfo.date ? dateInfo.date.product_id : 'none',
+                                   'course.product_id:', course.product_id,
+                                   'rowProductId (final):', rowProductId);
 
                         // Get STM Course ID for this specific date
                         const stmCourseId = dateInfo && dateInfo.date.stm_course_id ? dateInfo.date.stm_course_id : course.related_stm_course_id || '';
@@ -1188,6 +1199,9 @@ if (!defined('ABSPATH')) {
                                     // Include product_id if exists
                                     if (productSelect && productSelect.value) {
                                         dateData.product_id = productSelect.value;
+                                        console.log('[CBM Debug] Save - Date:', dateData.date, 'Product ID:', dateData.product_id);
+                                    } else {
+                                        console.warn('[CBM Debug] Save - Date:', dateData.date, 'NO PRODUCT ID FOUND');
                                     }
 
                                     // Include STM course if exists
