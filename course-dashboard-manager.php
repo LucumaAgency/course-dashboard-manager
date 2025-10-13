@@ -3671,26 +3671,68 @@ function save_group_settings() {
         if (isset($_POST['linked_product_id'])) {
             update_post_meta($course_id, 'linked_product_id', intval($_POST['linked_product_id']));
         }
-        
+
         if (isset($_POST['dates'])) {
             $dates = json_decode(stripslashes($_POST['dates']), true);
             if (is_array($dates)) {
                 $formatted_dates = [];
                 foreach ($dates as $date_info) {
                     if (!empty($date_info['date'])) {
-                        $formatted_dates[] = [
+                        $date_entry = [
                             'date' => sanitize_text_field($date_info['date']),
                             'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : 20,
                             'button_text' => isset($date_info['button_text']) ? sanitize_text_field($date_info['button_text']) : ''
                         ];
+
+                        // Process product_id if exists for this specific date
+                        if (isset($date_info['product_id']) && !empty($date_info['product_id'])) {
+                            $product_id = intval($date_info['product_id']);
+                            $date_entry['product_id'] = $product_id;
+
+                            // Update prices for this specific product if provided
+                            if (function_exists('wc_get_product')) {
+                                $product = wc_get_product($product_id);
+                                if ($product) {
+                                    $price_updated = false;
+
+                                    if (isset($date_info['regular_price']) && $date_info['regular_price'] !== '') {
+                                        $product->set_regular_price(floatval($date_info['regular_price']));
+                                        $price_updated = true;
+                                    }
+
+                                    if (isset($date_info['sale_price']) && $date_info['sale_price'] !== '') {
+                                        if (floatval($date_info['sale_price']) > 0) {
+                                            $product->set_sale_price(floatval($date_info['sale_price']));
+                                        } else {
+                                            $product->set_sale_price('');
+                                        }
+                                        $price_updated = true;
+                                    }
+
+                                    if ($price_updated) {
+                                        $product->save();
+                                        error_log('[CBM Debug] Updated prices for product ' . $product_id . ' in date: ' . $date_info['date']);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Process STM course_id if exists
+                        if (isset($date_info['stm_course_id']) && !empty($date_info['stm_course_id'])) {
+                            $date_entry['stm_course_id'] = intval($date_info['stm_course_id']);
+                        }
+
+                        $formatted_dates[] = $date_entry;
                     }
                 }
-                
+
                 if (function_exists('update_field')) {
                     update_field('course_dates', $formatted_dates, $course_id);
                 } else {
                     update_post_meta($course_id, 'course_dates', $formatted_dates);
                 }
+
+                error_log('[CBM Debug] Saved ' . count($formatted_dates) . ' dates with individual products for course ' . $course_id);
             }
         }
     }

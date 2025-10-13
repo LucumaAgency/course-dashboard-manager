@@ -582,14 +582,19 @@ if (!defined('ABSPATH')) {
                                       (boxState === 'waitlist' ? 'Join Waitlist' : 'Enroll Now');
                     
                     if (boxState === 'enroll-course') {
+                        // Get product_id specific to this date/row
+                        const rowProductId = (dateInfo && dateInfo.date && dateInfo.date.product_id)
+                                             ? dateInfo.date.product_id
+                                             : course.product_id;
+
                         // Get STM Course ID for this specific date
                         const stmCourseId = dateInfo && dateInfo.date.stm_course_id ? dateInfo.date.stm_course_id : course.related_stm_course_id || '';
-                        
-                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
+
+                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="Date/Text" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>${buildProductSelect(rowProductId)}</td>`;
                         rowHTML += `<td>${buildSTMCourseSelect(stmCourseId, course.id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(rowProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(rowProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="${stock}" min="0" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: ${available <= 5 ? '#d54e21' : (available <= 10 ? '#f0ad4e' : '#46b450')}; font-weight: bold;">${available}</span></td>`;
@@ -600,10 +605,15 @@ if (!defined('ABSPATH')) {
                             <span class="save-status" style="margin-left: 5px;"></span>
                         </td>`;
                     } else if (boxState === 'soldout') {
-                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td>${buildProductSelect(course.product_id)}</td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
-                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(course.product_id)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        // Get product_id specific to this date/row
+                        const rowProductId = (dateInfo && dateInfo.date && dateInfo.date.product_id)
+                                             ? dateInfo.date.product_id
+                                             : course.product_id;
+
+                        rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo ? dateInfo.date.date : ''}" placeholder="Date/Text" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td>${buildProductSelect(rowProductId)}</td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(rowProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
+                        rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(rowProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td><input type="number" class="inline-edit-stock" value="0" min="0" readonly style="width: 100%; padding: 3px; background: #f0f0f0;"></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="sold-count">${sold}</span></td>`;
                         rowHTML += `<td style="text-align: center;"><span class="available-count" style="color: #d54e21; font-weight: bold;">0</span></td>`;
@@ -1155,31 +1165,55 @@ if (!defined('ABSPATH')) {
                                                          enrollRows[0].querySelector('.enroll-product-select, select').value : '';
                             saveData.enroll_dates = JSON.stringify(enrollDates);
                         } else {
-                            // Collect data for other states
+                            // Collect data for other states (enroll-course, soldout, countdown, etc.)
                             const tableRows = document.querySelectorAll('#table-body tr.course-row');
                             const dates = [];
-                            
+
                             tableRows.forEach(row => {
                                 const dateInput = row.querySelector('.inline-edit-date');
+                                const productSelect = row.querySelector('.inline-edit-product, select');
                                 const stockInput = row.querySelector('.inline-edit-stock');
                                 const buttonText = row.querySelector('.inline-edit-button-text');
-                                
+                                const stmCourseSelect = row.querySelector('.inline-edit-stm-course');
+                                const regularPriceInput = row.querySelector('.inline-edit-regular-price');
+                                const salePriceInput = row.querySelector('.inline-edit-sale-price');
+
                                 if (dateInput && dateInput.value) {
-                                    dates.push({
+                                    const dateData = {
                                         date: dateInput.value,
                                         stock: stockInput ? stockInput.value : 20,
                                         button_text: buttonText ? buttonText.value : ''
-                                    });
+                                    };
+
+                                    // Include product_id if exists
+                                    if (productSelect && productSelect.value) {
+                                        dateData.product_id = productSelect.value;
+                                    }
+
+                                    // Include STM course if exists
+                                    if (stmCourseSelect && stmCourseSelect.value) {
+                                        dateData.stm_course_id = stmCourseSelect.value;
+                                    }
+
+                                    // Include prices if exist
+                                    if (regularPriceInput && regularPriceInput.value) {
+                                        dateData.regular_price = regularPriceInput.value;
+                                    }
+                                    if (salePriceInput && salePriceInput.value) {
+                                        dateData.sale_price = salePriceInput.value;
+                                    }
+
+                                    dates.push(dateData);
                                 }
                             });
-                            
+
                             if (dates.length > 0) {
                                 saveData.dates = JSON.stringify(dates);
                             }
-                            
-                            // Get product if visible
+
+                            // Get product if visible (fallback for backwards compatibility)
                             const productSelect = document.querySelector('#table-body .inline-edit-product');
-                            if (productSelect) {
+                            if (productSelect && productSelect.value) {
                                 saveData.linked_product_id = productSelect.value;
                             }
                         }
