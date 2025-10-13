@@ -361,11 +361,13 @@ window.selectBox = function(element, boxType, courseId) {
     // Initialize on page load
     $(document).ready(function() {
         console.log('Course Box Manager frontend loaded');
-        
-        // NO auto-selection of dates - let user choose
-        // Only initialize the Enroll-Buy combo box selection
+
+        // Initialize the Enroll-Buy combo box selection
         initEnrollBuySelection();
-        
+
+        // Auto-select first available date and update its price
+        initFirstDateSelection();
+
         // Re-bind date button handlers after a short delay to ensure DOM is ready
         setTimeout(function() {
             console.log('[CBM] Re-binding date button handlers');
@@ -439,6 +441,64 @@ window.selectBox = function(element, boxType, courseId) {
         }, 500);
     });
     
+    // Auto-select first available date and update price on page load
+    function initFirstDateSelection() {
+        console.log('[CBM] Initializing first date selection');
+
+        // Find all boxes with dates
+        $('.box.enroll-course').each(function() {
+            const $box = $(this);
+            const $firstAvailableDate = $box.find('.date-btn:not(.sold-out):not(:disabled)').first();
+
+            if ($firstAvailableDate.length) {
+                console.log('[CBM] Auto-selecting first available date');
+
+                // Mark as selected
+                $firstAvailableDate.addClass('selected');
+
+                // Get date data
+                const dateValue = $firstAvailableDate.data('date') || $firstAvailableDate.attr('data-date') || $firstAvailableDate.text().trim();
+                const buttonText = $firstAvailableDate.data('button-text');
+                const stmCourseId = $firstAvailableDate.data('stm-course-id');
+                const regularPrice = $firstAvailableDate.data('regular-price');
+                const salePrice = $firstAvailableDate.data('sale-price');
+
+                // Store the date
+                $box.data('selected-date', dateValue);
+                $box.attr('data-selected-date', dateValue);
+
+                // Update button text
+                if (buttonText) {
+                    $box.find('.add-to-cart-button .button-text').text(buttonText);
+                }
+
+                // Update STM Course ID
+                if (stmCourseId) {
+                    $box.data('stm-course-id', stmCourseId);
+                    $box.find('.add-to-cart-button').attr('data-product-id', stmCourseId);
+                }
+
+                // Update prices
+                if (regularPrice) {
+                    const $priceContainer = $box.find('.price-container');
+
+                    if (salePrice && parseFloat(salePrice) > 0 && parseFloat(salePrice) < parseFloat(regularPrice)) {
+                        $priceContainer.html(
+                            '<p class="regular-price strikethrough">' + formatPrice(regularPrice) + '</p>' +
+                            '<p class="sale-price">' + formatPrice(salePrice) + '</p>'
+                        );
+                        console.log('[CBM] Updated to sale price on init');
+                    } else {
+                        $priceContainer.html(
+                            '<p class="regular-price">' + formatPrice(regularPrice) + '</p>'
+                        );
+                        console.log('[CBM] Updated to regular price on init');
+                    }
+                }
+            }
+        });
+    }
+
     // Handle Enroll-Buy combo box selection
     function initEnrollBuySelection() {
         console.log('[CBM] Initializing Enroll-Buy selection');
