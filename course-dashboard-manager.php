@@ -58,12 +58,17 @@ spl_autoload_register(function ($class) {
 // Initialize the seats remaining functionality
 add_action('init', function() {
     new CourseBoxManager\SeatsRemaining();
-    
+
     // Initialize enrollment sync for STM LMS integration
     if (class_exists('WooCommerce')) {
         new CourseBoxManager\EnrollmentSync();
     }
-    
+
+    // Initialize Cart Handler for AJAX add to cart
+    if (class_exists('WooCommerce')) {
+        new CourseBoxManager\CartHandler();
+    }
+
     // Load frontend shortcode file which includes pre-rendering for popup
     if (file_exists(CBM_PLUGIN_DIR . 'frontend/shortcode.php')) {
         require_once CBM_PLUGIN_DIR . 'frontend/shortcode.php';
