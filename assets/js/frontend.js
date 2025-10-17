@@ -156,7 +156,11 @@ window.selectBox = function(element, boxType, courseId) {
 
     // Function to perform add to cart AJAX request
     function performAddToCart($button, productId, quantity, selectedDate) {
-        const originalText = $button.find('.button-text').text();
+        // Store original button text if not already stored
+        if (!$button.data('original-text')) {
+            $button.data('original-text', $button.find('.button-text').text());
+        }
+        const originalText = $button.data('original-text');
 
         // Add loading state
         $button.addClass('loading');
@@ -208,7 +212,7 @@ window.selectBox = function(element, boxType, courseId) {
                     // Reset retry counter on success
                     $button.data('retry-count', 0);
 
-                    // Update button
+                    // Update button - ensure we show "Added!" not "Retrying..."
                     $button.find('.button-text').text('Added!');
 
                     // Check if FunnelKit Cart is active
@@ -240,6 +244,8 @@ window.selectBox = function(element, boxType, courseId) {
                         $button.removeClass('loading');
                         $button.find('.button-text').text(originalText);
                         $button.find('.loading-spinner').remove();
+                        // Clear stored original text
+                        $button.removeData('original-text');
                     }, 2000);
 
                 } else {
@@ -288,6 +294,8 @@ window.selectBox = function(element, boxType, courseId) {
                     $button.removeClass('loading');
                     $button.find('.button-text').text(originalText);
                     $button.find('.loading-spinner').remove();
+                    // Clear stored original text
+                    $button.removeData('original-text');
 
                     if (response.product_url) {
                         window.location.href = response.product_url;
@@ -310,6 +318,8 @@ window.selectBox = function(element, boxType, courseId) {
                 $button.removeClass('loading');
                 $button.find('.button-text').text(originalText);
                 $button.find('.loading-spinner').remove();
+                // Clear stored original text
+                $button.removeData('original-text');
             }
         });
     }
