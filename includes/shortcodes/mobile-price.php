@@ -43,20 +43,41 @@ function mobile_price_shortcode($atts) {
             }
         }
 
-        // Get enroll price with WooCommerce priority
-        $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
-        if ($enroll_product_id && function_exists('wc_get_product')) {
-            $product = wc_get_product($enroll_product_id);
-            if ($product) {
-                $enroll_price = $product->get_price();
-                if (is_numeric($enroll_price) && $enroll_price > 0) {
-                    $prices_to_compare[] = floatval($enroll_price);
-                    error_log('[mobile_price] Enroll product ' . $enroll_product_id . ': ' . $enroll_price);
+        // Get enroll prices from course_dates (each date can have different product_id)
+        $course_dates = cbm_get_field('course_dates', $course_id) ?: [];
+        if (!empty($course_dates)) {
+            foreach ($course_dates as $date_entry) {
+                $date_product_id = isset($date_entry['product_id']) ? $date_entry['product_id'] : null;
+
+                if ($date_product_id && function_exists('wc_get_product')) {
+                    $date_product = wc_get_product($date_product_id);
+                    if ($date_product) {
+                        $date_price = $date_product->get_price();
+                        if (is_numeric($date_price) && $date_price > 0) {
+                            $prices_to_compare[] = floatval($date_price);
+                            error_log('[mobile_price] Enroll date product ' . $date_product_id . ': ' . $date_price);
+                        }
+                    }
                 }
             }
         }
 
-        // Fallback to ACF if no WooCommerce products
+        // Fallback to enroll_product_id if no date-specific products found
+        if (empty($prices_to_compare)) {
+            $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
+            if ($enroll_product_id && function_exists('wc_get_product')) {
+                $product = wc_get_product($enroll_product_id);
+                if ($product) {
+                    $enroll_price = $product->get_price();
+                    if (is_numeric($enroll_price) && $enroll_price > 0) {
+                        $prices_to_compare[] = floatval($enroll_price);
+                        error_log('[mobile_price] Enroll product ' . $enroll_product_id . ': ' . $enroll_price);
+                    }
+                }
+            }
+        }
+
+        // Final fallback to ACF if no WooCommerce products
         if (empty($prices_to_compare)) {
             $course_price = cbm_get_field('course_price', $course_id, null);
             $enroll_price = cbm_get_field('enroll_price', $course_id, null);
@@ -94,24 +115,46 @@ function mobile_price_shortcode($atts) {
             }
         }
     }
-    // For enroll-course state: get enroll price only
+    // For enroll-course state: get enroll prices from course_dates
     else {
-        $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
-        if (!$enroll_product_id) {
-            $enroll_product_id = get_post_meta($course_id, 'linked_product_id', true);
-        }
+        // Get prices from course_dates (each date can have different product_id)
+        $course_dates = cbm_get_field('course_dates', $course_id) ?: [];
+        if (!empty($course_dates)) {
+            foreach ($course_dates as $date_entry) {
+                $date_product_id = isset($date_entry['product_id']) ? $date_entry['product_id'] : null;
 
-        if ($enroll_product_id && function_exists('wc_get_product')) {
-            $product = wc_get_product($enroll_product_id);
-            if ($product) {
-                $enroll_price = $product->get_price();
-                if (is_numeric($enroll_price) && $enroll_price > 0) {
-                    $prices_to_compare[] = floatval($enroll_price);
+                if ($date_product_id && function_exists('wc_get_product')) {
+                    $date_product = wc_get_product($date_product_id);
+                    if ($date_product) {
+                        $date_price = $date_product->get_price();
+                        if (is_numeric($date_price) && $date_price > 0) {
+                            $prices_to_compare[] = floatval($date_price);
+                            error_log('[mobile_price] Enroll date product ' . $date_product_id . ': ' . $date_price);
+                        }
+                    }
                 }
             }
         }
 
-        // Fallback to ACF
+        // Fallback to enroll_product_id or linked_product_id
+        if (empty($prices_to_compare)) {
+            $enroll_product_id = get_post_meta($course_id, 'enroll_product_id', true);
+            if (!$enroll_product_id) {
+                $enroll_product_id = get_post_meta($course_id, 'linked_product_id', true);
+            }
+
+            if ($enroll_product_id && function_exists('wc_get_product')) {
+                $product = wc_get_product($enroll_product_id);
+                if ($product) {
+                    $enroll_price = $product->get_price();
+                    if (is_numeric($enroll_price) && $enroll_price > 0) {
+                        $prices_to_compare[] = floatval($enroll_price);
+                    }
+                }
+            }
+        }
+
+        // Final fallback to ACF
         if (empty($prices_to_compare)) {
             $enroll_price = cbm_get_field('enroll_price', $course_id, 1249.99);
             if (is_numeric($enroll_price) && $enroll_price > 0) {

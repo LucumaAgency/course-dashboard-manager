@@ -42,6 +42,12 @@ class CourseExporter {
         if (!$screen || !in_array($screen->id, ['toplevel_page_course-box-tables', 'course', 'edit-course'])) {
             return;
         }
+
+        // Get all course groups
+        $groups = get_terms([
+            'taxonomy' => 'course_group',
+            'hide_empty' => false
+        ]);
         ?>
         <style>
         #cbm-export-import-bar {
@@ -56,6 +62,8 @@ class CourseExporter {
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
+            max-width: 600px;
         }
         #cbm-export-import-bar.hidden {
             display: none;
@@ -75,36 +83,49 @@ class CourseExporter {
             cursor: pointer;
             z-index: 9998;
         }
+        #cbm-group-selector {
+            min-width: 200px;
+        }
         </style>
-        
+
         <!-- Toggle Button -->
         <button class="cbm-toggle-button" onclick="document.getElementById('cbm-export-import-bar').classList.toggle('hidden'); this.style.display='none';">
             📦 Export/Import
         </button>
-        
+
         <!-- Export/Import Bar -->
         <div id="cbm-export-import-bar" class="hidden">
-            <strong>Course Data:</strong>
-            
+            <strong>Export Group:</strong>
+
+            <!-- Group Selector -->
+            <select id="cbm-group-selector" class="regular-text">
+                <option value="">-- Select Group --</option>
+                <?php foreach ($groups as $group): ?>
+                    <option value="<?php echo esc_attr($group->term_id); ?>">
+                        <?php echo esc_html($group->name); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
             <!-- Export Button -->
             <button class="button button-primary" id="cbm-export-btn">
                 <span class="dashicons dashicons-download"></span>
                 Export JSON
             </button>
-            
+
             <!-- Import Button -->
             <input type="file" id="cbm-import-file" accept=".json">
             <button class="button" onclick="document.getElementById('cbm-import-file').click();">
                 <span class="dashicons dashicons-upload"></span>
                 Import JSON
             </button>
-            
+
             <!-- Close Button -->
             <button class="button" onclick="document.getElementById('cbm-export-import-bar').classList.add('hidden'); document.querySelector('.cbm-toggle-button').style.display='block';">
                 ✕
             </button>
-            
-            <div id="cbm-status-message" style="margin-left: 10px;"></div>
+
+            <div id="cbm-status-message" style="margin-left: 10px; width: 100%;"></div>
         </div>
         
         <script>
@@ -113,12 +134,20 @@ class CourseExporter {
             $('#cbm-export-btn').on('click', function() {
                 const $btn = $(this);
                 const $status = $('#cbm-status-message');
-                
+                const groupId = $('#cbm-group-selector').val();
+
+                if (!groupId) {
+                    $status.html('<span style="color: red;">Please select a group to export</span>');
+                    setTimeout(() => $status.html(''), 3000);
+                    return;
+                }
+
                 $btn.prop('disabled', true);
                 $status.html('<span style="color: #666;">Generating export...</span>');
-                
+
                 $.post(ajaxurl, {
                     action: 'cbm_export_all_data',
+                    group_id: groupId,
                     nonce: '<?php echo wp_create_nonce('cbm_export'); ?>'
                 }, function(response) {
                     if (response.success) {
@@ -196,167 +225,193 @@ class CourseExporter {
     }
     
     /**
-     * AJAX: Export all data
+     * AJAX: Export group table data
      */
     public function ajax_export_all_data() {
         check_ajax_referer('cbm_export', 'nonce');
-        
+
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
         }
-        
+
+        $group_id = isset($_POST['group_id']) ? intval($_POST['group_id']) : 0;
+
+        if (!$group_id) {
+            wp_send_json_error('No group selected');
+        }
+
+        // Get group info
+        $group = get_term($group_id, 'course_group');
+        if (is_wp_error($group)) {
+            wp_send_json_error('Invalid group');
+        }
+
+        // Export group table data
+        $export_data = $this->export_group_table_data($group_id, $group);
+
+        wp_send_json_success($export_data);
+    }
+
+    /**
+     * Export complete group table data
+     */
+    private function export_group_table_data($group_id, $group) {
+        // Get all courses in this group
+        $courses = get_posts([
+            'post_type' => 'course',
+            'posts_per_page' => -1,
+            'tax_query' => [
+                [
+                    'taxonomy' => 'course_group',
+                    'field' => 'term_id',
+                    'terms' => $group_id,
+                ],
+            ],
+        ]);
+
+        // Get first course for group settings
+        $first_course_id = !empty($courses) ? $courses[0]->ID : 0;
+        $box_state = $first_course_id ? get_post_meta($first_course_id, 'box_state', true) : 'enroll-course';
+        $instructors = $first_course_id ? get_post_meta($first_course_id, 'course_instructors', true) : [];
+        $instructor_id = !empty($instructors) ? $instructors[0] : '';
+
+        // Get selling page
+        $selling_page_id = 0;
+        $selling_courses = get_posts([
+            'post_type' => 'course',
+            'posts_per_page' => 1,
+            'meta_key' => 'is_selling_page',
+            'meta_value' => '1',
+            'tax_query' => [
+                [
+                    'taxonomy' => 'course_group',
+                    'field' => 'term_id',
+                    'terms' => $group_id,
+                ],
+            ],
+        ]);
+        if (!empty($selling_courses)) {
+            $selling_page_id = $selling_courses[0]->ID;
+        }
+
+        // Prepare export structure
         $export_data = [
             'version' => CBM_VERSION,
             'export_date' => current_time('mysql'),
-            'site_url' => home_url(),
-            'data' => [
-                'groups' => $this->export_groups(),
-                'courses' => $this->export_courses(),
-                'products' => $this->export_products(),
-                'settings' => $this->export_settings()
-            ]
-        ];
-        
-        wp_send_json_success($export_data);
-    }
-    
-    /**
-     * Export course groups
-     */
-    private function export_groups() {
-        $groups = get_terms([
-            'taxonomy' => 'course_group',
-            'hide_empty' => false
-        ]);
-        
-        $export_groups = [];
-        
-        foreach ($groups as $group) {
-            $group_data = [
+            'group' => [
                 'name' => $group->name,
                 'slug' => $group->slug,
                 'description' => $group->description,
-                'meta' => []
+            ],
+            'group_settings' => [
+                'box_state' => $box_state,
+                'instructor_id' => $instructor_id,
+                'selling_page_id' => $selling_page_id,
+            ],
+            'course_ids' => array_map(function($course) {
+                return $course->ID;
+            }, $courses),
+            'table_data' => []
+        ];
+
+        // Export table data based on box_state
+        if ($box_state === 'enroll-buy') {
+            // Buy course configuration
+            $buy_product_id = $first_course_id ? get_post_meta($first_course_id, 'buy_product_id', true) : '';
+            $buy_button_text = $first_course_id ? get_post_meta($first_course_id, 'buy_button_text', true) : 'Buy Course';
+
+            $export_data['table_data']['buy'] = [
+                'product_id' => $buy_product_id,
+                'button_text' => $buy_button_text,
             ];
-            
-            // Get group metadata
-            $meta_keys = ['group_settings', 'default_instructor', 'default_price', 'enrollment_limit'];
-            foreach ($meta_keys as $key) {
-                $value = get_term_meta($group->term_id, $key, true);
-                if ($value) {
-                    $group_data['meta'][$key] = $value;
+
+            // Add product prices
+            if ($buy_product_id && function_exists('wc_get_product')) {
+                $product = wc_get_product($buy_product_id);
+                if ($product) {
+                    $export_data['table_data']['buy']['regular_price'] = $product->get_regular_price();
+                    $export_data['table_data']['buy']['sale_price'] = $product->get_sale_price();
                 }
             }
-            
-            $export_groups[] = $group_data;
-        }
-        
-        return $export_groups;
-    }
-    
-    /**
-     * Export courses
-     */
-    private function export_courses() {
-        $courses = get_posts([
-            'post_type' => 'course',
-            'post_status' => 'any',
-            'posts_per_page' => -1
-        ]);
-        
-        $export_courses = [];
-        
-        foreach ($courses as $course) {
-            $course_data = [
-                'title' => $course->post_title,
-                'content' => $course->post_content,
-                'excerpt' => $course->post_excerpt,
-                'status' => $course->post_status,
-                'slug' => $course->post_name,
-                'meta' => []
+
+            // Enroll course dates
+            $enroll_product_id = $first_course_id ? get_post_meta($first_course_id, 'enroll_product_id', true) : '';
+            $dates = $first_course_id ? (function_exists('get_field') ? get_field('course_dates', $first_course_id) : get_post_meta($first_course_id, 'course_dates', true)) : [];
+
+            $export_data['table_data']['enroll'] = [
+                'product_id' => $enroll_product_id,
+                'dates' => $this->format_dates_for_export($dates ?: []),
             ];
-            
-            // Get all post meta
-            $all_meta = get_post_meta($course->ID);
-            foreach ($all_meta as $key => $values) {
-                // Skip private meta
-                if (strpos($key, '_') !== 0 || strpos($key, '_cbm') === 0) {
-                    $course_data['meta'][$key] = maybe_unserialize($values[0]);
+        } else {
+            // Other states (enroll-course, soldout, countdown, etc.)
+            foreach ($courses as $course) {
+                $product_id = get_post_meta($course->ID, 'linked_product_id', true);
+                $stm_course_id = get_post_meta($course->ID, 'related_stm_course_id', true);
+                $dates = function_exists('get_field') ? get_field('course_dates', $course->ID) : get_post_meta($course->ID, 'course_dates', true);
+
+                if ($dates && is_array($dates)) {
+                    foreach ($dates as $date_info) {
+                        $row_data = [
+                            'date' => $date_info['date'] ?? '',
+                            'product_id' => $date_info['product_id'] ?? $product_id,
+                            'stm_course_id' => $date_info['stm_course_id'] ?? $stm_course_id,
+                            'stock' => $date_info['stock'] ?? 20,
+                            'button_text' => $date_info['button_text'] ?? 'Enroll Now',
+                        ];
+
+                        // Add product prices
+                        $row_product_id = $row_data['product_id'];
+                        if ($row_product_id && function_exists('wc_get_product')) {
+                            $product = wc_get_product($row_product_id);
+                            if ($product) {
+                                $row_data['regular_price'] = $product->get_regular_price();
+                                $row_data['sale_price'] = $product->get_sale_price();
+                            }
+                        }
+
+                        $export_data['table_data'][] = $row_data;
+                    }
                 }
             }
-            
-            // Get taxonomies
-            $course_data['groups'] = wp_get_object_terms($course->ID, 'course_group', ['fields' => 'names']);
-            
-            // Get featured image
-            $thumbnail_id = get_post_thumbnail_id($course->ID);
-            if ($thumbnail_id) {
-                $course_data['featured_image'] = wp_get_attachment_url($thumbnail_id);
-            }
-            
-            $export_courses[] = $course_data;
         }
-        
-        return $export_courses;
+
+        return $export_data;
     }
-    
+
     /**
-     * Export WooCommerce products linked to courses
+     * Format dates array for export
      */
-    private function export_products() {
-        if (!function_exists('wc_get_products')) {
+    private function format_dates_for_export($dates) {
+        if (!is_array($dates)) {
             return [];
         }
-        
-        $products = wc_get_products(['limit' => -1]);
-        $export_products = [];
-        
-        foreach ($products as $product) {
-            // Only export products linked to courses
-            $linked_course = get_post_meta($product->get_id(), '_cbm_linked_stm_course', true) ?: 
-                           get_post_meta($product->get_id(), '_cbm_course_id', true);
-            
-            if (!$linked_course) {
-                continue;
-            }
-            
-            $export_products[] = [
-                'name' => $product->get_name(),
-                'sku' => $product->get_sku(),
-                'regular_price' => $product->get_regular_price(),
-                'sale_price' => $product->get_sale_price(),
-                'description' => $product->get_description(),
-                'linked_course' => $linked_course
-            ];
-        }
-        
-        return $export_products;
-    }
-    
-    /**
-     * Export plugin settings
-     */
-    private function export_settings() {
-        $settings_keys = [
-            'cbm_integration_mode',
-            'cbm_auto_integrate_stm',
-            'cbm_auto_create_hybrid',
-            'cbm_bidirectional_sync',
-            'cbm_sync_content_to_stm',
-            'cbm_delete_linked_on_stm_delete',
-            'cbm_override_shortcodes',
-            'cbm_inject_position'
-        ];
-        
-        $settings = [];
-        foreach ($settings_keys as $key) {
-            $value = get_option($key);
-            if ($value !== false) {
-                $settings[$key] = $value;
+
+        $formatted_dates = [];
+        foreach ($dates as $date_info) {
+            if (is_array($date_info)) {
+                $formatted_date = [
+                    'date' => $date_info['date'] ?? '',
+                    'product_id' => $date_info['product_id'] ?? '',
+                    'stm_course_id' => $date_info['stm_course_id'] ?? '',
+                    'stock' => $date_info['stock'] ?? 20,
+                    'button_text' => $date_info['button_text'] ?? 'Enroll Now',
+                ];
+
+                // Add product prices
+                $product_id = $formatted_date['product_id'];
+                if ($product_id && function_exists('wc_get_product')) {
+                    $product = wc_get_product($product_id);
+                    if ($product) {
+                        $formatted_date['regular_price'] = $product->get_regular_price();
+                        $formatted_date['sale_price'] = $product->get_sale_price();
+                    }
+                }
+
+                $formatted_dates[] = $formatted_date;
             }
         }
-        
-        return $settings;
+
+        return $formatted_dates;
     }
 }
 

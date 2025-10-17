@@ -217,6 +217,37 @@
         }, 5000);
     })();
 
+    // Helper function to format price with currency (matching WooCommerce format)
+    function formatPrice(price) {
+        const formattedPrice = parseFloat(price).toFixed(2);
+        return '<span class="woocommerce-Price-amount amount"><bdi><span class="woocommerce-Price-currencySymbol">$</span>' + formattedPrice + ' <span class="woocommerce-Price-currencySymbol">USD</span></bdi></span>';
+    }
+
+    // Helper function to update prices when date is selected
+    function updateDatePrices($btn, $box) {
+        const regularPrice = $btn.data('regular-price');
+        const salePrice = $btn.data('sale-price');
+
+        console.log('[CBM Popup] Updating prices - Regular:', regularPrice, 'Sale:', salePrice);
+
+        if (regularPrice) {
+            const $priceContainer = $box.find('.price-container');
+
+            if (salePrice && parseFloat(salePrice) > 0 && parseFloat(salePrice) < parseFloat(regularPrice)) {
+                $priceContainer.html(
+                    '<p class="regular-price strikethrough">' + formatPrice(regularPrice) + '</p>' +
+                    '<p class="sale-price">' + formatPrice(salePrice) + '</p>'
+                );
+                console.log('[CBM Popup] Updated to sale price');
+            } else {
+                $priceContainer.html(
+                    '<p class="regular-price">' + formatPrice(regularPrice) + '</p>'
+                );
+                console.log('[CBM Popup] Updated to regular price');
+            }
+        }
+    }
+
     // Wait for DOM ready
     $(document).ready(function() {
         // Override jQuery removeClass for popup boxes
@@ -412,9 +443,13 @@
             e.preventDefault();
             e.stopPropagation();
 
-            const $box = $(this).closest('.box');
+            const $btn = $(this);
+            const $box = $btn.closest('.box');
             $box.find('.date-btn').removeClass('selected');
-            $(this).addClass('selected');
+            $btn.addClass('selected');
+
+            // Update prices if available
+            updateDatePrices($btn, $box);
         });
         
         // Add to cart
@@ -993,27 +1028,30 @@
             e.preventDefault();
             e.stopPropagation(); // Prevent event from bubbling
             e.stopImmediatePropagation(); // Stop ALL event handlers
-            
+
             const $btn = $(this);
             const $box = $btn.closest('.box');
-            
+
             // Ensure box stays selected
             $box.addClass('selected');
             $box.find('.circlecontainer').show();
             $box.find('.circle-container').hide();
-            
+
             // Handle date selection
             $btn.siblings('.date-btn').removeClass('selected');
             $btn.addClass('selected');
-            
+
             const buttonText = $btn.data('button-text');
             if (buttonText) {
                 $box.find('.add-to-cart-button .button-text').text(buttonText);
             }
-            
+
             $box.data('selected-date', $btn.data('date'));
             $box.attr('data-selected-date', $btn.data('date'));
-            
+
+            // Update prices
+            updateDatePrices($btn, $box);
+
             console.log('[CBM Popup] Date selected:', $btn.data('date'));
         });
         

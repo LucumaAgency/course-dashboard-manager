@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Course Box Manager
  * Description: A comprehensive plugin to manage and display selectable boxes for course post types with dashboard control, countdowns, start date selection, and WooCommerce integration.
- * Version: 1.9.37
+ * Version: 1.9.41
  * Author: Carlos Murillo
  * Author URI: https://lucumaagency.com/
  * License: GPL-2.0+
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
-define('CBM_VERSION', '1.9.37');
+define('CBM_VERSION', '1.9.41');
 
 // Helper function to safely get ACF field
 function cbm_get_field($field, $post_id = false, $default = null) {
@@ -1522,31 +1522,58 @@ function course_box_tables_page() {
                                                          enrollRows[0].querySelector('.enroll-product-select, select').value : '';
                             saveData.enroll_dates = JSON.stringify(enrollDates);
                         } else {
-                            // Collect data for other states
+                            // Collect data for other states (enroll-course, soldout, countdown, etc.)
                             const tableRows = document.querySelectorAll('#table-body tr.course-row');
                             const dates = [];
-                            
+
                             tableRows.forEach(row => {
                                 const dateInput = row.querySelector('.inline-edit-date');
+                                const productSelect = row.querySelector('.inline-edit-product, select');
                                 const stockInput = row.querySelector('.inline-edit-stock');
                                 const buttonText = row.querySelector('.inline-edit-button-text');
-                                
+                                const stmCourseSelect = row.querySelector('.inline-edit-stm-course');
+                                const regularPriceInput = row.querySelector('.inline-edit-regular-price');
+                                const salePriceInput = row.querySelector('.inline-edit-sale-price');
+
                                 if (dateInput && dateInput.value) {
-                                    dates.push({
+                                    const dateData = {
                                         date: dateInput.value,
                                         stock: stockInput ? stockInput.value : 20,
                                         button_text: buttonText ? buttonText.value : ''
-                                    });
+                                    };
+
+                                    // Include product_id if exists
+                                    if (productSelect && productSelect.value) {
+                                        dateData.product_id = productSelect.value;
+                                        console.log('[CBM Debug] Save All - Date:', dateData.date, 'Product ID:', dateData.product_id);
+                                    } else {
+                                        console.warn('[CBM Debug] Save All - Date:', dateData.date, 'NO PRODUCT FOUND');
+                                    }
+
+                                    // Include STM course if exists
+                                    if (stmCourseSelect && stmCourseSelect.value) {
+                                        dateData.stm_course_id = stmCourseSelect.value;
+                                    }
+
+                                    // Include prices if exist
+                                    if (regularPriceInput && regularPriceInput.value) {
+                                        dateData.regular_price = regularPriceInput.value;
+                                    }
+                                    if (salePriceInput && salePriceInput.value) {
+                                        dateData.sale_price = salePriceInput.value;
+                                    }
+
+                                    dates.push(dateData);
                                 }
                             });
-                            
+
                             if (dates.length > 0) {
                                 saveData.dates = JSON.stringify(dates);
                             }
-                            
-                            // Get product if visible
+
+                            // Get product if visible (fallback for backwards compatibility)
                             const productSelect = document.querySelector('#table-body .inline-edit-product');
-                            if (productSelect) {
+                            if (productSelect && productSelect.value) {
                                 saveData.linked_product_id = productSelect.value;
                             }
                         }
@@ -3671,26 +3698,72 @@ function save_group_settings() {
         if (isset($_POST['linked_product_id'])) {
             update_post_meta($course_id, 'linked_product_id', intval($_POST['linked_product_id']));
         }
-        
+
         if (isset($_POST['dates'])) {
             $dates = json_decode(stripslashes($_POST['dates']), true);
             if (is_array($dates)) {
                 $formatted_dates = [];
                 foreach ($dates as $date_info) {
                     if (!empty($date_info['date'])) {
-                        $formatted_dates[] = [
+                        $date_entry = [
                             'date' => sanitize_text_field($date_info['date']),
                             'stock' => isset($date_info['stock']) ? intval($date_info['stock']) : 20,
                             'button_text' => isset($date_info['button_text']) ? sanitize_text_field($date_info['button_text']) : ''
                         ];
+
+                        // Process product_id if exists for this specific date
+                        if (isset($date_info['product_id']) && !empty($date_info['product_id'])) {
+                            $product_id = intval($date_info['product_id']);
+                            $date_entry['product_id'] = $product_id;
+
+                            // Update prices for this specific product if provided
+                            if (function_exists('wc_get_product')) {
+                                $product = wc_get_product($product_id);
+                                if ($product) {
+                                    $price_updated = false;
+
+                                    if (isset($date_info['regular_price']) && $date_info['regular_price'] !== '') {
+                                        $product->set_regular_price(floatval($date_info['regular_price']));
+                                        $price_updated = true;
+                                    }
+
+                                    // Handle sale_price: always update if provided (even if empty to clear)
+                                    if (isset($date_info['sale_price'])) {
+                                        $sale_price_value = floatval($date_info['sale_price']);
+                                        if ($sale_price_value > 0) {
+                                            $product->set_sale_price($sale_price_value);
+                                        } else {
+                                            // Clear sale price if 0 or empty
+                                            $product->set_sale_price('');
+                                            delete_post_meta($product_id, '_sale_price');
+                                        }
+                                        $price_updated = true;
+                                    }
+
+                                    if ($price_updated) {
+                                        $product->save();
+                                        error_log('[CBM Debug] Updated prices for product ' . $product_id . ' in date: ' . $date_info['date']);
+                                    }
+                                }
+                            }
+                        }
+
+                        // Process STM course_id if exists
+                        if (isset($date_info['stm_course_id']) && !empty($date_info['stm_course_id'])) {
+                            $date_entry['stm_course_id'] = intval($date_info['stm_course_id']);
+                        }
+
+                        $formatted_dates[] = $date_entry;
                     }
                 }
-                
+
                 if (function_exists('update_field')) {
                     update_field('course_dates', $formatted_dates, $course_id);
                 } else {
                     update_post_meta($course_id, 'course_dates', $formatted_dates);
                 }
+
+                error_log('[CBM Debug] Saved ' . count($formatted_dates) . ' dates with individual products for course ' . $course_id);
             }
         }
     }
@@ -3940,7 +4013,17 @@ function save_table_row_data() {
     $date_index = sanitize_text_field($_POST['date_index']);
     $product_id = intval($_POST['product_id']);
     $regular_price = isset($_POST['regular_price']) ? floatval($_POST['regular_price']) : null;
-    $sale_price = isset($_POST['sale_price']) ? floatval($_POST['sale_price']) : null;
+
+    // Handle sale_price: empty string should be treated as "clear the sale price"
+    $sale_price = null;
+    if (isset($_POST['sale_price'])) {
+        $sale_price_raw = trim($_POST['sale_price']);
+        if ($sale_price_raw === '' || $sale_price_raw === '0') {
+            $sale_price = 0; // Clear sale price
+        } else {
+            $sale_price = floatval($sale_price_raw);
+        }
+    }
     $instructor_id = intval($_POST['instructor_id']);
     $stock = intval($_POST['stock']);
     $button_text = sanitize_text_field($_POST['button_text']);
@@ -3989,16 +4072,19 @@ function save_table_row_data() {
                     $price_updated = true;
                     error_log('[CBM Debug] Updated product ' . $product_id . ' regular price to: ' . $regular_price);
                 }
-                
-                // Update sale price if provided
-                if ($sale_price !== null && $sale_price !== '') {
+
+                // Update sale price: always update if provided (even if 0 to clear)
+                if ($sale_price !== null) {
                     if ($sale_price > 0) {
                         $product->set_sale_price($sale_price);
+                        error_log('[CBM Debug] Updated product ' . $product_id . ' sale price to: ' . $sale_price);
                     } else {
-                        $product->set_sale_price(''); // Clear sale price if 0 or empty
+                        // Clear sale price if 0 or empty
+                        $product->set_sale_price('');
+                        delete_post_meta($product_id, '_sale_price');
+                        error_log('[CBM Debug] Cleared sale price for product ' . $product_id);
                     }
                     $price_updated = true;
-                    error_log('[CBM Debug] Updated product ' . $product_id . ' sale price to: ' . $sale_price);
                 }
                 
                 if ($price_updated) {

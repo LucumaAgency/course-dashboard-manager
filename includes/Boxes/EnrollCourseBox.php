@@ -128,14 +128,31 @@ class EnrollCourseBox extends AbstractBox {
                 
                 // Get STM Course ID for this date if available
                 $stm_course_id = isset($date_info['stm_course_id']) ? $date_info['stm_course_id'] : '';
-                
-                // Add data attributes for button text, STM course, and sold out status
+
+                // Get product ID for this specific date
+                $date_product_id = isset($date_info['product_id']) ? $date_info['product_id'] : $this->course_product_id;
+
+                // Get prices for this specific date's product
+                $date_regular_price = '';
+                $date_sale_price = '';
+                if ($date_product_id && function_exists('wc_get_product')) {
+                    $date_product = wc_get_product($date_product_id);
+                    if ($date_product) {
+                        $date_regular_price = $date_product->get_regular_price();
+                        $date_sale_price = $date_product->get_sale_price();
+                    }
+                }
+
+                // Add data attributes for button text, STM course, prices, and sold out status
                 $dates_html .= sprintf(
-                    '<button class="date-btn%s" data-date="%s" data-button-text="%s" data-stm-course-id="%s" %s>%s%s</button>',
+                    '<button class="date-btn%s" data-date="%s" data-button-text="%s" data-stm-course-id="%s" data-product-id="%s" data-regular-price="%s" data-sale-price="%s" %s>%s%s</button>',
                     $is_sold_out ? ' sold-out' : '',
                     esc_attr($date),
                     esc_attr($button_text),
                     esc_attr($stm_course_id),
+                    esc_attr($date_product_id),
+                    esc_attr($date_regular_price),
+                    esc_attr($date_sale_price),
                     $is_sold_out ? 'disabled' : '',
                     esc_html($date),  // Display the text exactly as entered
                     $is_sold_out ? ' (Sold Out)' : ($available <= 5 ? ' (' . $available . ' left)' : '')
