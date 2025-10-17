@@ -157,12 +157,17 @@ window.selectBox = function(element, boxType, courseId) {
     // Add to cart handler
     $(document).on('click', '.add-to-cart-button:not(.sold-out):not(.loading)', function(e) {
         e.preventDefault();
-        
+
         const $button = $(this);
         let $box = $button.closest('.box');
-        
+
         const productId = $button.data('product-id');
         const quantity = $button.data('quantity') || 1;
+
+        // Initialize retry counter if not exists
+        if (!$button.data('retry-count')) {
+            $button.data('retry-count', 0);
+        }
         
         // Debug: Log the box we're working with
         console.log('[CBM] Add to cart clicked');
@@ -290,11 +295,14 @@ window.selectBox = function(element, boxType, courseId) {
             dataType: 'json',
             success: function(response) {
                 console.log('Cart response:', response);
-                
+
                 if (response.success) {
+                    // Reset retry counter on success
+                    $button.data('retry-count', 0);
+
                     // Update button
                     $button.find('.button-text').text('Added!');
-                    
+
                     // Check if FunnelKit Cart is active
                     if (response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
                         // Trigger FunnelKit Cart
@@ -310,7 +318,7 @@ window.selectBox = function(element, boxType, courseId) {
                     } else {
                         // Regular WooCommerce behavior
                         $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
-                        
+
                         // Optionally redirect to cart
                         if (cbm_ajax.cart_url) {
                             setTimeout(function() {
@@ -318,21 +326,58 @@ window.selectBox = function(element, boxType, courseId) {
                             }, 1000);
                         }
                     }
-                    
+
                     // Reset button after delay
                     setTimeout(function() {
                         $button.removeClass('loading');
                         $button.find('.button-text').text(originalText);
                         $button.find('.loading-spinner').remove(); // Remove spinner from DOM
                     }, 2000);
-                    
+
                 } else {
                     // Error handling
-                    alert('Error adding to cart. Please try again.');
+                    console.error('[CBM] Add to cart failed:', response);
+
+                    // Check if it's a nonce error and we received a new nonce
+                    if (response.data && response.data.error_code === 'invalid_nonce' && response.data.regenerate_nonce && response.data.new_nonce) {
+                        var retryCount = $button.data('retry-count') || 0;
+
+                        // Only retry once to prevent infinite loops
+                        if (retryCount < 1) {
+                            console.log('[CBM] Nonce error detected - regenerating and retrying (attempt ' + (retryCount + 1) + ')');
+
+                            // Update the nonce in cbm_ajax global
+                            cbm_ajax.nonce = response.data.new_nonce;
+
+                            // Increment retry counter
+                            $button.data('retry-count', retryCount + 1);
+
+                            // Show a brief message
+                            $button.find('.button-text').text('Retrying...');
+
+                            // Retry the request with the new nonce after a short delay
+                            setTimeout(function() {
+                                console.log('[CBM] Retrying with new nonce');
+                                $button.trigger('click');
+                            }, 500);
+
+                            return;
+                        } else {
+                            console.error('[CBM] Nonce retry limit reached - asking user to refresh');
+                        }
+                    }
+
+                    // Reset retry counter
+                    $button.data('retry-count', 0);
+
+                    // Show error message to user
+                    var errorMessage = response.data && response.data.message ? response.data.message : 'Error adding to cart. Please try again.';
+                    alert(errorMessage);
+
                     $button.removeClass('loading');
                     $button.find('.button-text').text(originalText);
                     $button.find('.loading-spinner').remove(); // Remove spinner from DOM
-                    
+
                     if (response.product_url) {
                         window.location.href = response.product_url;
                     }

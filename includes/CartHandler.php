@@ -28,20 +28,48 @@ class CartHandler {
     public function handle_add_to_cart() {
         error_log('[CBM CartHandler] handle_add_to_cart called');
         error_log('[CBM CartHandler] POST data: ' . json_encode($_POST));
-        
+
         // Verify nonce
         $nonce_valid = false;
-        if (isset($_POST['security']) && wp_verify_nonce($_POST['security'], 'woocommerce-add-to-cart')) {
-            $nonce_valid = true;
-            error_log('[CBM CartHandler] Nonce valid via security parameter');
-        } elseif (isset($_POST['nonce']) && wp_verify_nonce($_POST['nonce'], 'woocommerce-add-to-cart')) {
-            $nonce_valid = true;
-            error_log('[CBM CartHandler] Nonce valid via nonce parameter');
+        $nonce_provided = false;
+        $nonce_value = '';
+
+        if (isset($_POST['security'])) {
+            $nonce_provided = true;
+            $nonce_value = $_POST['security'];
+            if (wp_verify_nonce($_POST['security'], 'woocommerce-add-to-cart')) {
+                $nonce_valid = true;
+                error_log('[CBM CartHandler] Nonce valid via security parameter');
+            }
+        } elseif (isset($_POST['nonce'])) {
+            $nonce_provided = true;
+            $nonce_value = $_POST['nonce'];
+            if (wp_verify_nonce($_POST['nonce'], 'woocommerce-add-to-cart')) {
+                $nonce_valid = true;
+                error_log('[CBM CartHandler] Nonce valid via nonce parameter');
+            }
         }
-        
+
         if (!$nonce_valid) {
-            error_log('[CBM CartHandler] Invalid nonce');
-            wp_send_json_error(['message' => 'Invalid security token']);
+            // Log detailed error information
+            error_log('[CBM CartHandler] NONCE VALIDATION FAILED');
+            error_log('[CBM CartHandler] Nonce provided: ' . ($nonce_provided ? 'YES' : 'NO'));
+            if ($nonce_provided) {
+                error_log('[CBM CartHandler] Nonce value (first 10 chars): ' . substr($nonce_value, 0, 10) . '...');
+                error_log('[CBM CartHandler] Nonce length: ' . strlen($nonce_value));
+            }
+            error_log('[CBM CartHandler] User ID: ' . get_current_user_id());
+            error_log('[CBM CartHandler] User logged in: ' . (is_user_logged_in() ? 'YES' : 'NO'));
+            error_log('[CBM CartHandler] Current time: ' . current_time('mysql'));
+            error_log('[CBM CartHandler] Request URL: ' . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : 'N/A'));
+
+            // Return error with flag to regenerate nonce
+            wp_send_json_error([
+                'message' => 'Invalid security token. Please refresh the page and try again.',
+                'error_code' => 'invalid_nonce',
+                'regenerate_nonce' => true,
+                'new_nonce' => wp_create_nonce('woocommerce-add-to-cart')
+            ]);
             return;
         }
         
