@@ -154,6 +154,166 @@ window.selectBox = function(element, boxType, courseId) {
         $container.trigger('dateSelected', [dateValue]);
     });
 
+    // Function to perform add to cart AJAX request
+    function performAddToCart($button, productId, quantity, selectedDate) {
+        const originalText = $button.find('.button-text').text();
+
+        // Add loading state
+        $button.addClass('loading');
+
+        // Add spinner if it doesn't exist
+        if (!$button.find('.loading-spinner').length) {
+            $button.append('<span class="loading-spinner"></span>');
+        }
+
+        // Check if cbm_ajax is available
+        if (typeof cbm_ajax === 'undefined' || !cbm_ajax.ajax_url) {
+            console.error('[CBM] AJAX configuration not available');
+            alert('Error: AJAX configuration not found. Please refresh the page.');
+            $button.removeClass('loading');
+            $button.find('.button-text').text(originalText);
+            $button.find('.loading-spinner').remove();
+            return;
+        }
+
+        console.log('[CBM] Using AJAX URL:', cbm_ajax.ajax_url);
+
+        // Prepare data
+        const data = {
+            action: 'woocommerce_add_to_cart',
+            product_id: productId,
+            quantity: quantity,
+            variation_id: 0,
+            security: cbm_ajax.nonce || ''
+        };
+
+        // Add selected date if available
+        if (selectedDate) {
+            data.start_date = selectedDate;
+            data.course_date = selectedDate;
+        }
+
+        console.log('Adding to cart:', data);
+
+        // Make AJAX request
+        $.ajax({
+            type: 'POST',
+            url: cbm_ajax.ajax_url,
+            data: data,
+            dataType: 'json',
+            success: function(response) {
+                console.log('Cart response:', response);
+
+                if (response.success) {
+                    // Reset retry counter on success
+                    $button.data('retry-count', 0);
+
+                    // Update button
+                    $button.find('.button-text').text('Added!');
+
+                    // Check if FunnelKit Cart is active
+                    if (response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
+                        // Trigger FunnelKit Cart
+                        if (typeof fkcart_show_cart === 'function') {
+                            fkcart_show_cart();
+                        } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
+                            FKCart.show_cart();
+                        } else {
+                            // Try to trigger FunnelKit by event
+                            $(document.body).trigger('fkcart_show_cart');
+                            $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
+                        }
+                    } else {
+                        // Regular WooCommerce behavior
+                        $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
+
+                        // Optionally redirect to cart
+                        if (cbm_ajax.cart_url) {
+                            setTimeout(function() {
+                                window.location.href = cbm_ajax.cart_url;
+                            }, 1000);
+                        }
+                    }
+
+                    // Reset button after delay
+                    setTimeout(function() {
+                        $button.removeClass('loading');
+                        $button.find('.button-text').text(originalText);
+                        $button.find('.loading-spinner').remove();
+                    }, 2000);
+
+                } else {
+                    // Error handling
+                    console.error('[CBM] Add to cart failed:', response);
+
+                    // Check if it's a nonce error and we received a new nonce
+                    if (response.data && response.data.error_code === 'invalid_nonce' && response.data.regenerate_nonce && response.data.new_nonce) {
+                        var retryCount = $button.data('retry-count') || 0;
+
+                        // Only retry once to prevent infinite loops
+                        if (retryCount < 1) {
+                            console.log('[CBM] Nonce error detected - regenerating and retrying (attempt ' + (retryCount + 1) + ')');
+
+                            // Update the nonce in cbm_ajax global
+                            cbm_ajax.nonce = response.data.new_nonce;
+
+                            // Increment retry counter
+                            $button.data('retry-count', retryCount + 1);
+
+                            // Show a brief message
+                            $button.find('.button-text').text('Retrying...');
+
+                            // Retry the request with the new nonce directly (not via trigger click)
+                            setTimeout(function() {
+                                console.log('[CBM] Retrying with new nonce');
+                                // Remove loading state temporarily to allow retry
+                                $button.removeClass('loading');
+                                // Call the function directly instead of triggering click
+                                performAddToCart($button, productId, quantity, selectedDate);
+                            }, 500);
+
+                            return;
+                        } else {
+                            console.error('[CBM] Nonce retry limit reached - asking user to refresh');
+                        }
+                    }
+
+                    // Reset retry counter
+                    $button.data('retry-count', 0);
+
+                    // Show error message to user
+                    var errorMessage = response.data && response.data.message ? response.data.message : 'Error adding to cart. Please try again.';
+                    alert(errorMessage);
+
+                    $button.removeClass('loading');
+                    $button.find('.button-text').text(originalText);
+                    $button.find('.loading-spinner').remove();
+
+                    if (response.product_url) {
+                        window.location.href = response.product_url;
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('[CBM] AJAX error:', error);
+                console.error('[CBM] Response status:', xhr.status);
+                console.error('[CBM] Response text:', xhr.responseText ? xhr.responseText.substring(0, 500) : 'empty');
+
+                // Check if response is HTML instead of JSON
+                if (xhr.responseText && xhr.responseText.indexOf('<!DOCTYPE') !== -1) {
+                    console.error('[CBM] Received HTML instead of JSON - AJAX endpoint not found');
+                    alert('Error: Server configuration issue. The cart functionality is not available.');
+                } else {
+                    alert('Error adding to cart. Please try again.');
+                }
+
+                $button.removeClass('loading');
+                $button.find('.button-text').text(originalText);
+                $button.find('.loading-spinner').remove();
+            }
+        });
+    }
+
     // Add to cart handler
     $(document).on('click', '.add-to-cart-button:not(.sold-out):not(.loading)', function(e) {
         e.preventDefault();
@@ -168,7 +328,7 @@ window.selectBox = function(element, boxType, courseId) {
         if (!$button.data('retry-count')) {
             $button.data('retry-count', 0);
         }
-        
+
         // Debug: Log the box we're working with
         console.log('[CBM] Add to cart clicked');
         console.log('[CBM] Box element:', $box[0]);
@@ -241,166 +401,9 @@ window.selectBox = function(element, boxType, courseId) {
             alert('Please select a date');
             return;
         }
-        
-        // Add loading state
-        $button.addClass('loading');
-        const originalText = $button.find('.button-text').text();
-        
-        // Add spinner if it doesn't exist
-        if (!$button.find('.loading-spinner').length) {
-            $button.append('<span class="loading-spinner"></span>');
-        }
-        
-        // Check if cbm_ajax is available (should always be available now)
-        if (typeof cbm_ajax === 'undefined' || !cbm_ajax.ajax_url) {
-            console.error('[CBM] AJAX configuration not available - this should not happen');
-            console.log('[CBM] window.cbm_ajax:', window.cbm_ajax);
-            
-            // Try to use window.cbm_ajax as fallback
-            if (window.cbm_ajax && window.cbm_ajax.ajax_url) {
-                console.log('[CBM] Using window.cbm_ajax as fallback');
-                cbm_ajax = window.cbm_ajax;
-            } else {
-                alert('Error: AJAX configuration not found. Please refresh the page.');
-                $button.removeClass('loading');
-                $button.find('.button-text').text(originalText);
-                return;
-            }
-        }
-        
-        console.log('[CBM] Using AJAX URL:', cbm_ajax.ajax_url);
-        
-        // Prepare data
-        const data = {
-            action: 'woocommerce_add_to_cart',
-            product_id: productId,
-            quantity: quantity,
-            variation_id: 0,
-            security: cbm_ajax.nonce || ''
-        };
-        
-        // Add selected date if available
-        if (selectedDate) {
-            data.start_date = selectedDate;
-            data.course_date = selectedDate;
-        }
-        
-        console.log('Adding to cart:', data);
-        
-        // Make AJAX request
-        $.ajax({
-            type: 'POST',
-            url: cbm_ajax.ajax_url,
-            data: data,
-            dataType: 'json',
-            success: function(response) {
-                console.log('Cart response:', response);
 
-                if (response.success) {
-                    // Reset retry counter on success
-                    $button.data('retry-count', 0);
-
-                    // Update button
-                    $button.find('.button-text').text('Added!');
-
-                    // Check if FunnelKit Cart is active
-                    if (response.use_funnelkit || cbm_ajax.is_funnelkit_active) {
-                        // Trigger FunnelKit Cart
-                        if (typeof fkcart_show_cart === 'function') {
-                            fkcart_show_cart();
-                        } else if (typeof FKCart !== 'undefined' && FKCart.show_cart) {
-                            FKCart.show_cart();
-                        } else {
-                            // Try to trigger FunnelKit by event
-                            $(document.body).trigger('fkcart_show_cart');
-                            $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
-                        }
-                    } else {
-                        // Regular WooCommerce behavior
-                        $(document.body).trigger('added_to_cart', [response.fragments, response.cart_hash]);
-
-                        // Optionally redirect to cart
-                        if (cbm_ajax.cart_url) {
-                            setTimeout(function() {
-                                window.location.href = cbm_ajax.cart_url;
-                            }, 1000);
-                        }
-                    }
-
-                    // Reset button after delay
-                    setTimeout(function() {
-                        $button.removeClass('loading');
-                        $button.find('.button-text').text(originalText);
-                        $button.find('.loading-spinner').remove(); // Remove spinner from DOM
-                    }, 2000);
-
-                } else {
-                    // Error handling
-                    console.error('[CBM] Add to cart failed:', response);
-
-                    // Check if it's a nonce error and we received a new nonce
-                    if (response.data && response.data.error_code === 'invalid_nonce' && response.data.regenerate_nonce && response.data.new_nonce) {
-                        var retryCount = $button.data('retry-count') || 0;
-
-                        // Only retry once to prevent infinite loops
-                        if (retryCount < 1) {
-                            console.log('[CBM] Nonce error detected - regenerating and retrying (attempt ' + (retryCount + 1) + ')');
-
-                            // Update the nonce in cbm_ajax global
-                            cbm_ajax.nonce = response.data.new_nonce;
-
-                            // Increment retry counter
-                            $button.data('retry-count', retryCount + 1);
-
-                            // Show a brief message
-                            $button.find('.button-text').text('Retrying...');
-
-                            // Retry the request with the new nonce after a short delay
-                            setTimeout(function() {
-                                console.log('[CBM] Retrying with new nonce');
-                                $button.trigger('click');
-                            }, 500);
-
-                            return;
-                        } else {
-                            console.error('[CBM] Nonce retry limit reached - asking user to refresh');
-                        }
-                    }
-
-                    // Reset retry counter
-                    $button.data('retry-count', 0);
-
-                    // Show error message to user
-                    var errorMessage = response.data && response.data.message ? response.data.message : 'Error adding to cart. Please try again.';
-                    alert(errorMessage);
-
-                    $button.removeClass('loading');
-                    $button.find('.button-text').text(originalText);
-                    $button.find('.loading-spinner').remove(); // Remove spinner from DOM
-
-                    if (response.product_url) {
-                        window.location.href = response.product_url;
-                    }
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('[CBM] AJAX error:', error);
-                console.error('[CBM] Response status:', xhr.status);
-                console.error('[CBM] Response text:', xhr.responseText ? xhr.responseText.substring(0, 500) : 'empty');
-                
-                // Check if response is HTML instead of JSON
-                if (xhr.responseText && xhr.responseText.indexOf('<!DOCTYPE') !== -1) {
-                    console.error('[CBM] Received HTML instead of JSON - AJAX endpoint not found');
-                    alert('Error: Server configuration issue. The cart functionality is not available.');
-                } else {
-                    alert('Error adding to cart. Please try again.');
-                }
-                
-                $button.removeClass('loading');
-                $button.find('.button-text').text(originalText);
-                $button.find('.loading-spinner').remove(); // Remove spinner from DOM
-            }
-        });
+        // Call the add to cart function
+        performAddToCart($button, productId, quantity, selectedDate);
     });
 
     // Initialize on page load
