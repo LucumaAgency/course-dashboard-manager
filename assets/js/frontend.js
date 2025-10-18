@@ -288,7 +288,22 @@ window.selectBox = function(element, boxType, courseId) {
                     $button.data('retry-count', 0);
 
                     // Show error message to user
-                    var errorMessage = response.data && response.data.message ? response.data.message : 'Error adding to cart. Please try again.';
+                    var errorMessage = 'Error adding to cart. Please try again.';
+
+                    // Extract message from various possible error formats
+                    if (response.data) {
+                        if (typeof response.data === 'string') {
+                            errorMessage = response.data;
+                        } else if (response.data.message) {
+                            errorMessage = response.data.message;
+                        } else if (typeof response.data === 'object') {
+                            // Log the full error object for debugging
+                            console.error('[CBM] Error object:', response.data);
+                            errorMessage = 'Error: ' + (response.data.error_code || 'Unknown error');
+                        }
+                    }
+
+                    console.error('[CBM] Final error message:', errorMessage);
                     alert(errorMessage);
 
                     $button.removeClass('loading');
