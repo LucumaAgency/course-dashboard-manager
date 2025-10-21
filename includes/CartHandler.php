@@ -144,11 +144,24 @@ class CartHandler {
             // Failed to add to cart
             $notices = wc_get_notices('error');
             $message = 'Could not add product to cart';
-            
+
             if (!empty($notices)) {
-                $message = strip_tags($notices[0]['notice']);
+                $notice_data = $notices[0]['notice'];
+
+                // Handle different notice formats
+                if (is_string($notice_data)) {
+                    $message = strip_tags($notice_data);
+                } elseif (is_array($notice_data) && isset($notice_data['message'])) {
+                    $message = strip_tags($notice_data['message']);
+                } elseif (is_object($notice_data) && isset($notice_data->message)) {
+                    $message = strip_tags($notice_data->message);
+                } else {
+                    // Fallback: convert to string
+                    $message = strip_tags(print_r($notice_data, true));
+                    error_log('[CBM CartHandler] Unexpected notice format: ' . print_r($notice_data, true));
+                }
             }
-            
+
             wp_send_json_error(['message' => $message]);
         }
     }
