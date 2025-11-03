@@ -45,7 +45,7 @@ function cbm_update_field($field, $value, $post_id = false) {
 }
 
 /**
- * Calculate total seats sold for a product/course
+ * Calculate total seats sold for a product/course with caching
  *
  * @param int $product_id WooCommerce product ID
  * @param string|null $date_text Optional specific date to filter by
@@ -56,13 +56,25 @@ function calculate_seats_sold($product_id, $date_text = null) {
         return 0;
     }
 
+    // Create cache key
+    $cache_key = 'cbm_seats_sold_' . $product_id;
+    if ($date_text) {
+        $cache_key .= '_' . md5($date_text);
+    }
+
+    // Try to get from cache
+    $cached = get_transient($cache_key);
+    if ($cached !== false) {
+        return (int) $cached;
+    }
+
     // Query only completed orders for better performance
     $args = [
         'status' => ['wc-completed'],
         'limit' => -1,
         'return' => 'ids',
         'date_query' => [
-            'after' => '2020-01-01', // Reasonable cutoff date
+            'after' => defined('CBM_ORDERS_DATE_CUTOFF') ? CBM_ORDERS_DATE_CUTOFF : '2020-01-01',
         ],
     ];
 
@@ -94,7 +106,30 @@ function calculate_seats_sold($product_id, $date_text = null) {
         }
     }
 
+    // Cache the result for 5 minutes
+    $expiration = defined('CBM_TRANSIENT_EXPIRATION') ? CBM_TRANSIENT_EXPIRATION : 5 * MINUTE_IN_SECONDS;
+    set_transient($cache_key, $total_sold, $expiration);
+
     return $total_sold;
+}
+
+/**
+ * Clear seats sold cache for a product
+ * Call this when an order is created/updated
+ *
+ * @param int $product_id Product ID
+ */
+function cbm_clear_seats_cache($product_id) {
+    global $wpdb;
+
+    // Delete all transients for this product
+    $wpdb->query(
+        $wpdb->prepare(
+            "DELETE FROM {$wpdb->options}
+             WHERE option_name LIKE %s",
+            $wpdb->esc_like('_transient_cbm_seats_sold_' . $product_id) . '%'
+        )
+    );
 }
 
 /**

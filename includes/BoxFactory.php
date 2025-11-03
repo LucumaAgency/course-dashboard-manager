@@ -26,9 +26,7 @@ class BoxFactory {
         error_log('[CBM Debug] get_box called for course_id: ' . $course_id);
         
         $box_types = [
-            // SoldOutBox::class,     // Temporarily disabled
             CountdownBox::class,
-            // WaitlistBox::class,  // Temporarily disabled - show soldout instead
             EnrollBuyBox::class,  // Check this before individual boxes
             BuyCourseBox::class,
             EnrollCourseBox::class

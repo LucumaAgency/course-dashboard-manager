@@ -17,7 +17,8 @@ define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CBM_VERSION', '1.9.46');
 
-// Include global helper functions
+// Include constants and helpers
+require_once CBM_PLUGIN_DIR . 'includes/constants.php';
 require_once CBM_PLUGIN_DIR . 'includes/helpers-global.php';
 
 // Autoloader for classes
@@ -168,19 +169,8 @@ function course_box_manager_menu() {
         'course-box-tables',
         'course_box_tables_page'
     );
-    
-    // Course Boxes submenu - disabled (commented out)
-    /*
-    add_submenu_page(
-        'course-box-tables',
-        'Course Boxes',
-        'Course Boxes',
-        'edit_posts',
-        'course-box-manager',
-        'course_box_manager_page'
-    );
-    */
 }
+
 
 // Handle course group creation and deletion
 add_action('admin_init', 'handle_course_group_actions', 20); // Priority 20 to ensure ACF is loaded
@@ -195,12 +185,12 @@ function handle_course_group_actions() {
         return;
     }
     
-    // Handle group deletion
-    if (isset($_GET['action']) && $_GET['action'] === 'delete_group' && isset($_GET['group_id']) && isset($_GET['_wpnonce'])) {
-        $group_id = intval($_GET['group_id']);
-        
+    // Handle group deletion (POST request)
+    if (isset($_POST['action']) && $_POST['action'] === 'delete_group' && isset($_POST['group_id']) && isset($_POST['_wpnonce'])) {
+        $group_id = intval($_POST['group_id']);
+
         // Verify nonce
-        if (!wp_verify_nonce($_GET['_wpnonce'], 'delete_group_' . $group_id)) {
+        if (!wp_verify_nonce($_POST['_wpnonce'], 'delete_group_' . $group_id)) {
             wp_die('Security check failed');
         }
         
@@ -358,16 +348,17 @@ function course_box_tables_page() {
                             <td><?php echo count($courses_in_group); ?></td>
                             <td>
                                 <a href="?page=course-box-tables&group_id=<?php echo esc_attr($group->term_id); ?>" class="button">View Courses</a>
-                                <?php 
-                                $delete_message = count($courses_in_group) > 0 
+                                <?php
+                                $delete_message = count($courses_in_group) > 0
                                     ? 'This group contains ' . count($courses_in_group) . ' course(s). Deleting the group will unassign all courses from it. Are you sure?'
                                     : 'Are you sure you want to delete this group?';
                                 ?>
-                                <a href="<?php echo wp_nonce_url('?page=course-box-tables&action=delete_group&group_id=' . $group->term_id, 'delete_group_' . $group->term_id); ?>" 
-                                   class="button button-link-delete" 
-                                   onclick="return confirm('<?php echo esc_js($delete_message); ?>');">
-                                    Delete
-                                </a>
+                                <form method="post" action="" style="display: inline;" onsubmit="return confirm('<?php echo esc_js($delete_message); ?>');">
+                                    <?php wp_nonce_field('delete_group_' . $group->term_id, '_wpnonce'); ?>
+                                    <input type="hidden" name="action" value="delete_group">
+                                    <input type="hidden" name="group_id" value="<?php echo esc_attr($group->term_id); ?>">
+                                    <button type="submit" class="button button-link-delete">Delete</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -1972,11 +1963,6 @@ function save_course_settings() {
         }
     }
 
-    // Removed auto-change to waitlist - keep the selected state
-    // if ($box_state === 'enroll-course' && empty($formatted_dates)) {
-    //     $box_state = 'waitlist';
-    // }
-
     update_post_meta($course_id, 'box_state', $box_state);
     update_post_meta($course_id, 'course_instructors', $instructors);
     
@@ -2780,7 +2766,6 @@ function cbm_enqueue_popup_assets() {
     if (!is_admin()) {
         // Use the simple popup by default
         wp_enqueue_script('cbm-popup-simple');
-        // wp_enqueue_script('cbm-popup-auto'); // Commented out - using simple version
         wp_enqueue_style('cbm-popup');
 
         // Add debug script only if WP_DEBUG is enabled or query param exists

@@ -111,11 +111,12 @@ if (!defined('ABSPATH')) {
                                     ? 'This group contains ' . $courses_count . ' course(s). Deleting the group will unassign all courses from it. Are you sure?'
                                     : 'Are you sure you want to delete this group?';
                                 ?>
-                                <a href="<?php echo wp_nonce_url('?page=course-box-tables&action=delete_group&group_id=' . $group->term_id, 'delete_group_' . $group->term_id); ?>" 
-                                   class="button button-link-delete" 
-                                   onclick="return confirm('<?php echo esc_js($delete_message); ?>');">
-                                    Delete
-                                </a>
+                                <form method="post" action="" style="display: inline;" onsubmit="return confirm('<?php echo esc_js($delete_message); ?>');">
+                                    <?php wp_nonce_field('delete_group_' . $group->term_id, '_wpnonce'); ?>
+                                    <input type="hidden" name="action" value="delete_group">
+                                    <input type="hidden" name="group_id" value="<?php echo esc_attr($group->term_id); ?>">
+                                    <button type="submit" class="button button-link-delete">Delete</button>
+                                </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
