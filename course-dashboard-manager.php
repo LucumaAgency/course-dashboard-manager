@@ -620,9 +620,9 @@ function course_box_tables_page() {
                             ];
                         }
                     }
-                    echo json_encode($courses_json);
+                    echo wp_json_encode($courses_json);
                 ?>;
-                var allProducts = <?php echo json_encode($all_products); ?>;
+                var allProducts = <?php echo wp_json_encode($all_products); ?>;
                 var groupId = <?php echo intval($group_id); ?>;
             </script>
         
@@ -1178,7 +1178,7 @@ function course_box_tables_page() {
                     }
                     ?>
                     
-                    const stmCoursesGlobal = <?php echo json_encode($stm_courses_js_global); ?>;
+                    const stmCoursesGlobal = <?php echo wp_json_encode($stm_courses_js_global); ?>;
                     
                     stmCoursesGlobal.forEach(course => {
                         const selected = currentSTMId == course.id ? 'selected' : '';
@@ -1216,7 +1216,7 @@ function course_box_tables_page() {
                     }
                     ?>
                     
-                    const stmCourses = <?php echo json_encode($stm_courses_js); ?>;
+                    const stmCourses = <?php echo wp_json_encode($stm_courses_js); ?>;
                     
                     stmCourses.forEach(course => {
                         const isSelected = selectedIdStr === String(course.id);
@@ -3447,8 +3447,14 @@ add_action('wp_ajax_assign_course_to_group', 'assign_course_to_group');
 function assign_course_to_group() {
     error_log('[CBM Debug] assign_course_to_group called');
     error_log('[CBM Debug] POST data: ' . print_r($_POST, true));
-    
+
     check_ajax_referer('course_box_nonce', 'nonce');
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
     $course_id = intval($_POST['course_id']);
     $group_id = intval($_POST['group_id']);
     $instructors = isset($_POST['instructors']) ? json_decode(stripslashes($_POST['instructors']), true) : [];
@@ -3598,7 +3604,13 @@ function cbm_ajax_add_to_cart() {
 add_action('wp_ajax_save_group_settings', 'save_group_settings');
 function save_group_settings() {
     check_ajax_referer('course_box_nonce', 'nonce');
-    
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $group_id = intval($_POST['group_id']);
     $box_state = sanitize_text_field($_POST['box_state']);
     $course_id = isset($_POST['course_id']) ? intval($_POST['course_id']) : 0;
@@ -3779,6 +3791,13 @@ function save_group_settings() {
 add_action('wp_ajax_save_course_settings', 'save_course_settings');
 function save_course_settings() {
     check_ajax_referer('course_box_nonce', 'nonce');
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $course_id = intval($_POST['course_id']);
     $group_id = intval($_POST['group_id']);
     $box_state = sanitize_text_field($_POST['box_state']);
@@ -3929,6 +3948,13 @@ function save_course_settings() {
 add_action('wp_ajax_remove_course_from_group', 'remove_course_from_group');
 function remove_course_from_group() {
     check_ajax_referer('course_box_nonce', 'nonce');
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $course_id = intval($_POST['course_id']);
     $group_id = intval($_POST['group_id']);
     
@@ -3941,6 +3967,13 @@ function remove_course_from_group() {
 add_action('wp_ajax_delete_course', 'delete_course');
 function delete_course() {
     check_ajax_referer('course_box_nonce', 'nonce');
+
+    // Check user capabilities
+    if (!current_user_can('delete_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $course_id = intval($_POST['course_id']);
     $product_id = get_post_meta($course_id, 'linked_product_id', true);
     if ($product_id) {
@@ -3954,6 +3987,13 @@ function delete_course() {
 add_action('wp_ajax_save_inline_dates', 'save_inline_dates');
 function save_inline_dates() {
     check_ajax_referer('course_box_nonce', 'nonce');
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $course_id = intval($_POST['course_id']);
     $dates = json_decode(stripslashes($_POST['dates']), true);
     
@@ -4013,7 +4053,13 @@ function save_inline_dates() {
 add_action('wp_ajax_save_table_row_data', 'save_table_row_data');
 function save_table_row_data() {
     check_ajax_referer('course_box_nonce', 'nonce');
-    
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $course_id = intval($_POST['course_id']);
     $date_index = sanitize_text_field($_POST['date_index']);
     $product_id = intval($_POST['product_id']);
@@ -4219,7 +4265,13 @@ function save_table_row_data() {
 add_action('wp_ajax_delete_table_row', 'delete_table_row');
 function delete_table_row() {
     check_ajax_referer('course_box_nonce', 'nonce');
-    
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $course_id = intval($_POST['course_id']);
     $date_index = intval($_POST['date_index']);
     
@@ -4251,7 +4303,13 @@ function delete_table_row() {
 add_action('wp_ajax_apply_group_settings', 'apply_group_settings');
 function apply_group_settings() {
     check_ajax_referer('course_box_nonce', 'nonce');
-    
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $group_id = intval($_POST['group_id']);
     $box_state = sanitize_text_field($_POST['box_state']);
     $instructor_id = intval($_POST['instructor_id']);

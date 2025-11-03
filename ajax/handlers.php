@@ -79,6 +79,13 @@ function cbm_ajax_add_to_cart() {
  */
 function create_new_course_group() {
     check_ajax_referer('course_box_nonce', 'nonce');
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $group_name = sanitize_text_field($_POST['group_name']);
     $term = wp_insert_term($group_name, 'course_group');
     if (!is_wp_error($term)) {
@@ -93,6 +100,13 @@ function create_new_course_group() {
  */
 function delete_course_group() {
     check_ajax_referer('course_box_nonce', 'nonce');
+
+    // Check user capabilities
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error('Insufficient permissions');
+        return;
+    }
+
     $group_id = intval($_POST['group_id']);
     
     // Remove the term from all courses first

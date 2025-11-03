@@ -111,7 +111,8 @@ class EnrollmentSync {
         $table = $wpdb->prefix . 'stm_lms_user_courses';
         
         // Check if table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
+        $query = $wpdb->prepare("SHOW TABLES LIKE %s", $table);
+        if ($wpdb->get_var($query) != $table) {
             error_log('[CBM Enrollment Sync] Table ' . $table . ' does not exist');
             return false;
         }
@@ -132,9 +133,10 @@ class EnrollmentSync {
         global $wpdb;
         
         $table = $wpdb->prefix . 'stm_lms_user_courses';
-        
+
         // Check if table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
+        $query = $wpdb->prepare("SHOW TABLES LIKE %s", $table);
+        if ($wpdb->get_var($query) != $table) {
             error_log('[CBM Enrollment Sync] Cannot enroll - table ' . $table . ' does not exist');
             
             // Try using MasterStudy function if available

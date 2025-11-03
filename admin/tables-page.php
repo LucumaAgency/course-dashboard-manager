@@ -291,13 +291,13 @@ if (!defined('ABSPATH')) {
                             ];
                         }
                     }
-                    echo json_encode($courses_json);
+                    echo wp_json_encode($courses_json);
                 ?>;
                 console.log('[CBM Debug] Loaded coursesData:', coursesData);
                 if (coursesData && coursesData.length > 0 && coursesData[0].dates) {
                     console.log('[CBM Debug] First course dates:', coursesData[0].dates);
                 }
-                var allProducts = <?php echo json_encode($all_products); ?>;
+                var allProducts = <?php echo wp_json_encode($all_products); ?>;
                 var groupId = <?php echo intval($group_id); ?>;
             </script>
         
@@ -850,7 +850,7 @@ if (!defined('ABSPATH')) {
                     }
                     ?>
                     
-                    const stmCoursesGlobal = <?php echo json_encode($stm_courses_js_global); ?>;
+                    const stmCoursesGlobal = <?php echo wp_json_encode($stm_courses_js_global); ?>;
                     
                     stmCoursesGlobal.forEach(course => {
                         const selected = currentSTMId == course.id ? 'selected' : '';
@@ -884,7 +884,7 @@ if (!defined('ABSPATH')) {
                     }
                     ?>
                     
-                    const stmCourses = <?php echo json_encode($stm_courses_js); ?>;
+                    const stmCourses = <?php echo wp_json_encode($stm_courses_js); ?>;
                     
                     stmCourses.forEach(course => {
                         const selected = selectedId == course.id ? 'selected' : '';
