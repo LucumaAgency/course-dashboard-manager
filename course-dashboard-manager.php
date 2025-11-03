@@ -67,7 +67,15 @@ add_action('init', function() {
     }
 });
 
-// Register course_group taxonomy
+/**
+ * Register course_group taxonomy
+ *
+ * Registers a custom taxonomy for grouping courses and products together.
+ * This allows courses to be organized into manageable groups in the admin interface.
+ *
+ * @since 1.0.0
+ * @return void
+ */
 add_action('init', 'register_course_group_taxonomy');
 function register_course_group_taxonomy() {
     register_taxonomy('course_group', ['course', 'product'], [
@@ -83,7 +91,15 @@ function register_course_group_taxonomy() {
     ]);
 }
 
-// Register instructor CPT
+/**
+ * Register instructor custom post type
+ *
+ * Creates a custom post type for managing course instructors.
+ * Instructors can be assigned to courses via course meta.
+ *
+ * @since 1.0.0
+ * @return void
+ */
 add_action('init', 'register_instructor_cpt');
 function register_instructor_cpt() {
     register_post_type('instructor', [
@@ -148,6 +164,16 @@ function cbm_stm_diagnostic_notice() {
         echo '<div class="notice notice-warning"><p><strong>STM LMS Diagnostic:</strong> No STM courses found. Checked post types: ' . implode(', ', $stm_post_types) . ' | Plugin Version: ' . CBM_VERSION . ' | <a href="?page=course-box-tables&cbm_clear_cache=1">Clear Cache</a></p></div>';
     }
 }
+
+/**
+ * Register admin menu pages
+ *
+ * Creates the main "Course Tables" menu item and submenu pages in WordPress admin.
+ * Users with 'edit_posts' capability can access these pages.
+ *
+ * @since 1.0.0
+ * @return void
+ */
 function course_box_manager_menu() {
     // Main menu now redirects to Tables view
     add_menu_page(
@@ -171,8 +197,16 @@ function course_box_manager_menu() {
     );
 }
 
-
-// Handle course group creation and deletion
+/**
+ * Handle course group creation and deletion actions
+ *
+ * Processes POST requests for creating and deleting course groups.
+ * Includes nonce verification and capability checks for security.
+ * Runs on admin_init with priority 20 to ensure ACF is loaded.
+ *
+ * @since 1.0.0
+ * @return void
+ */
 add_action('admin_init', 'handle_course_group_actions', 20); // Priority 20 to ensure ACF is loaded
 function handle_course_group_actions() {
     // Only process on admin pages
@@ -1497,7 +1531,15 @@ function course_box_manager_page() {
     <?php
 }
 
-// AJAX Handler for Creating Course Group
+/**
+ * AJAX handler for creating a new course group
+ *
+ * Creates a new term in the course_group taxonomy.
+ * Requires valid nonce and sanitizes input.
+ *
+ * @since 1.0.0
+ * @return void Sends JSON response
+ */
 add_action('wp_ajax_create_new_course_group', 'create_new_course_group');
 function create_new_course_group() {
     check_ajax_referer(CBM_NONCE_CREATE_GROUP, 'nonce');
@@ -1510,7 +1552,15 @@ function create_new_course_group() {
     }
 }
 
-// AJAX Handler for Deleting Course Group
+/**
+ * AJAX handler for deleting a course group
+ *
+ * Removes all courses from the group before deleting the term.
+ * Requires valid nonce and user capability check.
+ *
+ * @since 1.0.0
+ * @return void Sends JSON response
+ */
 add_action('wp_ajax_delete_course_group', 'delete_course_group');
 function delete_course_group() {
     check_ajax_referer(CBM_NONCE_DELETE_GROUP, 'nonce');
@@ -1543,7 +1593,15 @@ function delete_course_group() {
     }
 }
 
-// AJAX Handler for Assigning Course to Group
+/**
+ * AJAX handler for assigning a course to a group
+ *
+ * Assigns a course to a course_group taxonomy term and updates instructors.
+ * Also updates the instructor meta to track which courses they teach.
+ *
+ * @since 1.0.0
+ * @return void Sends JSON response
+ */
 add_action('wp_ajax_assign_course_to_group', 'assign_course_to_group');
 function assign_course_to_group() {
     error_log('[CBM Debug] assign_course_to_group called');
@@ -1702,6 +1760,15 @@ function cbm_ajax_add_to_cart() {
     }
 }
 
+/**
+ * AJAX handler for saving group settings
+ *
+ * Applies box_state settings to all courses in a group.
+ * Allows bulk updates of course configurations.
+ *
+ * @since 1.0.0
+ * @return void Sends JSON response
+ */
 add_action('wp_ajax_save_group_settings', 'save_group_settings');
 function save_group_settings() {
     check_ajax_referer(CBM_NONCE_SAVE_GROUP, 'nonce');
@@ -1889,6 +1956,15 @@ function save_group_settings() {
     wp_send_json_success(['message' => 'Settings saved successfully']);
 }
 
+/**
+ * AJAX handler for saving individual course settings
+ *
+ * Updates course meta including box_state, dates, instructors, linked products,
+ * and related STM course. Handles all course configuration updates.
+ *
+ * @since 1.0.0
+ * @return void Sends JSON response
+ */
 add_action('wp_ajax_save_course_settings', 'save_course_settings');
 function save_course_settings() {
     check_ajax_referer(CBM_NONCE_SAVE_COURSE, 'nonce');
