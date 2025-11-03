@@ -35,12 +35,10 @@
                 // Handle STM Course selection changes
                 const stmCourseSelect = document.getElementById('stm-course');
                 if (stmCourseSelect) {
-                    console.log('[CBM] STM Course select found, adding change listener');
                     stmCourseSelect.addEventListener('change', function() {
                         const courseId = this.getAttribute('data-course-id');
                         const stmCourseId = this.value;
                         
-                        console.log('[CBM] STM Course changed:', {courseId, stmCourseId});
                         
                         // Save via AJAX
                         const formData = new FormData();
@@ -81,7 +79,6 @@
                                 setTimeout(() => {
                                     stmCourseSelect.style.backgroundColor = originalBg;
                                 }, 1500);
-                                console.log('[CBM] STM Course saved successfully');
                             } else {
                                 console.error('[CBM] Error saving STM Course:', data);
                                 alert('Error saving STM Course: ' + (data.data || 'Unknown error'));
@@ -92,7 +89,6 @@
                         });
                     });
                 } else {
-                    console.log('[CBM] STM Course select NOT found');
                 }
                 
                 const addCourseModal = document.getElementById('add-course-modal');

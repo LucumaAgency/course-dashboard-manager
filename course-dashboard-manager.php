@@ -17,25 +17,8 @@ define('CBM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('CBM_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('CBM_VERSION', '1.9.46');
 
-// Helper function to safely get ACF field
-function cbm_get_field($field, $post_id = false, $default = null) {
-    if (function_exists('get_field')) {
-        $value = get_field($field, $post_id);
-        return $value !== false ? $value : $default;
-    }
-    // Fallback to post meta
-    $value = get_post_meta($post_id, $field, true);
-    return $value !== '' ? $value : $default;
-}
-
-// Helper function to safely update ACF field
-function cbm_update_field($field, $value, $post_id = false) {
-    if (function_exists('update_field')) {
-        return update_field($field, $value, $post_id);
-    }
-    // Fallback to post meta
-    return update_post_meta($post_id, $field, $value);
-}
+// Include global helper functions
+require_once CBM_PLUGIN_DIR . 'includes/helpers-global.php';
 
 // Autoloader for classes
 spl_autoload_register(function ($class) {
@@ -197,48 +180,6 @@ function course_box_manager_menu() {
         'course_box_manager_page'
     );
     */
-}
-
-// Helper function to calculate seats sold for a course
-function calculate_seats_sold($product_id, $date_text = null) {
-    if (!$product_id) {
-        return 0;
-    }
-    
-    $args = [
-        'status' => ['wc-completed'],
-        'limit' => -1,
-        'date_query' => ['after' => '2020-01-01'],
-    ];
-    
-    // Check if WooCommerce is available
-    if (!function_exists('wc_get_orders')) {
-        return 0;
-    }
-    
-    $orders = wc_get_orders($args);
-    $sales_count = 0;
-    $matching_orders = [];
-    
-    foreach ($orders as $order) {
-        foreach ($order->get_items() as $item) {
-            if ($item->get_product_id() == $product_id) {
-                if ($date_text) {
-                    $start_date = $item->get_meta('Start Date');
-                    // Compare as text strings, case-insensitive
-                    if (strcasecmp(trim($start_date), trim($date_text)) === 0) {
-                        $sales_count += $item->get_quantity();
-                        $matching_orders[] = $order->get_id();
-                    }
-                } else {
-                    $sales_count += $item->get_quantity();
-                    $matching_orders[] = $order->get_id();
-                }
-            }
-        }
-    }
-    
-    return $sales_count;
 }
 
 // Handle course group creation and deletion
@@ -735,7 +676,6 @@ function course_box_tables_page() {
                         }
                         
                         // Send AJAX request to add course to group
-                        console.log('[CBM Debug] Adding course:', courseId, 'to group:', groupId);
                         
                         fetch(ajaxurl + '?action=assign_course_to_group', {
                             method: 'POST',
@@ -744,14 +684,12 @@ function course_box_tables_page() {
                                   '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
                         })
                         .then(response => {
-                            console.log('[CBM Debug] Response status:', response.status);
                             if (!response.ok) {
                                 throw new Error('Network response was not ok');
                             }
                             return response.json();
                         })
                         .then(result => {
-                            console.log('[CBM Debug] AJAX result:', result);
                             if (result.success) {
                                 // Reload the page to show the new course
                                 location.reload();
@@ -1143,10 +1081,6 @@ function course_box_manager_page() {
                                 ℹ️ STM Courses detected: <?php echo count($stm_courses); ?> | Plugin v<?php echo CBM_VERSION; ?>
                             </p>
                             <script>
-                            console.log('[CBM] STM Course field rendered for course <?php echo $course_id; ?>');
-                            console.log('[CBM] Plugin version: <?php echo CBM_VERSION; ?>');
-                            console.log('[CBM] STM courses found: <?php echo count($stm_courses); ?>');
-                            console.log('[CBM] Current selection: <?php echo $related_stm_course_id ?: "none"; ?>');
                             </script>
                         </td>
                     </tr>
@@ -1606,12 +1540,10 @@ function course_box_manager_page() {
                 // Handle STM Course selection changes
                 const stmCourseSelect = document.getElementById('stm-course');
                 if (stmCourseSelect) {
-                    console.log('[CBM] STM Course select found, adding change listener');
                     stmCourseSelect.addEventListener('change', function() {
                         const courseId = this.getAttribute('data-course-id');
                         const stmCourseId = this.value;
                         
-                        console.log('[CBM] STM Course changed:', {courseId, stmCourseId});
                         
                         // Save via AJAX
                         const formData = new FormData();
@@ -1652,7 +1584,6 @@ function course_box_manager_page() {
                                 setTimeout(() => {
                                     stmCourseSelect.style.backgroundColor = originalBg;
                                 }, 1500);
-                                console.log('[CBM] STM Course saved successfully');
                             } else {
                                 console.error('[CBM] Error saving STM Course:', data);
                                 alert('Error saving STM Course: ' + (data.data || 'Unknown error'));
@@ -1663,7 +1594,6 @@ function course_box_manager_page() {
                         });
                     });
                 } else {
-                    console.log('[CBM] STM Course select NOT found');
                 }
                 
                 const addCourseModal = document.getElementById('add-course-modal');
@@ -2382,7 +2312,7 @@ function assign_course_to_group() {
     }
     $course_id = intval($_POST['course_id']);
     $group_id = intval($_POST['group_id']);
-    $instructors = isset($_POST['instructors']) ? json_decode(stripslashes($_POST['instructors']), true) : [];
+    $instructors = isset($_POST['instructors']) ? cbm_json_decode($_POST['instructors'], true, []) : [];
     
     error_log('[CBM Debug] Course ID: ' . $course_id . ', Group ID: ' . $group_id);
     
@@ -2613,7 +2543,7 @@ function save_group_settings() {
         
         // Save enroll dates
         if (isset($_POST['enroll_dates'])) {
-            $enroll_dates = json_decode(stripslashes($_POST['enroll_dates']), true);
+            $enroll_dates = cbm_json_decode($_POST['enroll_dates'], true, []);
             if (is_array($enroll_dates)) {
                 // Format dates for storage
                 $formatted_dates = [];
@@ -2642,7 +2572,7 @@ function save_group_settings() {
         }
 
         if (isset($_POST['dates'])) {
-            $dates = json_decode(stripslashes($_POST['dates']), true);
+            $dates = cbm_json_decode($_POST['dates'], true, []);
             if (is_array($dates)) {
                 $formatted_dates = [];
                 foreach ($dates as $date_info) {
@@ -2726,9 +2656,9 @@ function save_course_settings() {
     $course_id = intval($_POST['course_id']);
     $group_id = intval($_POST['group_id']);
     $box_state = sanitize_text_field($_POST['box_state']);
-    $instructors = json_decode(stripslashes($_POST['instructors']), true);
+    $instructors = cbm_json_decode($_POST['instructors'], true, []);
     $stock = sanitize_text_field($_POST['stock']);
-    $dates = json_decode(stripslashes($_POST['dates']), true);
+    $dates = cbm_json_decode($_POST['dates'], true, []);
     $selling_page_id = intval($_POST['selling_page_id']);
     $linked_product_id = intval($_POST['linked_product_id']);
     
@@ -2920,7 +2850,7 @@ function save_inline_dates() {
     }
 
     $course_id = intval($_POST['course_id']);
-    $dates = json_decode(stripslashes($_POST['dates']), true);
+    $dates = cbm_json_decode($_POST['dates'], true, []);
     
     if (!$course_id) {
         wp_send_json_error('Invalid course ID');
@@ -3558,7 +3488,6 @@ function cbm_enqueue_global_assets() {
                 cart_url: "' . (function_exists('wc_get_cart_url') ? wc_get_cart_url() : '') . '",
                 is_funnelkit_active: ' . (defined('FKCART_VERSION') || class_exists('FKCart') ? 'true' : 'false') . '
             };
-            console.log("[CBM] Global cbm_ajax initialized early:", window.cbm_ajax);
         ');
     }
 }
@@ -3645,13 +3574,10 @@ function course_box_manager_shortcode() {
     wp_add_inline_script('course-box-frontend', '
         // Define selectBox immediately for onclick handlers
         if (typeof window.selectBox === "undefined") {
-            console.log("[CBM] Defining selectBox inline...");
             window.selectBox = function(element, boxType, courseId) {
-                console.log("[CBM] selectBox called (inline)", boxType, courseId);
                 
                 // If jQuery not ready, wait and retry
                 if (typeof jQuery === "undefined") {
-                    console.log("[CBM] jQuery not ready, waiting...");
                     setTimeout(function() {
                         window.selectBox(element, boxType, courseId);
                     }, 100);
@@ -3707,14 +3633,11 @@ function course_box_manager_shortcode() {
     try {
         // Add inline script to define selectBox immediately before boxes render
         $inline_script = '<script type="text/javascript">
-            console.log("[CBM] Defining selectBox function inline before boxes...");
             if (typeof window.selectBox === "undefined") {
                 window.selectBox = function(element, boxType, courseId) {
-                    console.log("[CBM] selectBox called", boxType, courseId);
                     
                     // If jQuery not ready, wait and retry
                     if (typeof jQuery === "undefined") {
-                        console.log("[CBM] jQuery not ready, retrying in 100ms...");
                         setTimeout(function() {
                             window.selectBox(element, boxType, courseId);
                         }, 100);
@@ -3726,12 +3649,10 @@ function course_box_manager_shortcode() {
                     
                     // Toggle selection
                     if ($box.hasClass("selected")) {
-                        console.log("[CBM] Deselecting box");
                         $box.removeClass("selected");
                         $box.find(".circlecontainer").show();
                         $box.find(".circle-container").hide();
                     } else {
-                        console.log("[CBM] Selecting box");
                         // Deselect siblings
                         $box.siblings(".box").removeClass("selected");
                         $box.siblings(".box").find(".circlecontainer").show();
@@ -3743,9 +3664,7 @@ function course_box_manager_shortcode() {
                         $box.find(".circle-container").show();
                     }
                 };
-                console.log("[CBM] selectBox function defined successfully");
             } else {
-                console.log("[CBM] selectBox already defined");
             }
         </script>';
         

@@ -10,17 +10,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const ajaxurl = cbmTablesData.ajaxUrl;
     const nonce = cbmTablesData.nonce;
     
-    console.log('[CBM Debug] DOMContentLoaded - Tables view script starting');
-    console.log('[CBM Debug] Group ID:', groupId);
-    console.log('[CBM Debug] Courses data available:', coursesData.length > 0 ? 'YES' : 'NO');
-    console.log('[CBM Debug] All products available:', Object.keys(allProducts).length > 0 ? 'YES' : 'NO');
-    console.log('[CBM Debug] STM Courses available:', stmCourses.length);
     
                 let currentBoxState = document.getElementById('group-box-state').value;
                 let rowCounter = 0;
                 
-                console.log('[CBM Debug] Current box state:', currentBoxState);
-                console.log('[CBM Debug] Courses data:', coursesData);
                 
                 // Function to render table based on box state
                 function renderTable(boxState) {
@@ -142,15 +135,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (boxState === 'enroll-course') {
                         // Multiple rows allowed for enroll-course
                         coursesData.forEach(course => {
-                            console.log('[CBM Debug] Loading course data:', course);
                             if (course.dates && course.dates.length > 0) {
-                                console.log('[CBM Debug] Course has dates:', course.dates);
                                 course.dates.forEach((dateInfo, index) => {
-                                    console.log('[CBM Debug] Processing date:', dateInfo, 'at index:', index);
                                     addTableRow(course, {date: dateInfo, index: index}, boxState);
                                 });
                             } else {
-                                console.log('[CBM Debug] Course has no dates, adding empty row');
                                 addTableRow(course, null, boxState);
                             }
                         });
@@ -191,7 +180,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.className = 'course-row editable-row';
                     row.dataset.courseId = course.id;
                     
-                    console.log('[CBM Debug] addTableRow - Course ID:', course.id, 'Date Info:', dateInfo);
                     
                     if (dateInfo) {
                         row.dataset.dateIndex = dateInfo.index;
@@ -201,7 +189,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     let rowHTML = '';
                     const stock = boxState === 'soldout' ? 0 : (dateInfo && dateInfo.date && dateInfo.date.stock !== undefined ? dateInfo.date.stock : course.stock || 20);
-                    console.log('[CBM Debug] Stock for row:', stock, 'DateInfo:', dateInfo, 'Course stock:', course.stock);
                     const sold = 0; // Will be calculated server-side
                     const available = Math.max(0, stock - sold);
                     const buttonText = dateInfo && dateInfo.date && dateInfo.date.button_text ? dateInfo.date.button_text :
@@ -212,7 +199,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         const stmCourseId = dateInfo && dateInfo.date && dateInfo.date.stm_course_id ? dateInfo.date.stm_course_id : course.related_stm_course_id || '';
                         // Get Product ID for this specific date, fallback to course product
                         const productId = dateInfo && dateInfo.date && dateInfo.date.product_id ? dateInfo.date.product_id : course.product_id;
-                        console.log('[CBM Debug] Product ID for row:', productId, 'from dateInfo:', dateInfo?.date?.product_id, 'fallback:', course.product_id);
 
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateInfo && dateInfo.date ? dateInfo.date.date : ''}" placeholder="YYYY-MM-DD" style="width: 100%; padding: 3px;"></td>`;
                         rowHTML += `<td>${buildProductSelect(productId)}</td>`;
@@ -289,7 +275,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         rowHTML += `<td><input type="text" class="inline-edit-date" value="${dateValue}" placeholder="Date/Text" style="width: 100%; padding: 3px;"></td>`;
 
                         const enrollProductId = (dateInfo && dateInfo.date && dateInfo.date.product_id) ? dateInfo.date.product_id : (course.enroll_product_id || course.product_id);
-                        console.log('[CBM Debug] Enroll product ID for row:', enrollProductId);
                         rowHTML += `<td>${buildProductSelect(enrollProductId, 'enroll-product-select')}</td>`;
                         
                         // Add STM Course selector for enroll-buy (enroll section)
@@ -349,7 +334,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         buy_price: ''
                     };
                     
-                    console.log('[CBM Debug] Buy table course data:', firstCourse);
                     
                     // Create buy row
                     const row = document.createElement('tr');
@@ -357,7 +341,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     row.dataset.courseId = firstCourse.id;
                     
                     const buyProductId = firstCourse.buy_product_id || firstCourse.product_id;
-                    console.log('[CBM Debug] Buy product ID for table:', buyProductId);
                     
                     let rowHTML = '';
                     rowHTML += `<td>${buildProductSelect(buyProductId, 'buy-product-select')}</td>`;
@@ -397,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Update product prices if needed
                             if (buyProductId && (regularPrice || salePrice)) {
                                 // This would call the save function
-                                console.log('Saving buy product config:', {
                                     courseId,
                                     buyProductId,
                                     regularPrice,
@@ -423,15 +405,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     const selectClass = className || 'inline-edit-product';
                     // Convert selectedId to string for comparison
                     const selectedIdStr = selectedId ? String(selectedId) : '';
-                    console.log('[CBM Debug] Building product select with selectedId:', selectedIdStr);
-                    console.log('[CBM Debug] Available products:', Object.keys(allProducts));
 
                     let html = `<select class="${selectClass}" style="width: 100%; padding: 3px;" onchange="updateProductPrice(this)"><option value="">None</option>`;
                     for (let id in allProducts) {
                         const productName = allProducts[id].name || allProducts[id]; // Support both old and new format
                         const isSelected = selectedIdStr === String(id);
                         if (isSelected) {
-                            console.log('[CBM Debug] Found match! Product', id, 'is selected');
                         }
                         html += `<option value="${id}" ${isSelected ? 'selected' : ''}>${productName}</option>`;
                     }
@@ -464,7 +443,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 function buildSTMCourseSelect(selectedId, courseId) {
                     // Convert selectedId to string for comparison
                     const selectedIdStr = selectedId ? String(selectedId) : '';
-                    console.log('[CBM Debug] Building STM course select with selectedId:', selectedIdStr);
 
                     let html = `<select class="inline-edit-stm-course" data-course-id="${courseId}" style="width: 100%; padding: 3px;">`;
                     html += '<option value="">None</option>';
