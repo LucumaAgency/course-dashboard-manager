@@ -113,14 +113,18 @@ function cbm_admin_enqueue_scripts($hook) {
             ];
         }
 
-        // Localize script with data
+        // Localize script with data and action-specific nonces
         wp_localize_script('cbm-tables-manager', 'cbmTablesData', array(
             'coursesData' => $courses_json,
             'allProducts' => $all_products,
             'groupId' => $group_id,
             'stmCourses' => $stm_courses,
             'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('course_box_nonce')
+            'nonces' => array(
+                'saveTableRow' => wp_create_nonce(CBM_NONCE_SAVE_TABLE_ROW),
+                'deleteRow' => wp_create_nonce(CBM_NONCE_DELETE_ROW),
+                'saveInlineDates' => wp_create_nonce(CBM_NONCE_SAVE_INLINE_DATES),
+            )
         ));
     }
 }

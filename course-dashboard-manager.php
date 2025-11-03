@@ -671,8 +671,8 @@ function course_box_tables_page() {
                         fetch(ajaxurl + '?action=assign_course_to_group', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                            body: 'course_id=' + courseId + '&group_id=' + groupId + 
-                                  '&nonce=' + '<?php echo wp_create_nonce('course_box_nonce'); ?>'
+                            body: 'course_id=' + courseId + '&group_id=' + groupId +
+                                  '&nonce=' + '<?php echo wp_create_nonce(CBM_NONCE_ASSIGN_COURSE); ?>'
                         })
                         .then(response => {
                             if (!response.ok) {
@@ -1500,7 +1500,7 @@ function course_box_manager_page() {
 // AJAX Handler for Creating Course Group
 add_action('wp_ajax_create_new_course_group', 'create_new_course_group');
 function create_new_course_group() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_CREATE_GROUP, 'nonce');
     $group_name = sanitize_text_field($_POST['group_name']);
     $term = wp_insert_term($group_name, 'course_group');
     if (!is_wp_error($term)) {
@@ -1513,7 +1513,7 @@ function create_new_course_group() {
 // AJAX Handler for Deleting Course Group
 add_action('wp_ajax_delete_course_group', 'delete_course_group');
 function delete_course_group() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_DELETE_GROUP, 'nonce');
     $group_id = intval($_POST['group_id']);
     
     // Remove the term from all courses first
@@ -1549,7 +1549,7 @@ function assign_course_to_group() {
     error_log('[CBM Debug] assign_course_to_group called');
     error_log('[CBM Debug] POST data: ' . print_r($_POST, true));
 
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_ASSIGN_COURSE, 'nonce');
 
     // Check user capabilities
     if (!current_user_can('edit_posts')) {
@@ -1704,7 +1704,7 @@ function cbm_ajax_add_to_cart() {
 
 add_action('wp_ajax_save_group_settings', 'save_group_settings');
 function save_group_settings() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_SAVE_GROUP, 'nonce');
 
     // Check user capabilities
     if (!current_user_can('edit_posts')) {
@@ -1891,7 +1891,7 @@ function save_group_settings() {
 
 add_action('wp_ajax_save_course_settings', 'save_course_settings');
 function save_course_settings() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_SAVE_COURSE, 'nonce');
 
     // Check user capabilities
     if (!current_user_can('edit_posts')) {
@@ -2043,7 +2043,7 @@ function save_course_settings() {
 
 add_action('wp_ajax_remove_course_from_group', 'remove_course_from_group');
 function remove_course_from_group() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_REMOVE_COURSE, 'nonce');
 
     // Check user capabilities
     if (!current_user_can('edit_posts')) {
@@ -2062,7 +2062,7 @@ function remove_course_from_group() {
 
 add_action('wp_ajax_delete_course', 'delete_course');
 function delete_course() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_DELETE_COURSE, 'nonce');
 
     // Check user capabilities
     if (!current_user_can('delete_posts')) {
@@ -2082,7 +2082,7 @@ function delete_course() {
 // AJAX Handler for inline date/stock editing
 add_action('wp_ajax_save_inline_dates', 'save_inline_dates');
 function save_inline_dates() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_SAVE_INLINE_DATES, 'nonce');
 
     // Check user capabilities
     if (!current_user_can('edit_posts')) {
@@ -2148,7 +2148,7 @@ function save_inline_dates() {
 // AJAX Handler for saving table row data
 add_action('wp_ajax_save_table_row_data', 'save_table_row_data');
 function save_table_row_data() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_SAVE_TABLE_ROW, 'nonce');
 
     // Check user capabilities
     if (!current_user_can('edit_posts')) {
@@ -2360,7 +2360,7 @@ function save_table_row_data() {
 // AJAX Handler for deleting table row
 add_action('wp_ajax_delete_table_row', 'delete_table_row');
 function delete_table_row() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_DELETE_ROW, 'nonce');
 
     // Check user capabilities
     if (!current_user_can('edit_posts')) {
@@ -2398,7 +2398,7 @@ function delete_table_row() {
 // AJAX Handler for applying group settings
 add_action('wp_ajax_apply_group_settings', 'apply_group_settings');
 function apply_group_settings() {
-    check_ajax_referer('course_box_nonce', 'nonce');
+    check_ajax_referer(CBM_NONCE_APPLY_GROUP_SETTINGS, 'nonce');
 
     // Check user capabilities
     if (!current_user_can('edit_posts')) {

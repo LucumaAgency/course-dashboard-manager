@@ -36,10 +36,19 @@ define('CBM_POST_TYPE_INSTRUCTOR', 'instructor');
 define('CBM_CAPABILITY_MANAGE', 'edit_posts');
 define('CBM_CAPABILITY_DELETE', 'delete_posts');
 
-// Nonce names
-define('CBM_NONCE_ACTION', 'course_box_nonce');
-define('CBM_NONCE_CREATE_GROUP', 'create_course_group');
-define('CBM_NONCE_DELETE_GROUP', 'delete_group_');
+// Nonce names - Each AJAX action should have its own nonce for better security
+define('CBM_NONCE_CREATE_GROUP', 'cbm_create_group_nonce');
+define('CBM_NONCE_DELETE_GROUP', 'delete_group_'); // Kept for backward compatibility with dynamic group IDs
+define('CBM_NONCE_ASSIGN_COURSE', 'cbm_assign_course_nonce');
+define('CBM_NONCE_SAVE_GROUP', 'cbm_save_group_nonce');
+define('CBM_NONCE_SAVE_COURSE', 'cbm_save_course_nonce');
+define('CBM_NONCE_SAVE_TABLE_ROW', 'cbm_save_table_row_nonce');
+define('CBM_NONCE_DELETE_ROW', 'cbm_delete_row_nonce');
+define('CBM_NONCE_REMOVE_COURSE', 'cbm_remove_course_nonce');
+define('CBM_NONCE_DELETE_COURSE', 'cbm_delete_course_nonce');
+define('CBM_NONCE_SAVE_INLINE_DATES', 'cbm_save_inline_dates_nonce');
+define('CBM_NONCE_APPLY_GROUP_SETTINGS', 'cbm_apply_group_settings_nonce');
+define('CBM_NONCE_POPUP', 'cbm_popup_nonce');
 
 // AJAX actions
 define('CBM_AJAX_CREATE_GROUP', 'create_new_course_group');
