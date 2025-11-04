@@ -208,7 +208,7 @@ class EnrollCourseBox extends AbstractBox {
                                 <p class="regular-price"><?php echo $this->format_price($display_price); ?> <?php echo esc_html($currency); ?></p>
                             <?php endif; ?>
                         </div>
-                        <p class="description">Join weekly live sessions with feedback and expert mentorship. Pay Once.</p>
+                        <p class="description">Join weekly live sessions with feedback and expert mentorship.</p>
                     </div>
                 </div>
                 
