@@ -8,10 +8,20 @@
 namespace CourseBoxManager\Boxes;
 
 class BuyCourseBox extends AbstractBox {
-    
+
     public $buy_regular_price;
     public $buy_sale_price;
-    
+
+    public function __construct($course_id) {
+        parent::__construct($course_id);
+
+        // Override button_text with buy-specific button text
+        $buy_button_text = get_post_meta($this->course_id, 'buy_button_text', true);
+        if (!empty($buy_button_text)) {
+            $this->button_text = $buy_button_text;
+        }
+    }
+
     public function should_display() {
         // Display when box_state is buy-course, regardless of stock
         return $this->box_state === 'buy-course';

@@ -613,6 +613,7 @@ function course_box_tables_page() {
                                 'buy_product_id' => get_post_meta($course_id, 'buy_product_id', true),
                                 'enroll_product_id' => get_post_meta($course_id, 'enroll_product_id', true),
                                 'buy_price' => get_post_meta($course_id, 'buy_price', true),
+                                'buy_button_text' => get_post_meta($course_id, 'buy_button_text', true),
                                 'related_stm_course_id' => get_post_meta($course_id, 'related_stm_course_id', true),
                                 'launch_date' => $launch_date,
                                 'dates' => $dates ?: [],
@@ -1056,25 +1057,28 @@ function course_box_tables_page() {
                         id: 0,
                         product_id: '',
                         buy_product_id: '',
-                        buy_price: ''
+                        buy_price: '',
+                        buy_button_text: ''
                     };
-                    
+
                     console.log('[CBM Debug] Buy table course data:', firstCourse);
-                    
+
                     // Create buy row
                     const row = document.createElement('tr');
                     row.className = 'course-row editable-row buy-row';
                     row.dataset.courseId = firstCourse.id;
-                    
+
                     const buyProductId = firstCourse.buy_product_id || firstCourse.product_id;
+                    const buyButtonText = firstCourse.buy_button_text || 'Buy Course';
                     console.log('[CBM Debug] Buy product ID for table:', buyProductId);
-                    
+                    console.log('[CBM Debug] Buy button text:', buyButtonText);
+
                     let rowHTML = '';
                     rowHTML += `<td>${buildProductSelect(buyProductId, 'buy-product-select')}</td>`;
                     rowHTML += `<td>${buildSTMCourseSelect(firstCourse.related_stm_course_id || '', firstCourse.id)}</td>`;
                     rowHTML += `<td><input type="number" class="inline-edit-regular-price" value="${getProductRegularPrice(buyProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
                     rowHTML += `<td><input type="number" class="inline-edit-sale-price" value="${getProductSalePrice(buyProductId)}" min="0" step="0.01" style="width: 100%; padding: 3px;"></td>`;
-                    rowHTML += `<td><input type="text" class="inline-edit-button-text" value="Buy Course" style="width: 100%; padding: 3px;"></td>`;
+                    rowHTML += `<td><input type="text" class="inline-edit-button-text" value="${buyButtonText}" style="width: 100%; padding: 3px;"></td>`;
                     rowHTML += `<td>
                         <button class="button button-small button-primary save-buy-row">Save</button>
                         <span class="save-status" style="margin-left: 5px;"></span>
