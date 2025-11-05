@@ -252,8 +252,8 @@
 
 .date-btn.sold-out,
 .date-btn:disabled {
-    background-color: #333 !important;
-    color: #666 !important;
+    background-color: #0b000800 !important;
+    color: #ffffff6b !important;
     cursor: not-allowed !important;
     opacity: 0.5 !important;
     pointer-events: none !important; /* Completely disable mouse interaction */
