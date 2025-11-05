@@ -456,9 +456,20 @@
         $('.add-to-cart-button').off('click').on('click', function(e) {
             e.preventDefault();
             const $button = $(this);
-            const productId = $button.data('product-id');
-            const selectedDate = $button.closest('.box').find('.date-btn.selected').data('date') || '';
-            
+            let productId = $button.data('product-id');
+            const $box = $button.closest('.box');
+            const $selectedDateBtn = $box.find('.date-btn.selected');
+            const selectedDate = $selectedDateBtn.data('date') || '';
+
+            // Use product ID from selected date button if available
+            if ($selectedDateBtn.length > 0) {
+                const dateProductId = $selectedDateBtn.data('product-id');
+                if (dateProductId) {
+                    console.log('[CBM Popup] Using date-specific product ID:', dateProductId, '(was:', productId, ')');
+                    productId = dateProductId;
+                }
+            }
+
             if (productId) {
                 addToCart($button, productId, selectedDate);
             }
@@ -1063,15 +1074,25 @@
             
             const $button = $(this);
             const $box = $button.closest('.box');
-            
+
             // Ensure box stays selected
             $box.addClass('selected');
             $box.find('.circlecontainer').show();
             $box.find('.circle-container').hide();
-            
-            const productId = $button.data('product-id');
-            const selectedDate = $box.data('selected-date') || $box.find('.date-btn.selected').data('date') || '';
-            
+
+            let productId = $button.data('product-id');
+            const $selectedDateBtn = $box.find('.date-btn.selected');
+            const selectedDate = $box.data('selected-date') || $selectedDateBtn.data('date') || '';
+
+            // Use product ID from selected date button if available
+            if ($selectedDateBtn.length > 0) {
+                const dateProductId = $selectedDateBtn.data('product-id');
+                if (dateProductId) {
+                    console.log('[CBM Popup] Overriding with date-specific product ID:', dateProductId, '(was:', productId, ')');
+                    productId = dateProductId;
+                }
+            }
+
             console.log('[CBM Popup] Add to cart clicked - Product ID:', productId, 'Date:', selectedDate);
             
             if (!productId) {

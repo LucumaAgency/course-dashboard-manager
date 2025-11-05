@@ -346,7 +346,7 @@ window.selectBox = function(element, boxType, courseId) {
         const $button = $(this);
         let $box = $button.closest('.box');
 
-        const productId = $button.data('product-id');
+        let productId = $button.data('product-id');
         const quantity = $button.data('quantity') || 1;
 
         // Initialize retry counter if not exists
@@ -358,7 +358,8 @@ window.selectBox = function(element, boxType, courseId) {
         console.log('[CBM] Add to cart clicked');
         console.log('[CBM] Box element:', $box[0]);
         console.log('[CBM] Box classes:', $box.attr('class'));
-        
+        console.log('[CBM] Initial product ID from button:', productId);
+
         // Try multiple ways to get the selected date
         let selectedDate = '';
         
@@ -366,10 +367,17 @@ window.selectBox = function(element, boxType, courseId) {
         const $selectedDateBtn = $box.find('.date-btn.selected');
         console.log('[CBM] Found selected date buttons in box:', $selectedDateBtn.length);
         if ($selectedDateBtn.length > 0) {
-            selectedDate = $selectedDateBtn.data('date') || 
-                          $selectedDateBtn.attr('data-date') || 
+            selectedDate = $selectedDateBtn.data('date') ||
+                          $selectedDateBtn.attr('data-date') ||
                           $selectedDateBtn.text().trim();
             console.log('[CBM] Method 1 - Selected date from button:', selectedDate);
+
+            // IMPORTANT: Use the product ID from the selected date button if available
+            const dateProductId = $selectedDateBtn.data('product-id') || $selectedDateBtn.attr('data-product-id');
+            if (dateProductId) {
+                console.log('[CBM] Overriding product ID with date-specific product:', dateProductId, '(was:', productId, ')');
+                productId = dateProductId;
+            }
         }
         
         // Method 2: Check data attribute on box
@@ -383,35 +391,51 @@ window.selectBox = function(element, boxType, courseId) {
             const $parentContainer = $box.closest('.box-wrapper-no-select, .cbm-tab-pane');
             const $selectedDateInParent = $parentContainer.find('.date-btn.selected');
             if ($selectedDateInParent.length > 0) {
-                selectedDate = $selectedDateInParent.data('date') || 
-                              $selectedDateInParent.attr('data-date') || 
+                selectedDate = $selectedDateInParent.data('date') ||
+                              $selectedDateInParent.attr('data-date') ||
                               $selectedDateInParent.text().trim();
                 console.log('[CBM] Method 3 - Date from parent container:', selectedDate);
+
+                // Use product ID from this date button
+                const dateProductId = $selectedDateInParent.data('product-id') || $selectedDateInParent.attr('data-product-id');
+                if (dateProductId) {
+                    console.log('[CBM] Overriding product ID with date-specific product (Method 3):', dateProductId, '(was:', productId, ')');
+                    productId = dateProductId;
+                }
             }
         }
-        
+
         // Method 4: Check if there's only one date and auto-select it
         if (!selectedDate) {
             const $allDates = $box.find('.date-btn:not(.sold-out)');
             if ($allDates.length === 1) {
-                selectedDate = $allDates.first().data('date') || 
-                              $allDates.first().attr('data-date') || 
-                              $allDates.first().text().trim();
+                const $singleDate = $allDates.first();
+                selectedDate = $singleDate.data('date') ||
+                              $singleDate.attr('data-date') ||
+                              $singleDate.text().trim();
                 // Auto-select this date visually too
-                $allDates.first().addClass('selected');
+                $singleDate.addClass('selected');
                 console.log('[CBM] Method 4 - Single date auto-selected:', selectedDate);
+
+                // Use product ID from this date button
+                const dateProductId = $singleDate.data('product-id') || $singleDate.attr('data-product-id');
+                if (dateProductId) {
+                    console.log('[CBM] Overriding product ID with date-specific product (Method 4):', dateProductId, '(was:', productId, ')');
+                    productId = dateProductId;
+                }
             }
         }
         
         console.log('[CBM] Final selected date:', selectedDate);
-        
+        console.log('[CBM] Final product ID to add to cart:', productId);
+
         // Check how many date buttons exist in this box
         const $allDateButtons = $box.find('.date-btn');
         const $availableDateButtons = $box.find('.date-btn:not(.sold-out)');
-        
+
         console.log('[CBM] Total date buttons:', $allDateButtons.length);
         console.log('[CBM] Available date buttons:', $availableDateButtons.length);
-        
+
         if (!productId) {
             console.error('[CBM] No product ID found');
             return;
