@@ -254,10 +254,10 @@
 .date-btn:disabled {
     background-color: #0b000800 !important;
     color: #ffffff6b !important;
+}
+
+.date-btn.sold-out {
     cursor: not-allowed !important;
-    opacity: 0.5 !important;
-    pointer-events: none !important; /* Completely disable mouse interaction */
-    border: 1px solid #444 !important;
 }
 
 /* Buttons */
