@@ -387,13 +387,13 @@ body.cbm-popup-open {
     font-weight: 400;
 }
 
-.cbm-popup-container .date-btn:hover {
+.cbm-popup-container .date-btn:not(.sold-out):not(:disabled):hover {
     background: #DE04A4 !important;
     border-color: #DE04A4 !important;
     color: white !important;
 }
 
-.cbm-popup-container .date-btn.selected {
+.cbm-popup-container .date-btn.selected:not(.sold-out):not(:disabled) {
     background: #DE04A4 !important;
     color: white !important;
     border-color: #DE04A4 !important;
@@ -413,16 +413,27 @@ body.cbm-popup-open {
     transform: translateY(-2px);
 }
 
-/* Override WordPress button styles for date buttons */
-.cbm-popup-container button.date-btn:active,
-.cbm-popup-container button.date-btn:focus,
-.cbm-popup-container button.date-btn:hover,
-.cbm-popup-container .date-btn:active,
-.cbm-popup-container .date-btn:focus,
-.cbm-popup-container .date-btn:hover,
-button.date-btn:active,
-button.date-btn:focus,
-button.date-btn:hover {
+/* Sold-out and disabled date buttons */
+.date-btn.sold-out,
+.date-btn:disabled {
+    background-color: #0b000800 !important;
+    color: #ffffff6b !important;
+}
+
+.date-btn.sold-out {
+    cursor: not-allowed !important;
+}
+
+/* Override WordPress button styles for date buttons (excluding sold-out/disabled) */
+.cbm-popup-container button.date-btn:not(.sold-out):not(:disabled):active,
+.cbm-popup-container button.date-btn:not(.sold-out):not(:disabled):focus,
+.cbm-popup-container button.date-btn:not(.sold-out):not(:disabled):hover,
+.cbm-popup-container .date-btn:not(.sold-out):not(:disabled):active,
+.cbm-popup-container .date-btn:not(.sold-out):not(:disabled):focus,
+.cbm-popup-container .date-btn:not(.sold-out):not(:disabled):hover,
+button.date-btn:not(.sold-out):not(:disabled):active,
+button.date-btn:not(.sold-out):not(:disabled):focus,
+button.date-btn:not(.sold-out):not(:disabled):hover {
     background-color: #DE04A4 !important;
     border-color: #DE04A4 !important;
     color: white !important;
@@ -430,15 +441,15 @@ button.date-btn:hover {
     text-decoration: none !important;
 }
 
-.cbm-popup-container button.date-btn.selected:active,
-.cbm-popup-container button.date-btn.selected:focus,
-.cbm-popup-container button.date-btn.selected:hover,
-.cbm-popup-container .date-btn.selected:active,
-.cbm-popup-container .date-btn.selected:focus,
-.cbm-popup-container .date-btn.selected:hover,
-button.date-btn.selected:active,
-button.date-btn.selected:focus,
-button.date-btn.selected:hover {
+.cbm-popup-container button.date-btn.selected:not(.sold-out):not(:disabled):active,
+.cbm-popup-container button.date-btn.selected:not(.sold-out):not(:disabled):focus,
+.cbm-popup-container button.date-btn.selected:not(.sold-out):not(:disabled):hover,
+.cbm-popup-container .date-btn.selected:not(.sold-out):not(:disabled):active,
+.cbm-popup-container .date-btn.selected:not(.sold-out):not(:disabled):focus,
+.cbm-popup-container .date-btn.selected:not(.sold-out):not(:disabled):hover,
+button.date-btn.selected:not(.sold-out):not(:disabled):active,
+button.date-btn.selected:not(.sold-out):not(:disabled):focus,
+button.date-btn.selected:not(.sold-out):not(:disabled):hover {
     background-color: #DE04A4 !important;
     border-color: #DE04A4 !important;
     color: white !important;

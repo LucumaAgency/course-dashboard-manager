@@ -654,12 +654,12 @@ button.date-btn:not(.sold-out):not(:disabled):hover,
     text-decoration: none !important;
 }
 
-button.date-btn.selected:active,
-button.date-btn.selected:focus,
-button.date-btn.selected:hover,
-.date-btn.selected:active,
-.date-btn.selected:focus,
-.date-btn.selected:hover {
+button.date-btn.selected:not(.sold-out):not(:disabled):active,
+button.date-btn.selected:not(.sold-out):not(:disabled):focus,
+button.date-btn.selected:not(.sold-out):not(:disabled):hover,
+.date-btn.selected:not(.sold-out):not(:disabled):active,
+.date-btn.selected:not(.sold-out):not(:disabled):focus,
+.date-btn.selected:not(.sold-out):not(:disabled):hover {
     background-color: #DE04A4 !important;
     border-color: #DE04A4 !important;
     color: white !important;
